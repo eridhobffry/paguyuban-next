@@ -22,6 +22,12 @@ const SponsorsSection = dynamic(
   () => import("@/components/sections/SponsorsSection")
 );
 const CtaSection = dynamic(() => import("@/components/sections/CtaSection"));
+const ROICalculatorSection = dynamic(
+  () => import("@/components/sections/ROICalculatorSection")
+);
+const ChatAssistantSection = dynamic(
+  () => import("@/components/sections/ChatAssistantSection")
+);
 
 export const metadata: Metadata = {
   title: "Nusantara Messe 2026 | Cultural & Business Expo",
@@ -66,12 +72,14 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
       <HeroSection />
       <InvestmentOpportunitySection />
+      <ROICalculatorSection />
       <AboutSection />
       <FeaturesSection />
       <SpeakersSection />
       <ScheduleSection />
       <SponsorsSection />
       <CtaSection />
+      <ChatAssistantSection />
     </main>
   );
 }
