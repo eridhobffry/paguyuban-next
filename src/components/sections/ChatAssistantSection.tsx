@@ -85,6 +85,7 @@ const ChatAssistantSection = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,11 +95,12 @@ const ChatAssistantSection = () => {
   };
 
   useEffect(() => {
+    setIsClient(true);
     scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isClient && isOpen && messages.length === 0) {
       // Initialize with greeting
       const assistant = assistants[selectedAssistant];
       setMessages([
@@ -111,7 +113,7 @@ const ChatAssistantSection = () => {
         },
       ]);
     }
-  }, [isOpen, selectedAssistant]);
+  }, [isClient, isOpen, selectedAssistant, messages.length]);
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -187,16 +189,19 @@ const ChatAssistantSection = () => {
 
   const resetChat = () => {
     setMessages([]);
-    const assistant = assistants[selectedAssistant];
-    setMessages([
-      {
-        id: Date.now().toString(),
-        text: assistant.greeting,
-        sender: "assistant",
-        timestamp: new Date(),
-        type: "text",
-      },
-    ]);
+    // Use setTimeout to ensure this runs after state update
+    setTimeout(() => {
+      const assistant = assistants[selectedAssistant];
+      setMessages([
+        {
+          id: Date.now().toString(),
+          text: assistant.greeting,
+          sender: "assistant",
+          timestamp: new Date(),
+          type: "text",
+        },
+      ]);
+    }, 0);
   };
 
   const toggleVoice = () => {
@@ -341,10 +346,12 @@ const ChatAssistantSection = () => {
                           {message.text}
                         </p>
                         <div className="text-xs opacity-70 mt-1">
-                          {message.timestamp.toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {typeof window !== "undefined"
+                            ? message.timestamp.toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
                         </div>
                       </div>
                     </div>

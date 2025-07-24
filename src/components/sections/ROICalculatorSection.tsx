@@ -217,6 +217,9 @@ const ROICalculatorSection = () => {
   };
 
   const formatCurrency = (amount: number) => {
+    if (typeof window === "undefined") {
+      return `€${Math.round(amount).toLocaleString()}`;
+    }
     return new Intl.NumberFormat("de-DE", {
       style: "currency",
       currency: "EUR",
@@ -226,6 +229,9 @@ const ROICalculatorSection = () => {
   };
 
   const formatNumber = (num: number) => {
+    if (typeof window === "undefined") {
+      return Math.round(num).toLocaleString();
+    }
     return new Intl.NumberFormat("de-DE").format(Math.round(num));
   };
 

@@ -11,9 +11,6 @@ import {
   PieChart,
   ArrowRight,
   Download,
-  Calendar,
-  MapPin,
-  Building,
   Zap,
   CheckCircle,
   Lock,
@@ -21,6 +18,19 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
+
+// Safe formatting function to prevent hydration mismatches
+const formatCurrency = (amount: number) => {
+  if (typeof window === "undefined") {
+    return `€${Math.round(amount).toLocaleString()}`;
+  }
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const marketData = [
   {
@@ -286,7 +296,7 @@ const InvestmentOpportunitySection = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-white font-bold">
-                        €{item.amount.toLocaleString()}
+                        {formatCurrency(item.amount)}
                       </div>
                       <div className="text-sm text-gray-400">
                         {item.percentage}%

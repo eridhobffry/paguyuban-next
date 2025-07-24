@@ -79,8 +79,10 @@ const HeroSection = () => {
   const [currentStat, setCurrentStat] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const interval = setInterval(() => {
       setCurrentStat((prev) => (prev + 1) % keyStats.length);
     }, 3000);
@@ -88,6 +90,8 @@ const HeroSection = () => {
   }, []);
 
   useEffect(() => {
+    if (!isClient) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth - 0.5) * 20,
@@ -97,7 +101,7 @@ const HeroSection = () => {
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isClient]);
 
   return (
     <section className="relative pt-20 pb-32 overflow-hidden">
@@ -110,9 +114,11 @@ const HeroSection = () => {
             radial-gradient(circle at 80% 70%, rgba(192, 132, 252, 0.2), transparent 30%),
             linear-gradient(to bottom right, #0f172a, #1e1b4b)
           `,
-          transform: `translate(${mousePosition.x * 0.5}px, ${
-            mousePosition.y * 0.5
-          }px)`,
+          transform: isClient
+            ? `translate(${mousePosition.x * 0.5}px, ${
+                mousePosition.y * 0.5
+              }px)`
+            : "translate(0px, 0px)",
         }}
       />
 
