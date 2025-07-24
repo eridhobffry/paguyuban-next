@@ -188,7 +188,6 @@ const documents = [
 ];
 
 const InvestmentOpportunitySection = () => {
-  const [selectedTier, setSelectedTier] = useState(0);
   const [activeDocument, setActiveDocument] = useState(0);
 
   return (

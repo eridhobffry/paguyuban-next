@@ -7,8 +7,6 @@ import {
   Send,
   Mic,
   MicOff,
-  User,
-  Bot,
   Sparkles,
   Globe,
   Calendar,
@@ -143,7 +141,7 @@ const ChatAssistantSection = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch (_error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: "Maaf, saya mengalami gangguan teknis. Silakan coba lagi atau hubungi tim support kami.",

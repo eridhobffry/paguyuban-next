@@ -4,14 +4,11 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator,
-  TrendingUp,
-  Euro,
   Users,
   Globe,
   Target,
   BarChart3,
   Info,
-  Zap,
   Award,
   ArrowRight,
   Download,
@@ -81,6 +78,19 @@ const investmentTiers: InvestmentTier[] = [
   },
 ];
 
+// Market multipliers based on research data
+const marketMultipliers = {
+  germany: 1.0, // Base: €8.5B market
+  europe: 2.3, // Extended European market
+  global: 5.1, // Global Indonesian diaspora reach
+};
+
+const goalMultipliers = {
+  awareness: 1.0,
+  leads: 1.4,
+  partnerships: 1.8,
+};
+
 const ROICalculatorSection = () => {
   const [selectedTier, setSelectedTier] = useState(0);
   const [customAmount, setCustomAmount] = useState(
@@ -106,19 +116,6 @@ const ROICalculatorSection = () => {
     timeToBreakeven: 0,
     threeYearValue: 0,
   });
-
-  // Market multipliers based on research data
-  const marketMultipliers = {
-    germany: 1.0, // Base: €8.5B market
-    europe: 2.3, // Extended European market
-    global: 5.1, // Global Indonesian diaspora reach
-  };
-
-  const goalMultipliers = {
-    awareness: 1.0,
-    leads: 1.4,
-    partnerships: 1.8,
-  };
 
   // Calculate ROI in real-time
   useEffect(() => {

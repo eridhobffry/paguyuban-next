@@ -7,12 +7,6 @@ interface ChatMessage {
   timestamp?: Date;
 }
 
-interface GeminiResponse {
-  text: string;
-  finishReason: string;
-  safetyRatings?: unknown[];
-}
-
 interface AssistantPersonality {
   name: string;
   systemPrompt: string;
@@ -221,7 +215,7 @@ Respond as ${
   // Find relevant knowledge based on user query
   private findRelevantKnowledge(message: string): string {
     const lowerMessage = message.toLowerCase();
-    let relevantSections: string[] = [];
+    const relevantSections: string[] = [];
 
     // Check for event information keywords
     if (
