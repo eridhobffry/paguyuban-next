@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 
 // Client components with dynamic imports
@@ -35,8 +35,6 @@ export const metadata: Metadata = {
     "Experience the future of cultural diplomacy at Nusantara Messe 2026 in Berlin. Join us for a unique fusion of Indonesian heritage and cutting-edge business opportunities in Europe's largest market.",
   keywords:
     "Nusantara Messe, Indonesia, Berlin, Cultural Expo, Business Expo, 2026, Investment",
-  themeColor: "#0f172a",
-  viewport: "width=device-width, initial-scale=1",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -65,6 +63,12 @@ export const metadata: Metadata = {
       "Experience the future of cultural diplomacy at Nusantara Messe 2026 in Berlin",
     images: ["/images/twitter-image.jpg"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0f172a",
 };
 
 export default function Home() {

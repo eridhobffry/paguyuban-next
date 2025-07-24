@@ -141,7 +141,7 @@ const ChatAssistantSection = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (_error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: "Maaf, saya mengalami gangguan teknis. Silakan coba lagi atau hubungi tim support kami.",
