@@ -68,10 +68,10 @@ const suggestedQuestions = [
 ];
 
 const quickInfo = [
-  { icon: Calendar, label: "Date", value: "Aug 5-10, 2026" },
+  { icon: Calendar, label: "Date", value: "Aug 5-6, 2026" },
   { icon: MapPin, label: "Venue", value: "Arena Berlin" },
   { icon: Users, label: "Attendees", value: "1,800+ Professionals" },
-  { icon: Euro, label: "Investment", value: "From €15,000" },
+  { icon: Euro, label: "Sponsorship", value: "From €5,000" },
 ];
 
 const ChatAssistantSection = () => {

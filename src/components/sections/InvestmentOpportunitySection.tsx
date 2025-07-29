@@ -35,33 +35,33 @@ const formatCurrency = (amount: number) => {
 const marketData = [
   {
     metric: "Bilateral Trade Volume",
-    value: "€8.5B",
-    growth: "+12% YoY",
+    value: "€8.2B",
+    growth: "Verified 2024",
     description: "Germany-Indonesia Annual Trade",
     icon: Euro,
     color: "from-green-400 to-emerald-600",
   },
   {
-    metric: "Indonesian Diaspora",
-    value: "30,000+",
-    growth: "+8% YoY",
-    description: "Professionals in Germany",
+    metric: "Indonesian Community",
+    value: "21,559",
+    growth: "Citizens + Students",
+    description: "Professionals & Students in Germany",
     icon: Users,
     color: "from-blue-400 to-cyan-600",
   },
   {
     metric: "Business Pipeline",
-    value: "€1.2M",
-    growth: "Projected",
+    value: "€650K",
+    growth: "Conservative Est.",
     description: "Qualified Opportunities",
     icon: TrendingUp,
     color: "from-purple-400 to-pink-600",
   },
   {
-    metric: "Market Reach",
-    value: "25M+",
+    metric: "Media Reach",
+    value: "5-8M",
     growth: "Impressions",
-    description: "Digital + Traditional Media",
+    description: "Digital Campaign Coverage",
     icon: Globe,
     color: "from-amber-400 to-orange-600",
   },
@@ -70,73 +70,110 @@ const marketData = [
 const financialBreakdown = [
   {
     category: "Sponsorships",
-    amount: 313000,
-    percentage: 57,
+    amount: 415000,
+    percentage: 67,
     color: "#10b981",
   },
   {
+    category: "Ticket Sales",
+    amount: 104660,
+    percentage: 17,
+    color: "#8b5cf6",
+  },
+  {
     category: "Exhibitor Fees",
-    amount: 90000,
-    percentage: 16,
+    amount: 66000,
+    percentage: 11,
     color: "#3b82f6",
   },
-  { category: "Ticket Sales", amount: 87000, percentage: 16, color: "#8b5cf6" },
   {
-    category: "Government Grants",
-    amount: 15000,
-    percentage: 3,
+    category: "Additional Revenue",
+    amount: 30000,
+    percentage: 5,
     color: "#f59e0b",
-  },
-  {
-    category: "Ancillary Revenue",
-    amount: 8000,
-    percentage: 1,
-    color: "#ef4444",
   },
 ];
 
-const investmentTiers = [
+const sponsorshipTiers = [
   {
     name: "Title Sponsor",
-    investment: "€50,000",
-    roi: "285%",
+    investment: "€75,000",
+    mediaValue: "€90,000",
     benefits: [
       "Naming rights to entire event",
       "100m² premium exhibition space",
       "2 keynote speaking slots",
       "VIP dinner hosting rights",
-      "40% of total event impressions",
+      "Logo on all marketing materials",
     ],
     availability: "1 Available",
     highlight: true,
+    impressions: "2.5M+",
+    leads: "150-200",
   },
   {
-    name: "Platinum Partner",
-    investment: "€25,000",
-    roi: "240%",
+    name: "Platinum Sponsor",
+    investment: "€50,000",
+    mediaValue: "€65,000",
     benefits: [
       "Session ownership rights",
       "50m² exhibition booth",
       "1 keynote presentation",
       "C-suite networking access",
-      "20% of total impressions",
+      "Premium brand placement",
     ],
     availability: "2 Available",
     highlight: false,
+    impressions: "1.8M+",
+    leads: "100-150",
   },
   {
     name: "Gold Sponsor",
-    investment: "€15,000",
-    roi: "195%",
+    investment: "€25,000",
+    mediaValue: "€35,000",
     benefits: [
       "Workshop sponsorship",
       "30m² exhibition space",
       "Thought leadership content",
+      "Professional networking access",
       "Social media integration",
-      "10% of total impressions",
     ],
     availability: "4 Available",
     highlight: false,
+    impressions: "1.2M+",
+    leads: "70-100",
+  },
+  {
+    name: "Silver Sponsor",
+    investment: "€15,000",
+    mediaValue: "€22,000",
+    benefits: [
+      "Exhibition booth (3×3m)",
+      "Brand visibility package",
+      "Networking opportunities",
+      "Digital marketing inclusion",
+      "Event program listing",
+    ],
+    availability: "6 Available",
+    highlight: false,
+    impressions: "800K+",
+    leads: "40-70",
+  },
+  {
+    name: "Bronze Sponsor",
+    investment: "€5,000",
+    mediaValue: "€8,000",
+    benefits: [
+      "Logo placement",
+      "Marketing materials inclusion",
+      "General networking access",
+      "Website recognition",
+      "Certificate of partnership",
+    ],
+    availability: "10 Available",
+    highlight: false,
+    impressions: "400K+",
+    leads: "20-40",
   },
 ];
 
@@ -206,24 +243,24 @@ const InvestmentOpportunitySection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <div className="inline-flex items-center space-x-2 mb-4 px-6 py-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-full">
-            <Target className="w-5 h-5 text-green-400" />
-            <span className="text-sm font-medium bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent">
-              Investment Opportunity
+          <div className="inline-flex items-center space-x-2 mb-4 px-6 py-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-full">
+            <Target className="w-5 h-5 text-blue-400" />
+            <span className="text-sm font-medium bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+              Sponsorship Opportunities
             </span>
           </div>
 
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-green-100 to-emerald-200 bg-clip-text text-transparent">
-            €8.5B Market Access with
-            <span className="block text-green-400 mt-2">
-              Proven ROI Framework
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+            Partner with Europe&apos;s Premier
+            <span className="block text-blue-400 mt-2">
+              Indonesia-Germany Platform
             </span>
           </h2>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Join Europe&apos;s premier Indonesian business gateway with
-            conservative 8.3% net margins and access to Germany&apos;s
-            fastest-growing Asian trade corridor.
+            Join the launch of a sustainable platform designed to forge the next
+            generation of Indonesia-Germany partnerships. Access verified market
+            opportunities with measurable brand benefits.
           </p>
         </motion.div>
 
@@ -274,8 +311,8 @@ const InvestmentOpportunitySection = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
-                <PieChart className="w-7 h-7 mr-3 text-green-400" />
-                Revenue Breakdown - €548,000 Total
+                <PieChart className="w-7 h-7 mr-3 text-blue-400" />
+                Revenue Breakdown - €616,000 Total
               </h3>
 
               <div className="space-y-4">
@@ -305,21 +342,23 @@ const InvestmentOpportunitySection = () => {
                 ))}
               </div>
 
-              <div className="mt-8 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20">
+              <div className="mt-8 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-green-400 font-bold text-lg">
-                      Net Profit
+                    <div className="text-blue-400 font-bold text-lg">
+                      Total Media Value
                     </div>
                     <div className="text-gray-300 text-sm">
-                      Conservative Estimate
+                      For All Sponsors
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-green-400">
-                      €45,480
+                    <div className="text-2xl font-bold text-blue-400">
+                      €220K+
                     </div>
-                    <div className="text-sm text-green-300">8.3% Margin</div>
+                    <div className="text-sm text-blue-300">
+                      Combined Benefits
+                    </div>
                   </div>
                 </div>
               </div>
@@ -359,7 +398,7 @@ const InvestmentOpportunitySection = () => {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">€548K</div>
+                    <div className="text-2xl font-bold text-white">€616K</div>
                     <div className="text-sm text-gray-400">Total Revenue</div>
                   </div>
                 </div>
@@ -377,23 +416,23 @@ const InvestmentOpportunitySection = () => {
           className="mb-16"
         >
           <h3 className="text-3xl font-bold text-center text-white mb-12">
-            Strategic Partnership Opportunities
+            Sponsorship Partnership Tiers
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {investmentTiers.map((tier, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sponsorshipTiers.map((tier, index) => (
               <div
                 key={index}
                 className={`relative p-8 rounded-2xl border transition-all duration-300 transform hover:scale-105 ${
                   tier.highlight
-                    ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30 ring-2 ring-green-500/20"
-                    : "bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 hover:border-green-500/20"
+                    ? "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 ring-2 ring-blue-500/20"
+                    : "bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 hover:border-blue-500/20"
                 }`}
               >
                 {tier.highlight && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-green-400 to-emerald-500 text-green-900 px-4 py-2 rounded-full text-sm font-bold">
-                      Best ROI
+                    <div className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                      Maximum Impact
                     </div>
                   </div>
                 )}
@@ -408,11 +447,16 @@ const InvestmentOpportunitySection = () => {
                   <div className="text-sm text-gray-400 mb-2">
                     {tier.availability}
                   </div>
-                  <div className="inline-flex items-center px-3 py-1 bg-green-500/20 rounded-full">
-                    <TrendingUp className="w-4 h-4 mr-1 text-green-400" />
-                    <span className="text-green-400 font-medium">
-                      {tier.roi} ROI
-                    </span>
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center px-3 py-1 bg-blue-500/20 rounded-full">
+                      <Globe className="w-4 h-4 mr-1 text-blue-400" />
+                      <span className="text-blue-400 font-medium">
+                        {tier.impressions}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Media Value: {tier.mediaValue}
+                    </div>
                   </div>
                 </div>
 
@@ -428,11 +472,11 @@ const InvestmentOpportunitySection = () => {
                 <button
                   className={`w-full py-3 rounded-xl font-bold transition-all duration-300 ${
                     tier.highlight
-                      ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white"
                       : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
                   }`}
                 >
-                  Secure Partnership
+                  Become a Sponsor
                 </button>
               </div>
             ))}
