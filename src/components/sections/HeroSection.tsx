@@ -164,7 +164,7 @@ const HeroSection = () => {
           {/* Restructured Main Heading - More Business Focused */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black mb-6 leading-tight">
             <span className="block bg-gradient-to-r from-white via-cyan-300 to-blue-400 bg-clip-text text-transparent">
-              €8.5B MARKET
+              €7.32 Billion MARKET
             </span>
             <span className="block bg-gradient-to-r from-emerald-400 via-green-400 to-cyan-400 bg-clip-text text-transparent mt-2">
               OPPORTUNITY
