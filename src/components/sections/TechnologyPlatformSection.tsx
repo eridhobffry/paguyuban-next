@@ -18,14 +18,13 @@ import {
   MessageSquare,
   Clock,
   Globe,
-  Calendar,
 } from "lucide-react";
 import { useState } from "react";
 
 const platforms = [
   {
-    id: "nusantaraconnect",
-    name: "NusantaraConnect",
+    id: "paguyubanconnect",
+    name: "PaguyubanConnect",
     subtitle: "AI-Powered B2B Matchmaking Platform",
     description:
       "First-of-kind cultural intelligence algorithms designed specifically for Indonesia-Germany business networking.",
@@ -81,10 +80,16 @@ const platforms = [
       "Infrastructure: AWS with auto-scaling",
       "Security: End-to-end encryption, GDPR compliant",
     ],
-    whiteLabelInfo: {
+    businessModel: {
       available: true,
-      price: "€5,000/event",
-      features: "Full platform licensing for other events post-2026",
+      subscriptions: {
+        free: "€0/month - Basic matching (5 matches/month)",
+        basic: "€39/month - Smart matching & analytics (20 matches/month)",
+        pro: "€89/month - Advanced features & integrations (50 matches/month)",
+        enterprise: "€299+/month - Custom AI models & white-label options",
+      },
+      whiteLabelLicensing: "€5,000/event - Full platform for other events",
+      additionalRevenue: "Premium features, API access, custom integrations",
     },
   },
   {
@@ -308,20 +313,64 @@ const TechnologyPlatformSection = () => {
               </div>
             </div>
 
-            {/* White Label Opportunity */}
-            {platforms[activePlatform].whiteLabelInfo.available && (
+            {/* Business Model */}
+            {platforms[activePlatform].businessModel?.available && (
               <div
-                className={`p-4 bg-gradient-to-r ${platforms[activePlatform].bgGradient} border ${platforms[activePlatform].borderColor} rounded-xl`}
+                className={`p-6 bg-gradient-to-r ${platforms[activePlatform].bgGradient} border ${platforms[activePlatform].borderColor} rounded-xl`}
               >
-                <h4 className="font-bold text-white mb-2 flex items-center">
+                <h4 className="font-bold text-white mb-4 flex items-center">
                   <Globe className="w-4 h-4 mr-2" />
-                  White-Label Licensing
+                  Revenue Model
                 </h4>
-                <p className="text-gray-200 text-sm mb-2">
-                  {platforms[activePlatform].whiteLabelInfo.features}
-                </p>
-                <div className="text-cyan-300 font-medium">
-                  {platforms[activePlatform].whiteLabelInfo.price}
+
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-200 mb-2">
+                      Subscription Tiers
+                    </h5>
+                    <div className="space-y-1 text-xs text-gray-300">
+                      <div>
+                        • Free:{" "}
+                        {
+                          platforms[activePlatform].businessModel.subscriptions
+                            .free
+                        }
+                      </div>
+                      <div>
+                        • Basic:{" "}
+                        {
+                          platforms[activePlatform].businessModel.subscriptions
+                            .basic
+                        }
+                      </div>
+                      <div>
+                        • Pro:{" "}
+                        {
+                          platforms[activePlatform].businessModel.subscriptions
+                            .pro
+                        }
+                      </div>
+                      <div>
+                        • Enterprise:{" "}
+                        {
+                          platforms[activePlatform].businessModel.subscriptions
+                            .enterprise
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-200 mb-1">
+                      White-Label Licensing
+                    </h5>
+                    <div className="text-xs text-cyan-300">
+                      {
+                        platforms[activePlatform].businessModel
+                          .whiteLabelLicensing
+                      }
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
