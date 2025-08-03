@@ -45,7 +45,7 @@ const keyStats = [
   {
     label: "Event Duration",
     value: "2 Days",
-    subtext: "August 5-6, 2026",
+    subtext: "August 7-8, 2026",
     icon: Calendar,
     color: "from-orange-400 to-red-600",
     delay: 400,

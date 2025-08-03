@@ -168,7 +168,7 @@ const CtaSection = () => {
                     <Calendar className="w-5 h-5 mr-3" />
                     <span className="font-medium">Event Dates</span>
                   </div>
-                  <div className="text-white font-bold">August 5-6, 2026</div>
+                  <div className="text-white font-bold">August 7-8, 2026</div>
                   <div className="text-gray-400 text-sm">2 Days in Berlin</div>
                 </div>
 

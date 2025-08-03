@@ -68,7 +68,7 @@ const suggestedQuestions = [
 ];
 
 const quickInfo = [
-  { icon: Calendar, label: "Date", value: "Aug 5-6, 2026" },
+  { icon: Calendar, label: "Date", value: "Aug 7-8, 2026" },
   { icon: MapPin, label: "Venue", value: "Arena Berlin" },
   { icon: Users, label: "Attendees", value: "1,800+ Professionals" },
   { icon: Euro, label: "Sponsorship", value: "From €5,000" },
@@ -162,13 +162,13 @@ const ChatAssistantSection = () => {
   ): Promise<string> => {
     try {
       // Import Gemini service dynamically to avoid SSR issues
-      const { geminiChat } = await import("@/lib/gemini");
+      const { paguyubanChat } = await import("@/lib/gemini");
 
       // Map assistant index to assistant type
-      const assistantType = assistantIndex === 0 ? "bangUcup" : "nengRima";
+      const assistantType = assistantIndex === 0 ? "ucup" : "rima";
 
       // Get response from Gemini with knowledge base and safety filtering
-      const response = await geminiChat.chat(question, assistantType);
+      const response = await paguyubanChat.chat(question, assistantType);
 
       return response;
     } catch (error) {
@@ -176,8 +176,8 @@ const ChatAssistantSection = () => {
 
       // Fallback to simple responses if API fails
       return assistantIndex === 0
-        ? "Maaf, saya sedang mengalami gangguan koneksi. Tim support Nusantara Messe 2026 siap membantu Anda di info@nusantaramesse.com atau +49 (0) 30 1234-5678."
-        : "I apologize for the connection issue. Our Nusantara Messe 2026 support team is available at info@nusantaramesse.com for immediate assistance.";
+        ? "Maaf, saya sedang mengalami gangguan koneksi. Tim support Paguyuban Messe 2026 siap membantu Anda di nusantaraexpoofficial@gmail.com."
+        : "I apologize for the connection issue. Our Paguyuban Messe 2026 support team is available at nusantaraexpoofficial@gmail.com for immediate assistance.";
     }
   };
 

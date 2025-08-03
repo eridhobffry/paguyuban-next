@@ -17,7 +17,7 @@ const features = [
   {
     icon: <Calendar className="w-6 h-6 text-cyan-400" />,
     title: "2 Days of Excellence",
-    description: "August 5-6, 2026",
+    description: "August 7-8, 2026",
   },
   {
     icon: <MapPin className="w-6 h-6 text-purple-400" />,
