@@ -27,189 +27,214 @@ interface InvestmentTier {
   visibility: number;
 }
 
-const investmentTiers: InvestmentTier[] = [
+const sponsorshipTiers: InvestmentTier[] = [
   {
     name: "Title Sponsor",
-    baseAmount: 50000,
+    baseAmount: 120000,
     benefits: [
       "Naming rights to entire event",
-      "100m² premium exhibition space",
-      "2 keynote speaking slots",
+      "Premier booth placement & branding",
+      "2 keynote speaking opportunities",
       "40% of total event impressions",
-      "VIP dinner hosting rights",
+      "20 VIP passes & exclusive networking",
+      "50 AI-facilitated introductions",
     ],
-    color: "from-green-400 to-emerald-600",
+    color: "from-amber-500 to-orange-600",
     description: "Maximum visibility and market impact",
-    impressions: 10000000, // 40% of 25M
-    networking: 1800, // Full access
+    impressions: 4000000, // 40% of 10M (realistic estimate)
+    networking: 50, // AI matches
     visibility: 100,
   },
   {
-    name: "Platinum Partner",
-    baseAmount: 25000,
+    name: "Platinum Sponsor",
+    baseAmount: 60000,
     benefits: [
-      "Session ownership rights",
-      "50m² exhibition booth",
-      "1 keynote presentation",
-      "20% of total impressions",
-      "C-suite networking access",
+      "High-impact visibility & branding",
+      "30 AI-facilitated introductions",
+      "Panel participation opportunity",
+      "Access to segmented attendee list",
+      "15 VIP passes & VVIP networking",
+      "Featured in digital campaigns",
     ],
-    color: "from-blue-400 to-cyan-600",
-    description: "Strategic partnership with high impact",
-    impressions: 5000000, // 20% of 25M
-    networking: 1080, // 60% access
+    color: "from-blue-500 to-cyan-600",
+    description: "Strategic partnership with measurable ROI",
+    impressions: 2500000, // 25% of 10M
+    networking: 30, // AI matches
     visibility: 75,
   },
   {
     name: "Gold Sponsor",
+    baseAmount: 40000,
+    benefits: [
+      "Strong visibility in high-traffic areas",
+      "20 AI matchmaking connections",
+      "Speaking slot or demo opportunity",
+      "Shared booth space in expo hall",
+      "10 VIP passes & networking access",
+      "Inclusion in email campaigns",
+    ],
+    color: "from-purple-500 to-pink-600",
+    description: "Solid ROI with focused benefits",
+    impressions: 1500000, // 15% of 10M
+    networking: 20, // AI matches
+    visibility: 50,
+  },
+  {
+    name: "Silver Sponsor",
+    baseAmount: 25000,
+    benefits: [
+      "Solid visibility placement",
+      "10 AI introductions",
+      "Exhibition table option",
+      "5 VIP passes & networking",
+      "Social media mentions",
+    ],
+    color: "from-gray-400 to-gray-600",
+    description: "Cost-effective sponsorship benefits",
+    impressions: 800000, // 8% of 10M
+    networking: 10, // AI matches
+    visibility: 35,
+  },
+  {
+    name: "Bronze Sponsor",
     baseAmount: 15000,
     benefits: [
-      "Workshop sponsorship",
-      "30m² exhibition space",
-      "Thought leadership content",
-      "10% of total impressions",
-      "Professional networking",
+      "Entry-level visibility",
+      "5 AI matches",
+      "General networking access",
+      "3 VIP passes",
+      "Basic CSR alignment",
     ],
-    color: "from-amber-400 to-orange-600",
-    description: "Solid visibility in growing market",
-    impressions: 2500000, // 10% of 25M
-    networking: 720, // 40% access
-    visibility: 50,
+    color: "from-orange-400 to-orange-600",
+    description: "Accessible sponsorship entry point",
+    impressions: 400000, // 4% of 10M
+    networking: 5, // AI matches
+    visibility: 20,
   },
 ];
 
-// Market multipliers based on research data
-const marketMultipliers = {
-  germany: 1.0, // Base: €8.5B market
-  europe: 2.3, // Extended European market
-  global: 5.1, // Global Indonesian diaspora reach
+// Sponsor benefit metrics based on industry standards
+const sponsorMetrics = {
+  cpmRate: 2.5, // €2-3 per thousand impressions (using €2.5 average)
+  leadConversionRate: 0.65, // 50-80 leads per exhibitor (using 65% conversion from AI matches)
+  brandLiftRate: 0.2, // 15-25% brand lift (using 20% average)
+  avgLeadValue: 3500, // Average B2B lead value in Germany-Indonesia business
+  businessPipelineMin: 200000, // Conservative business pipeline estimate
+  businessPipelineMax: 650000, // Optimistic business pipeline estimate
 };
 
-const goalMultipliers = {
+const businessGoalMultipliers = {
   awareness: 1.0,
-  leads: 1.4,
-  partnerships: 1.8,
+  leads: 1.3,
+  partnerships: 1.6,
+  market_entry: 2.0,
 };
 
 const ROICalculatorSection = () => {
   const [selectedTier, setSelectedTier] = useState(0);
   const [customAmount, setCustomAmount] = useState(
-    investmentTiers[0].baseAmount
+    sponsorshipTiers[0].baseAmount
   );
   const [companySize, setCompanySize] = useState(100); // employees
-  const [marketingBudget, setMarketingBudget] = useState(500000); // annual
-  const [targetMarket, setTargetMarket] = useState("germany"); // germany, europe, global
-  const [businessGoal, setBusinessGoal] = useState("awareness"); // awareness, leads, partnerships
+  const [annualMarketing, setAnnualMarketing] = useState(500000); // annual marketing budget
+  const [businessGoal, setBusinessGoal] = useState("awareness"); // awareness, leads, partnerships, market_entry
   const [showMethodology, setShowMethodology] = useState(false);
 
   const [calculations, setCalculations] = useState({
-    totalROI: 0,
-    breakdownROI: {
-      brandAwareness: 0,
-      leadGeneration: 0,
-      partnerships: 0,
-      marketAccess: 0,
+    totalValue: 0,
+    breakdown: {
+      mediaValue: 0,
+      leadValue: 0,
+      brandLiftValue: 0,
+      businessPipeline: 0,
     },
-    costPerImpression: 0,
-    estimatedLeads: 0,
-    leadValue: 0,
-    timeToBreakeven: 0,
-    threeYearValue: 0,
+    metrics: {
+      costPerImpression: 0,
+      estimatedLeads: 0,
+      brandLiftPercentage: 0,
+      pipelineRange: { min: 0, max: 0 },
+    },
+    roi: 0,
+    paybackPeriod: 0,
   });
 
-  // Calculate ROI in real-time
+  // Calculate sponsor benefits in real-time
   useEffect(() => {
-    const calculateROI = () => {
-      const tier = investmentTiers[selectedTier];
+    const calculateSponsorBenefits = () => {
+      const tier = sponsorshipTiers[selectedTier];
       const investment = customAmount;
-      const marketMultiplier =
-        marketMultipliers[targetMarket as keyof typeof marketMultipliers];
       const goalMultiplier =
-        goalMultipliers[businessGoal as keyof typeof goalMultipliers];
+        businessGoalMultipliers[
+          businessGoal as keyof typeof businessGoalMultipliers
+        ];
 
-      // Brand Awareness Value (based on impression value)
-      const impressionValue = 0.012; // €0.012 per impression (industry standard)
-      const totalImpressions = tier.impressions * marketMultiplier;
-      const brandAwarenessValue = totalImpressions * impressionValue;
+      // Media Value (based on CPM)
+      const mediaValue = (tier.impressions / 1000) * sponsorMetrics.cpmRate;
 
-      // Lead Generation Value (based on attendee quality)
-      const leadConversionRate = 0.15; // 15% of networking contacts become leads
-      const avgLeadValue = 2500; // Average B2B lead value for German market
-      const qualifiedContacts = tier.networking * leadConversionRate;
-      const leadGenerationValue =
-        qualifiedContacts * avgLeadValue * goalMultiplier;
+      // Lead Generation Value
+      const estimatedLeads = Math.round(
+        tier.networking * sponsorMetrics.leadConversionRate
+      );
+      const leadValue =
+        estimatedLeads * sponsorMetrics.avgLeadValue * goalMultiplier;
 
-      // Partnership Value (strategic relationships)
-      const partnershipProbability = (tier.visibility / 100) * 0.3; // 30% max chance
-      const avgPartnershipValue = 150000; // Average partnership value
-      const partnershipValue = partnershipProbability * avgPartnershipValue;
+      // Brand Lift Value (percentage increase in brand awareness)
+      const brandLiftPercentage = sponsorMetrics.brandLiftRate * 100;
+      const brandLiftValue = investment * sponsorMetrics.brandLiftRate;
 
-      // Market Access Value (long-term strategic value)
-      const marketAccessValue = investment * 0.5 * marketMultiplier; // Strategic premium
+      // Business Pipeline (conservative estimate)
+      const pipelineMultiplier = tier.visibility / 100;
+      const pipelineMin =
+        sponsorMetrics.businessPipelineMin * pipelineMultiplier;
+      const pipelineMax =
+        sponsorMetrics.businessPipelineMax * pipelineMultiplier;
+      const avgPipeline = (pipelineMin + pipelineMax) / 2;
 
       // Total calculated benefits
-      const totalBenefits =
-        brandAwarenessValue +
-        leadGenerationValue +
-        partnershipValue +
-        marketAccessValue;
+      const totalValue = mediaValue + leadValue + brandLiftValue + avgPipeline;
 
       // ROI calculation
-      const roiPercentage = ((totalBenefits - investment) / investment) * 100;
+      const roi = ((totalValue - investment) / investment) * 100;
+
+      // Payback period (in months)
+      const monthlyBenefit = totalValue / 12;
+      const paybackPeriod = investment / monthlyBenefit;
 
       // Cost per impression
-      const costPerImpression = investment / totalImpressions;
-
-      // Time to breakeven (months)
-      const monthlyBenefit = totalBenefits / 12;
-      const timeToBreakeven = investment / monthlyBenefit;
-
-      // 3-year projected value
-      const threeYearValue = totalBenefits * 2.1; // Compound effect over 3 years
+      const costPerImpression = (investment / tier.impressions) * 1000;
 
       setCalculations({
-        totalROI: roiPercentage,
-        breakdownROI: {
-          brandAwareness:
-            ((brandAwarenessValue - investment * 0.4) / (investment * 0.4)) *
-            100,
-          leadGeneration:
-            ((leadGenerationValue - investment * 0.3) / (investment * 0.3)) *
-            100,
-          partnerships:
-            ((partnershipValue - investment * 0.2) / (investment * 0.2)) * 100,
-          marketAccess:
-            ((marketAccessValue - investment * 0.1) / (investment * 0.1)) * 100,
+        totalValue,
+        breakdown: {
+          mediaValue,
+          leadValue,
+          brandLiftValue,
+          businessPipeline: avgPipeline,
         },
-        costPerImpression: costPerImpression,
-        estimatedLeads: Math.round(qualifiedContacts),
-        leadValue: avgLeadValue,
-        timeToBreakeven: timeToBreakeven,
-        threeYearValue: threeYearValue,
+        metrics: {
+          costPerImpression,
+          estimatedLeads,
+          brandLiftPercentage,
+          pipelineRange: { min: pipelineMin, max: pipelineMax },
+        },
+        roi,
+        paybackPeriod,
       });
     };
 
-    calculateROI();
-  }, [
-    selectedTier,
-    customAmount,
-    companySize,
-    marketingBudget,
-    targetMarket,
-    businessGoal,
-  ]);
+    calculateSponsorBenefits();
+  }, [selectedTier, customAmount, businessGoal]);
 
   const handleTierChange = (tierIndex: number) => {
     setSelectedTier(tierIndex);
-    setCustomAmount(investmentTiers[tierIndex].baseAmount);
+    setCustomAmount(sponsorshipTiers[tierIndex].baseAmount);
   };
 
   const resetCalculator = () => {
     setSelectedTier(0);
-    setCustomAmount(investmentTiers[0].baseAmount);
+    setCustomAmount(sponsorshipTiers[0].baseAmount);
     setCompanySize(100);
-    setMarketingBudget(500000);
-    setTargetMarket("germany");
+    setAnnualMarketing(500000);
     setBusinessGoal("awareness");
   };
 
@@ -292,16 +317,16 @@ const ROICalculatorSection = () => {
             <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-3xl p-8 border border-white/10 backdrop-blur-sm">
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
                 <Target className="w-6 h-6 mr-3 text-blue-400" />
-                Your Investment Details
+                Sponsorship Details
               </h3>
 
-              {/* Investment Tier Selection */}
+              {/* Sponsorship Tier Selection */}
               <div className="mb-8">
                 <label className="block text-sm font-medium text-gray-300 mb-4">
-                  Choose Investment Tier
+                  Choose Sponsorship Tier
                 </label>
                 <div className="space-y-3">
-                  {investmentTiers.map((tier, index) => (
+                  {sponsorshipTiers.map((tier, index) => (
                     <div
                       key={index}
                       onClick={() => handleTierChange(index)}
@@ -343,24 +368,24 @@ const ROICalculatorSection = () => {
               {/* Custom Amount Slider */}
               <div className="mb-8">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Custom Investment Amount
+                  Custom Sponsorship Amount
                 </label>
                 <div className="relative">
                   <input
                     type="range"
-                    min={10000}
-                    max={100000}
-                    step={1000}
+                    min={15000}
+                    max={150000}
+                    step={5000}
                     value={customAmount}
                     onChange={(e) => setCustomAmount(Number(e.target.value))}
                     className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
                   />
                   <div className="flex justify-between text-xs text-gray-400 mt-2">
-                    <span>€10K</span>
+                    <span>€15K</span>
                     <span className="font-bold text-blue-400">
                       {formatCurrency(customAmount)}
                     </span>
-                    <span>€100K</span>
+                    <span>€150K</span>
                   </div>
                 </div>
               </div>
@@ -385,22 +410,23 @@ const ROICalculatorSection = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Target Market
+                    Annual Marketing Budget
                   </label>
                   <select
-                    value={targetMarket}
-                    onChange={(e) => setTargetMarket(e.target.value)}
+                    value={annualMarketing}
+                    onChange={(e) => setAnnualMarketing(Number(e.target.value))}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
                   >
-                    <option value="germany">Germany (€8.5B market)</option>
-                    <option value="europe">Europe (Extended reach)</option>
-                    <option value="global">Global (Indonesian diaspora)</option>
+                    <option value={100000}>€100K - €250K</option>
+                    <option value={500000}>€250K - €750K</option>
+                    <option value={1000000}>€750K - €1.5M</option>
+                    <option value={2000000}>€1.5M+</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Primary Business Goal
+                    Primary Sponsorship Goal
                   </label>
                   <select
                     value={businessGoal}
@@ -410,6 +436,7 @@ const ROICalculatorSection = () => {
                     <option value="awareness">Brand Awareness</option>
                     <option value="leads">Lead Generation</option>
                     <option value="partnerships">Strategic Partnerships</option>
+                    <option value="market_entry">Market Entry</option>
                   </select>
                 </div>
               </div>
@@ -424,15 +451,14 @@ const ROICalculatorSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            {/* Main ROI Display */}
+            {/* Main Benefits Display */}
             <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-3xl p-8 border border-green-500/30 mb-8">
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Projected ROI
+                  Sponsorship Benefits Value
                 </h3>
                 <div className="text-6xl font-bold text-green-400 mb-2">
-                  {calculations.totalROI > 0 ? "+" : ""}
-                  {formatNumber(calculations.totalROI)}%
+                  {formatCurrency(calculations.totalValue)}
                 </div>
                 <p className="text-gray-300 mb-6">
                   Return on Investment over 12 months
@@ -441,15 +467,16 @@ const ROICalculatorSection = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/5 rounded-xl p-4">
                     <div className="text-2xl font-bold text-white">
-                      {formatCurrency(calculations.threeYearValue)}
+                      {calculations.roi > 0 ? "+" : ""}
+                      {formatNumber(calculations.roi)}%
                     </div>
-                    <div className="text-sm text-gray-400">3-Year Value</div>
+                    <div className="text-sm text-gray-400">ROI</div>
                   </div>
                   <div className="bg-white/5 rounded-xl p-4">
                     <div className="text-2xl font-bold text-blue-400">
-                      {formatNumber(calculations.timeToBreakeven)} months
+                      {formatNumber(calculations.paybackPeriod)} months
                     </div>
-                    <div className="text-sm text-gray-400">Break-even Time</div>
+                    <div className="text-sm text-gray-400">Payback Period</div>
                   </div>
                 </div>
               </div>
@@ -466,19 +493,19 @@ const ROICalculatorSection = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-400">Estimated Leads</span>
                     <span className="text-white font-bold">
-                      {calculations.estimatedLeads}
+                      {calculations.metrics.estimatedLeads}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Avg Lead Value</span>
+                    <span className="text-gray-400">Lead Value</span>
                     <span className="text-green-400 font-bold">
-                      {formatCurrency(calculations.leadValue)}
+                      {formatCurrency(calculations.breakdown.leadValue)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Lead Generation ROI</span>
+                    <span className="text-gray-400">Brand Lift</span>
                     <span className="text-green-400 font-bold">
-                      {formatNumber(calculations.breakdownROI.leadGeneration)}%
+                      {formatNumber(calculations.metrics.brandLiftPercentage)}%
                     </span>
                   </div>
                 </div>
@@ -493,24 +520,21 @@ const ROICalculatorSection = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-400">Total Impressions</span>
                     <span className="text-white font-bold">
-                      {formatNumber(
-                        investmentTiers[selectedTier].impressions *
-                          marketMultipliers[
-                            targetMarket as keyof typeof marketMultipliers
-                          ]
-                      )}
+                      {formatNumber(sponsorshipTiers[selectedTier].impressions)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Cost per Impression</span>
+                    <span className="text-gray-400">
+                      Cost per 1K Impressions
+                    </span>
                     <span className="text-purple-400 font-bold">
-                      €{calculations.costPerImpression.toFixed(4)}
+                      €{calculations.metrics.costPerImpression.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Brand Awareness ROI</span>
+                    <span className="text-gray-400">Media Value</span>
                     <span className="text-purple-400 font-bold">
-                      {formatNumber(calculations.breakdownROI.brandAwareness)}%
+                      {formatCurrency(calculations.breakdown.mediaValue)}
                     </span>
                   </div>
                 </div>
@@ -524,8 +548,8 @@ const ROICalculatorSection = () => {
                 Investment Benefits
               </h4>
               <div className="space-y-3">
-                {investmentTiers[selectedTier].benefits.map(
-                  (benefit, index) => (
+                {sponsorshipTiers[selectedTier].benefits.map(
+                  (benefit: string, index: number) => (
                     <div key={index} className="flex items-center">
                       <div className="w-2 h-2 bg-amber-400 rounded-full mr-3"></div>
                       <span className="text-gray-300">{benefit}</span>
