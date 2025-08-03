@@ -20,7 +20,7 @@ import Link from "next/link";
 const keyStats = [
   {
     label: "Total Revenue",
-    value: "€616K",
+    value: "€1.02M",
     subtext: "Premium Sponsorship Event",
     icon: Euro,
     color: "from-green-400 to-emerald-600",
@@ -28,8 +28,8 @@ const keyStats = [
   },
   {
     label: "Expected Attendees",
-    value: "1,800+",
-    subtext: "60% Business Pros",
+    value: "6,800+",
+    subtext: "1,800 Offline + 5,000 Online",
     icon: Users,
     color: "from-blue-400 to-cyan-600",
     delay: 200,
@@ -37,7 +37,7 @@ const keyStats = [
   {
     label: "Business Pipeline",
     value: "€650K",
-    subtext: "Qualified Opportunities",
+    subtext: "Conservative Projection",
     icon: TrendingUp,
     color: "from-purple-400 to-pink-600",
     delay: 300,
@@ -61,7 +61,7 @@ const trustIndicators = [
   {
     icon: Award,
     text: "Arena Berlin Confirmed",
-    detail: "€148K Venue Investment",
+    detail: "€236K Venue Investment",
   },
   {
     icon: Target,
