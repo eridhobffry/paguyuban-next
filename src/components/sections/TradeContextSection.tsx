@@ -19,14 +19,19 @@ const formatCurrency = (amount: number, currency: string = "EUR") => {
   if (typeof window === "undefined") {
     return `${currency === "EUR" ? "€" : "$"}${(amount / 1000000000).toFixed(
       1
-    )}B`;
+    )} Billion`;
   }
-  return new Intl.NumberFormat("de-DE", {
+
+  // Use English locale to avoid "Mrd." and ensure "B" for billions
+  const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency,
     notation: "compact",
     compactDisplay: "short",
   }).format(amount);
+
+  // Replace "B" with "Billion" for consistency
+  return formatted.replace(/B$/, " Billion");
 };
 
 const formatNumber = (num: number) => {
@@ -39,9 +44,9 @@ const formatNumber = (num: number) => {
 // Trade data based on internal documents
 const tradeData = {
   bilateralTrade: {
-    total: 7300000000, // €7.3B total bilateral trade
+    total: 7320000000, // €7.32B total bilateral trade (updated based on latest data)
     germanImports: 4430000000, // €4.43B German imports from Indonesia (Destatis)
-    germanExports: 2870000000, // €2.87B German exports to Indonesia (derived from €7.3B - €4.43B)
+    germanExports: 3120000000, // €3.12B German exports to Indonesia (derived from €7.32B - €4.43B)
   },
   usDollar: {
     germanImports: 4790000000, // US$ 4.79B
@@ -59,35 +64,55 @@ const tradeData = {
   },
 };
 
-// Key sectors for Indonesia-Germany collaboration
+// Key sectors for Indonesia-Germany collaboration (2025-2030)
 const collaborationSectors = [
   {
     sector: "Green Technology & Renewable Energy",
-    description: "Solar, wind, energy storage solutions",
-    potential: "€2.1B",
+    description: "Solar panels, wind turbines, energy storage",
+    potential: "€50.2B",
+    period: "cumulative 2025-2030",
     icon: <Factory className="w-6 h-6" />,
     color: "from-green-500 to-emerald-600",
   },
   {
     sector: "Digital Economy & Fintech",
-    description: "Digital payments, blockchain, e-commerce",
-    potential: "€1.8B",
+    description: "Digital payments, blockchain, e-commerce infrastructure",
+    potential: "€134B",
+    period: "by 2025, ~€276B by 2030",
     icon: <BarChart3 className="w-6 h-6" />,
     color: "from-blue-500 to-cyan-600",
   },
   {
     sector: "Manufacturing & Industry 4.0",
-    description: "Smart factories, IoT solutions, automation",
-    potential: "€1.5B",
+    description: "Smart factories, IoT solutions, quality systems",
+    potential: "€69.3B",
+    period: "ICT market by 2030",
     icon: <Target className="w-6 h-6" />,
     color: "from-purple-500 to-pink-600",
   },
   {
-    sector: "Food Technology & Agriculture",
-    description: "Processing tech, cold chain, organic certification",
-    potential: "€0.9B",
+    sector: "Food Technology & Sustainable Agriculture",
+    description: "Processing technology, cold chain, organic certification",
+    potential: "€5B",
+    period: "equipment market by 2030",
     icon: <Globe className="w-6 h-6" />,
     color: "from-orange-500 to-red-600",
+  },
+  {
+    sector: "Healthcare & Medical Technology",
+    description: "Diagnostic equipment, telemedicine, hospital management",
+    potential: "€3.7B",
+    period: "by 2030",
+    icon: <Users className="w-6 h-6" />,
+    color: "from-pink-500 to-rose-600",
+  },
+  {
+    sector: "Education Technology & Vocational Training",
+    description: "Online learning, vocational programs, certification systems",
+    potential: "€9-18B",
+    period: "potential share by 2030",
+    icon: <TrendingUp className="w-6 h-6" />,
+    color: "from-indigo-500 to-blue-600",
   },
 ];
 
@@ -203,7 +228,7 @@ const TradeContextSection = () => {
                 Market Challenge
               </h3>
               <p className="text-gray-300 text-lg leading-relaxed mb-6">
-                Despite €7.3 billion in bilateral trade, meaningful business
+                Despite €7.32 Billion in bilateral trade, meaningful business
                 connections between Indonesia and Germany remain limited due to
                 cultural barriers and lack of structured networking
                 opportunities.
@@ -279,7 +304,7 @@ const TradeContextSection = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {collaborationSectors.map((sector, index) => (
               <motion.div
                 key={index}
@@ -302,13 +327,18 @@ const TradeContextSection = () => {
                     <p className="text-gray-400 text-sm mb-3">
                       {sector.description}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
-                        Market Potential
-                      </span>
-                      <span className="text-green-400 font-bold">
-                        {sector.potential}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          Market Potential
+                        </span>
+                        <span className="text-green-400 font-bold">
+                          {sector.potential}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {sector.period}
+                      </div>
                     </div>
                   </div>
                 </div>
