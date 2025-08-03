@@ -32,7 +32,7 @@ const investmentBenefits = [
   },
   {
     icon: <Globe className="w-5 h-5 text-emerald-400" />,
-    text: "Access to €8.5B Germany-Indonesia trade corridor",
+    text: "Access to €7.32 Billion Germany-Indonesia trade corridor",
   },
   {
     icon: <Award className="w-5 h-5 text-emerald-400" />,
@@ -157,8 +157,8 @@ const CtaSection = () => {
               <p className="text-lg text-gray-300 mb-8">
                 Secure your position in the fastest-growing Asian trade
                 corridor. Conservative financial projections show immediate ROI
-                with long-term strategic value in Indonesia&apos;s €8.5B German
-                market presence.
+                with long-term strategic value in Indonesia&apos;s €7.32 Billion
+                German market presence.
               </p>
 
               {/* Event Details with Enhanced Visual Hierarchy */}
