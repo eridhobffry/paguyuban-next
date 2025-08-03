@@ -83,12 +83,87 @@ const sponsorTiers = [
   },
 ];
 
+// Sponsorship tier pricing and availability
+const sponsorshipTiers = [
+  {
+    name: "Title Sponsor",
+    price: 120000,
+    available: 1,
+    sold: 0,
+    color: "from-amber-500 to-orange-600",
+    features: [
+      "Naming rights to entire event",
+      "Premier visibility & branding",
+      "2 keynote speaking opportunities",
+      "40% of total event impressions",
+      "20 VIP passes & exclusive access",
+    ],
+  },
+  {
+    name: "Platinum Sponsors",
+    price: 60000,
+    available: 3,
+    sold: 0,
+    color: "from-blue-500 to-cyan-600",
+    features: [
+      "High-impact visibility",
+      "30 AI-facilitated introductions",
+      "Panel participation opportunity",
+      "15 VIP passes & networking",
+      "Digital campaign inclusion",
+    ],
+  },
+  {
+    name: "Gold Sponsors",
+    price: 40000,
+    available: 4,
+    sold: 0,
+    color: "from-purple-500 to-pink-600",
+    features: [
+      "Strong brand visibility",
+      "20 AI matchmaking connections",
+      "Speaking slot opportunity",
+      "10 VIP passes",
+      "Email campaign inclusion",
+    ],
+  },
+  {
+    name: "Silver Sponsors",
+    price: 25000,
+    available: 6,
+    sold: 0,
+    color: "from-gray-400 to-gray-600",
+    features: [
+      "Solid visibility placement",
+      "10 AI introductions",
+      "Exhibition table option",
+      "5 VIP passes",
+      "Social media mentions",
+    ],
+  },
+  {
+    name: "Bronze Sponsors",
+    price: 15000,
+    available: 8,
+    sold: 0,
+    color: "from-orange-400 to-orange-600",
+    features: [
+      "Entry-level visibility",
+      "5 AI matches",
+      "General networking access",
+      "3 VIP passes",
+      "Basic CSR alignment",
+    ],
+  },
+];
+
 const SponsorsSection = () => {
   return (
     <section id="sponsors" className="relative py-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/90 -z-10"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -99,7 +174,7 @@ const SponsorsSection = () => {
           >
             <Shield className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-medium bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">
-              Our Partners
+              Sponsorship Opportunities
             </span>
           </motion.div>
 
@@ -110,7 +185,7 @@ const SponsorsSection = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent"
           >
-            Proudly <span className="text-amber-400">Supported By</span>
+            Sponsorship <span className="text-amber-400">Tiers</span>
           </motion.h2>
 
           <motion.p
@@ -120,9 +195,86 @@ const SponsorsSection = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg text-gray-400"
           >
-            We&apos;re honored to collaborate with industry leaders and partners
-            who share our vision
+            Join industry leaders and gain exclusive access to Indonesia-Germany
+            business opportunities
           </motion.p>
+        </div>
+
+        {/* Sponsorship Tiers Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          {sponsorshipTiers.map((tier, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-3xl p-8 border border-white/10 relative ${
+                index === 0 ? "ring-2 ring-amber-500/30" : ""
+              }`}
+            >
+              {index === 0 && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-amber-900 px-4 py-1 rounded-full text-sm font-bold">
+                    Premier Tier
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {tier.name}
+                </h3>
+                <div className="text-3xl font-bold text-green-400 mb-1">
+                  €{tier.price.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400 mb-4">Investment</div>
+
+                <div className="flex justify-center items-center space-x-4 mb-4">
+                  <div className="bg-white/5 rounded-lg px-3 py-2">
+                    <div className="text-cyan-400 font-bold">
+                      {tier.available - tier.sold}
+                    </div>
+                    <div className="text-xs text-gray-400">Available</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg px-3 py-2">
+                    <div className="text-purple-400 font-bold">
+                      {tier.available}
+                    </div>
+                    <div className="text-xs text-gray-400">Total</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {tier.features.map((feature, featureIndex) => (
+                  <div key={featureIndex} className="flex items-start">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-3 mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-300 text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                className={`w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
+              >
+                Secure Sponsorship
+              </button>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Current Partners Section */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl font-bold mb-6 bg-gradient-to-r from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent"
+          >
+            Current <span className="text-amber-400">Partners</span>
+          </motion.h3>
         </div>
 
         <div className="space-y-16">
