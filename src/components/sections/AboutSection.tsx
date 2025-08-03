@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import Image from "next/image";
 
 const features = [
   {
@@ -151,9 +150,9 @@ const AboutSection = () => {
               </div>
             </div>
 
-            <div className="absolute -bottom-6 -right-6 bg-gradient-to-br from-amber-400 to-amber-600 text-amber-900 p-4 rounded-2xl shadow-xl">
-              <div className="text-sm font-bold">€148K</div>
-              <div className="text-xs">Venue Investment</div>
+            <div className="absolute -bottom-6 -right-6 bg-gradient-to-br from-amber-400 to-amber-600 text-amber-900 p-4 rounded-2xl shadow-xl min-w-[120px]">
+              <div className="text-sm font-bold">€236K</div>
+              <div className="text-xs whitespace-nowrap">Venue Investment</div>
             </div>
           </motion.div>
 
