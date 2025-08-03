@@ -35,7 +35,7 @@ const formatCurrency = (amount: number) => {
 const marketData = [
   {
     metric: "Bilateral Trade Volume",
-    value: "€8.2B",
+    value: "€7.32 Billion",
     growth: "Verified 2024",
     description: "Germany-Indonesia Annual Trade",
     icon: Euro,
@@ -189,7 +189,7 @@ const documents = [
     type: "Business Strategy",
     icon: FileText,
     preview:
-      "Detailed market opportunity analysis for Indonesia-Germany trade relationship worth €8.5B annually...",
+      "Detailed market opportunity analysis for Indonesia-Germany trade relationship worth €7.32 Billion annually...",
     restricted: true,
   },
   {
