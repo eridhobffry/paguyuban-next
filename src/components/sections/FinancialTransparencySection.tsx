@@ -195,7 +195,8 @@ const FinancialTransparencySection = () => {
     0
   );
   const totalCosts = majorCosts.reduce((sum, item) => sum + item.amount, 0);
-  const fundingGap = totalCosts - totalRevenue;
+  const netResult = totalRevenue - totalCosts;
+  const isProfit = netResult > 0;
 
   return (
     <section
@@ -426,9 +427,20 @@ const FinancialTransparencySection = () => {
                   Cost Structure - {formatCurrency(totalCosts)}
                 </h3>
                 <div className="text-right">
-                  <div className="text-red-400 font-bold">Funding Gap</div>
-                  <div className="text-2xl font-bold text-red-400">
-                    {formatCurrency(fundingGap)}
+                  <div
+                    className={`font-bold ${
+                      isProfit ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {isProfit ? "Projected Profit" : "Funding Gap"}
+                  </div>
+                  <div
+                    className={`text-2xl font-bold ${
+                      isProfit ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {isProfit ? "+" : ""}
+                    {formatCurrency(Math.abs(netResult))}
                   </div>
                 </div>
               </div>
@@ -482,12 +494,29 @@ const FinancialTransparencySection = () => {
                 </div>
                 <div className="text-gray-300">Total Costs</div>
               </div>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6 text-center">
-                <Target className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-yellow-400">
-                  {formatCurrency(fundingGap)}
+              <div
+                className={`${
+                  isProfit
+                    ? "bg-green-500/10 border-green-500/30"
+                    : "bg-yellow-500/10 border-yellow-500/30"
+                } rounded-xl p-6 text-center border`}
+              >
+                <Target
+                  className={`w-8 h-8 mx-auto mb-3 ${
+                    isProfit ? "text-green-400" : "text-yellow-400"
+                  }`}
+                />
+                <div
+                  className={`text-2xl font-bold ${
+                    isProfit ? "text-green-400" : "text-yellow-400"
+                  }`}
+                >
+                  {isProfit ? "+" : ""}
+                  {formatCurrency(Math.abs(netResult))}
                 </div>
-                <div className="text-gray-300">Funding Gap</div>
+                <div className="text-gray-300">
+                  {isProfit ? "Projected Profit" : "Funding Gap"}
+                </div>
               </div>
             </div>
           </motion.div>
