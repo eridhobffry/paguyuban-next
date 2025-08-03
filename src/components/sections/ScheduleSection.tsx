@@ -41,7 +41,7 @@ const scheduleData: Record<Day, ScheduleItem[]> = {
       title: "B2B Matchmaking & Exhibition",
       location: "Halle CE - Exhibition Hall",
       description:
-        "25-30 exhibition booths, AI-powered NusantaraConnect matchmaking, 15-minute scheduled meetings across key sectors.",
+        "25-30 exhibition booths, AI-powered PaguyubanConnect matchmaking, 15-minute scheduled meetings across key sectors.",
       type: "networking",
     },
     {
