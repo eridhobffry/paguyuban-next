@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator,
@@ -141,6 +141,8 @@ const ROICalculatorSection = () => {
   const [businessGoal, setBusinessGoal] = useState("awareness"); // awareness, leads, partnerships, market_entry
   const [showMethodology, setShowMethodology] = useState(false);
 
+  const reportRef = useRef<HTMLDivElement>(null);
+
   const [calculations, setCalculations] = useState({
     totalValue: 0,
     breakdown: {
@@ -256,6 +258,49 @@ const ROICalculatorSection = () => {
       return Math.round(num).toLocaleString();
     }
     return new Intl.NumberFormat("de-DE").format(Math.round(num));
+  };
+
+  const handleDownloadReport = () => {
+    if (!reportRef.current) return;
+    const reportContent = reportRef.current.innerHTML;
+    const printWindow = window.open("", "", "width=800,height=600");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>ROI Report</title>
+          <style>body { font-family: sans-serif; padding: 20px; }</style>
+        </head>
+        <body>${reportContent}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const handleShareResults = async () => {
+    const text = `Total Sponsorship Value: ${formatCurrency(
+      calculations.totalValue
+    )}\nROI: ${formatNumber(calculations.roi)}%\nPayback Period: ${formatNumber(
+      calculations.paybackPeriod
+    )} months`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "ROI Calculation Results",
+          text,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error("Share failed:", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+      alert("Results copied to clipboard");
+    }
   };
 
   return (
@@ -452,6 +497,7 @@ const ROICalculatorSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
+            <div ref={reportRef}>
             {/* Main Benefits Display */}
             <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-3xl p-8 border border-green-500/30 mb-8">
               <div className="text-center">
@@ -563,14 +609,21 @@ const ROICalculatorSection = () => {
                 )}
               </div>
             </div>
+            </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+              <button
+                onClick={handleDownloadReport}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+              >
                 <Download className="w-5 h-5 mr-2" />
                 Download Report
               </button>
-              <button className="flex-1 px-6 py-4 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 font-medium rounded-xl transition-colors flex items-center justify-center">
+              <button
+                onClick={handleShareResults}
+                className="flex-1 px-6 py-4 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 font-medium rounded-xl transition-colors flex items-center justify-center"
+              >
                 <Share className="w-5 h-5 mr-2" />
                 Share Results
               </button>
