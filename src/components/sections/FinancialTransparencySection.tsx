@@ -20,9 +20,7 @@ import { useState } from "react";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number) => {
-  if (typeof window === "undefined") {
-    return `€${Math.round(amount).toLocaleString()}`;
-  }
+  // Always use consistent formatting to prevent hydration issues
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",

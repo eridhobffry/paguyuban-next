@@ -16,12 +16,7 @@ import {
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number, currency: string = "EUR") => {
-  if (typeof window === "undefined") {
-    return `${currency === "EUR" ? "€" : "$"}${(amount / 1000000000).toFixed(
-      1
-    )} Billion`;
-  }
-
+  // Always use consistent formatting to prevent hydration issues
   // Use English locale to avoid "Mrd." and ensure "B" for billions
   const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -35,9 +30,7 @@ const formatCurrency = (amount: number, currency: string = "EUR") => {
 };
 
 const formatNumber = (num: number) => {
-  if (typeof window === "undefined") {
-    return num.toLocaleString();
-  }
+  // Always use consistent formatting to prevent hydration issues
   return new Intl.NumberFormat("de-DE").format(num);
 };
 
