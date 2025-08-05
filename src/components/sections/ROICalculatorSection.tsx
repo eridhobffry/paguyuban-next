@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Calculator,
@@ -141,6 +141,8 @@ const ROICalculatorSection = () => {
   const [businessGoal, setBusinessGoal] = useState("awareness"); // awareness, leads, partnerships, market_entry
   const [showMethodology, setShowMethodology] = useState(false);
 
+  const reportRef = useRef<HTMLDivElement>(null);
+
   const [calculations, setCalculations] = useState({
     totalValue: 0,
     breakdown: {
@@ -240,9 +242,7 @@ const ROICalculatorSection = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    if (typeof window === "undefined") {
-      return `€${Math.round(amount).toLocaleString()}`;
-    }
+    // Always use consistent formatting to prevent hydration issues
     return new Intl.NumberFormat("de-DE", {
       style: "currency",
       currency: "EUR",
@@ -252,10 +252,51 @@ const ROICalculatorSection = () => {
   };
 
   const formatNumber = (num: number) => {
-    if (typeof window === "undefined") {
-      return Math.round(num).toLocaleString();
-    }
+    // Always use consistent formatting to prevent hydration issues
     return new Intl.NumberFormat("de-DE").format(Math.round(num));
+  };
+
+  const handleDownloadReport = () => {
+    if (!reportRef.current) return;
+    const reportContent = reportRef.current.innerHTML;
+    const printWindow = window.open("", "", "width=800,height=600");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>ROI Report</title>
+          <style>body { font-family: sans-serif; padding: 20px; }</style>
+        </head>
+        <body>${reportContent}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const handleShareResults = async () => {
+    const text = `Total Sponsorship Value: ${formatCurrency(
+      calculations.totalValue
+    )}\nROI: ${formatNumber(calculations.roi)}%\nPayback Period: ${formatNumber(
+      calculations.paybackPeriod
+    )} months`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "ROI Calculation Results",
+          text,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error("Share failed:", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+      alert("Results copied to clipboard");
+    }
   };
 
   return (
@@ -452,125 +493,136 @@ const ROICalculatorSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            {/* Main Benefits Display */}
-            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-3xl p-8 border border-green-500/30 mb-8">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  Total Sponsorship Value
-                </h3>
-                <div className="text-6xl font-bold text-green-400 mb-2">
-                  {formatCurrency(calculations.totalValue)}
-                </div>
-                <p className="text-gray-300 mb-6">
-                  Estimated sponsorship benefits and market value
-                </p>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-2xl font-bold text-white">
-                      {calculations.roi > 0 ? "+" : ""}
-                      {formatNumber(calculations.roi)}%
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      Value vs Investment
-                    </div>
+            <div ref={reportRef}>
+              {/* Main Benefits Display */}
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-3xl p-8 border border-green-500/30 mb-8">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-white mb-4">
+                    Total Sponsorship Value
+                  </h3>
+                  <div className="text-6xl font-bold text-green-400 mb-2">
+                    {formatCurrency(calculations.totalValue)}
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4">
-                    <div className="text-2xl font-bold text-blue-400">
-                      {formatNumber(calculations.paybackPeriod)} months
+                  <p className="text-gray-300 mb-6">
+                    Estimated sponsorship benefits and market value
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-2xl font-bold text-white">
+                        {calculations.roi > 0 ? "+" : ""}
+                        {formatNumber(calculations.roi)}%
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Value vs Investment
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      Value Realization
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <div className="text-2xl font-bold text-blue-400">
+                        {formatNumber(calculations.paybackPeriod)} months
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Value Realization
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Detailed Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10">
+              {/* Detailed Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10">
+                  <h4 className="text-lg font-bold text-white mb-4 flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-blue-400" />
+                    Lead Generation
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Estimated Leads</span>
+                      <span className="text-white font-bold">
+                        {calculations.metrics.estimatedLeads}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Lead Value</span>
+                      <span className="text-green-400 font-bold">
+                        {formatCurrency(calculations.breakdown.leadValue)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Brand Lift</span>
+                      <span className="text-green-400 font-bold">
+                        {formatNumber(calculations.metrics.brandLiftPercentage)}
+                        %
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10">
+                  <h4 className="text-lg font-bold text-white mb-4 flex items-center">
+                    <Globe className="w-5 h-5 mr-2 text-purple-400" />
+                    Brand Exposure
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total Impressions</span>
+                      <span className="text-white font-bold">
+                        {formatNumber(
+                          sponsorshipTiers[selectedTier].impressions
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">
+                        Cost per 1K Impressions
+                      </span>
+                      <span className="text-purple-400 font-bold">
+                        €{calculations.metrics.costPerImpression.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Media Value</span>
+                      <span className="text-purple-400 font-bold">
+                        {formatCurrency(calculations.breakdown.mediaValue)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefits Breakdown */}
+              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10 mb-8">
                 <h4 className="text-lg font-bold text-white mb-4 flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-blue-400" />
-                  Lead Generation
+                  <Award className="w-5 h-5 mr-2 text-amber-400" />
+                  Investment Benefits
                 </h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Estimated Leads</span>
-                    <span className="text-white font-bold">
-                      {calculations.metrics.estimatedLeads}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Lead Value</span>
-                    <span className="text-green-400 font-bold">
-                      {formatCurrency(calculations.breakdown.leadValue)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Brand Lift</span>
-                    <span className="text-green-400 font-bold">
-                      {formatNumber(calculations.metrics.brandLiftPercentage)}%
-                    </span>
-                  </div>
+                  {sponsorshipTiers[selectedTier].benefits.map(
+                    (benefit: string, index: number) => (
+                      <div key={index} className="flex items-center">
+                        <div className="w-2 h-2 bg-amber-400 rounded-full mr-3"></div>
+                        <span className="text-gray-300">{benefit}</span>
+                      </div>
+                    )
+                  )}
                 </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10">
-                <h4 className="text-lg font-bold text-white mb-4 flex items-center">
-                  <Globe className="w-5 h-5 mr-2 text-purple-400" />
-                  Brand Exposure
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Total Impressions</span>
-                    <span className="text-white font-bold">
-                      {formatNumber(sponsorshipTiers[selectedTier].impressions)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      Cost per 1K Impressions
-                    </span>
-                    <span className="text-purple-400 font-bold">
-                      €{calculations.metrics.costPerImpression.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Media Value</span>
-                    <span className="text-purple-400 font-bold">
-                      {formatCurrency(calculations.breakdown.mediaValue)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Benefits Breakdown */}
-            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-6 border border-white/10 mb-8">
-              <h4 className="text-lg font-bold text-white mb-4 flex items-center">
-                <Award className="w-5 h-5 mr-2 text-amber-400" />
-                Investment Benefits
-              </h4>
-              <div className="space-y-3">
-                {sponsorshipTiers[selectedTier].benefits.map(
-                  (benefit: string, index: number) => (
-                    <div key={index} className="flex items-center">
-                      <div className="w-2 h-2 bg-amber-400 rounded-full mr-3"></div>
-                      <span className="text-gray-300">{benefit}</span>
-                    </div>
-                  )
-                )}
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+              <button
+                onClick={handleDownloadReport}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+              >
                 <Download className="w-5 h-5 mr-2" />
                 Download Report
               </button>
-              <button className="flex-1 px-6 py-4 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 font-medium rounded-xl transition-colors flex items-center justify-center">
+              <button
+                onClick={handleShareResults}
+                className="flex-1 px-6 py-4 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 font-medium rounded-xl transition-colors flex items-center justify-center"
+              >
                 <Share className="w-5 h-5 mr-2" />
                 Share Results
               </button>
