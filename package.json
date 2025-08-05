@@ -6,8 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "vitest run"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -56,10 +55,6 @@
     "eslint-config-next": "15.4.2",
     "tailwindcss": "^4.1.11",
     "tw-animate-css": "^1.3.5",
-    "typescript": "^5",
-    "vitest": "^1.5.0",
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.4.5",
-    "jsdom": "^24.0.0"
+    "typescript": "^5"
   }
 }
