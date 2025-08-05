@@ -17,13 +17,15 @@ import {
   FileText,
   ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Safe formatting function to prevent hydration mismatches
-const formatCurrency = (amount: number) => {
-  if (typeof window === "undefined") {
-    return `€${Math.round(amount).toLocaleString()}`;
+const formatCurrency = (amount: number, isClient: boolean = false) => {
+  if (!isClient) {
+    // Server-side: use simple format to match what we'll show initially on client
+    return `€${amount.toLocaleString("en-US")}`;
   }
+  // Client-side: use proper locale formatting
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
@@ -229,6 +231,11 @@ const documents = [
 
 const InvestmentOpportunitySection = () => {
   const [activeDocument, setActiveDocument] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <section
@@ -335,7 +342,7 @@ const InvestmentOpportunitySection = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-white font-bold">
-                        {formatCurrency(item.amount)}
+                        {formatCurrency(item.amount, isClient)}
                       </div>
                       <div className="text-sm text-gray-400">
                         {item.percentage}%
