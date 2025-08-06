@@ -451,7 +451,7 @@ export class PaguyubanChatService {
   };
 
   constructor() {
-    this.apiKey = "AIzaSyC6xXoR5PpkQy4vfagbJsgB-A2C-NeXR48";
+    this.apiKey = process.env.GEMINI_API_KEY || "";
     this.sessionStartTime = new Date();
   }
 

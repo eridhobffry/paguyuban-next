@@ -14,10 +14,13 @@ import {
   Zap,
   CheckCircle,
   Lock,
+  Unlock,
   FileText,
   ExternalLink,
+  Brain,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number, isClient: boolean = false) => {
@@ -182,60 +185,132 @@ const sponsorshipTiers = [
   },
 ];
 
-const documents = [
-  {
-    title: "Executive Business Plan",
-    description:
-      "Comprehensive 47-page business strategy with market analysis, financial projections, and risk assessments",
-    pages: "47 pages",
-    type: "Business Strategy",
-    icon: FileText,
-    preview:
-      "Detailed market opportunity analysis for Indonesia-Germany trade relationship worth €7.32 Billion annually...",
-    restricted: true,
-  },
-  {
-    title: "Financial Projections & ROI Analysis",
-    description:
-      "Conservative financial modeling with stress-tested scenarios and profitability analysis",
-    pages: "23 pages",
-    type: "Financial Analysis",
-    icon: BarChart3,
-    preview:
-      "Net profit of €45,480 (8.3% margin) with conservative assumptions. Multiple scenario modeling...",
-    restricted: true,
-  },
-  {
-    title: "Technical Innovation Overview",
-    description:
-      "AI-powered matchmaking platform specifications and competitive advantage analysis",
-    pages: "15 pages",
-    type: "Technology",
-    icon: Zap,
-    preview:
-      "First-of-kind cultural intelligence algorithms for B2B networking. Custom development by Indonesian team...",
-    restricted: false,
-  },
-  {
-    title: "Market Research & Validation",
-    description:
-      "Primary research including diaspora demographics and competitive landscape analysis",
-    pages: "31 pages",
-    type: "Market Research",
-    icon: Users,
-    preview:
-      "Primary research with 5,133 Indonesian students and 30,000+ professionals in German market...",
-    restricted: true,
-  },
-];
+interface DocumentData {
+  id: string;
+  title: string;
+  description: string;
+  preview: string;
+  pages: string;
+  type: string;
+  icon: string;
+  file_url?: string;
+  external_url?: string;
+  restricted: boolean;
+  ai_generated: boolean;
+}
 
 const InvestmentOpportunitySection = () => {
   const [activeDocument, setActiveDocument] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
+    fetchDocuments();
   }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      const response = await fetch("/api/documents/public");
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments(data.documents || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch documents:", error);
+      // Fallback to static documents if API fails
+      setDocuments([
+        {
+          id: "fallback-1",
+          title: "Executive Business Plan",
+          description:
+            "Comprehensive business strategy with market analysis, financial projections, and risk assessments",
+          pages: "47 pages",
+          type: "Business Strategy",
+          icon: "FileText",
+          preview:
+            "Detailed market opportunity analysis for Indonesia-Germany trade relationship worth €7.32 Billion annually...",
+          restricted: true,
+          ai_generated: false,
+        },
+        {
+          id: "fallback-2",
+          title: "Financial Projections & ROI Analysis",
+          description:
+            "Conservative financial modeling with stress-tested scenarios and profitability analysis",
+          pages: "23 pages",
+          type: "Financial Analysis",
+          icon: "BarChart3",
+          preview:
+            "Net profit of €65,186 with conservative assumptions. Multiple scenario modeling...",
+          restricted: true,
+          ai_generated: false,
+        },
+        {
+          id: "fallback-3",
+          title: "Technical Innovation Overview",
+          description:
+            "AI-powered matchmaking platform specifications and competitive advantage analysis",
+          pages: "15 pages",
+          type: "Technology",
+          icon: "Zap",
+          preview:
+            "First-of-kind cultural intelligence algorithms for B2B networking. Custom development by Indonesian team...",
+          restricted: false,
+          ai_generated: false,
+        },
+        {
+          id: "fallback-4",
+          title: "Market Research & Validation",
+          description:
+            "Primary research including diaspora demographics and competitive landscape analysis",
+          pages: "31 pages",
+          type: "Market Research",
+          icon: "Users",
+          preview:
+            "Primary research with 21,559 Indonesian community and 30,000+ professionals in German market...",
+          restricted: true,
+          ai_generated: false,
+        },
+      ]);
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const getIconComponent = (iconName: string) => {
+    const iconMap: { [key: string]: React.ElementType } = {
+      FileText,
+      BarChart3,
+      Zap,
+      Users,
+      TrendingUp,
+      Globe,
+      Target,
+      PieChart,
+      Download,
+      ExternalLink,
+    };
+    return iconMap[iconName] || FileText;
+  };
+
+  const handleDocumentAction = (doc: DocumentData) => {
+    if (doc.external_url) {
+      window.open(doc.external_url, "_blank");
+    } else if (doc.file_url) {
+      window.open(doc.file_url, "_blank");
+    } else {
+      // Request access for restricted documents
+      const subject = encodeURIComponent(`Access Request: ${doc.title}`);
+      const body = encodeURIComponent(
+        `I would like to request access to the document "${doc.title}" for Paguyuban Messe 2026 partnership evaluation.`
+      );
+      window.open(
+        `mailto:nusantaraexpoofficial@gmail.com?subject=${subject}&body=${body}`
+      );
+    }
+  };
 
   return (
     <section
@@ -514,61 +589,124 @@ const InvestmentOpportunitySection = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {documents.map((doc, index) => (
-              <div
-                key={index}
-                className={`relative p-6 rounded-xl border transition-all duration-300 hover:scale-[1.02] ${
-                  activeDocument === index
-                    ? "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30"
-                    : "bg-white/5 border-white/10 hover:border-blue-500/30"
-                }`}
-                onClick={() => setActiveDocument(index)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-blue-500/20 rounded-lg">
-                      <doc.icon className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white">{doc.title}</h4>
-                      <div className="flex items-center space-x-2 text-sm text-gray-400">
-                        <span>{doc.pages}</span>
-                        <span>•</span>
-                        <span>{doc.type}</span>
+            {documentsLoading
+              ? // Loading state
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="relative p-6 rounded-xl border bg-white/5 border-white/10 animate-pulse"
+                  >
+                    <div className="flex items-start space-x-3 mb-4">
+                      <div className="w-12 h-12 bg-gray-600 rounded-lg"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-600 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-700 rounded w-1/2"></div>
                       </div>
                     </div>
+                    <div className="space-y-2 mb-4">
+                      <div className="h-3 bg-gray-700 rounded"></div>
+                      <div className="h-3 bg-gray-700 rounded w-3/4"></div>
+                    </div>
+                    <div className="h-12 bg-gray-700 rounded mb-4"></div>
+                    <div className="flex space-x-3">
+                      <div className="flex-1 h-8 bg-gray-700 rounded"></div>
+                      <div className="w-8 h-8 bg-gray-700 rounded"></div>
+                    </div>
                   </div>
-                  {doc.restricted && (
-                    <Lock className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                  )}
-                </div>
+                ))
+              : documents.map((doc, index) => {
+                  const IconComponent = getIconComponent(doc.icon);
+                  return (
+                    <div
+                      key={doc.id}
+                      className={`relative p-6 rounded-xl border transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
+                        activeDocument === index
+                          ? "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30"
+                          : "bg-white/5 border-white/10 hover:border-blue-500/30"
+                      }`}
+                      onClick={() => setActiveDocument(index)}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-3 bg-blue-500/20 rounded-lg">
+                            <IconComponent className="w-6 h-6 text-blue-400" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-white">
+                                {doc.title}
+                              </h4>
+                              {doc.ai_generated && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30"
+                                >
+                                  <Brain className="w-3 h-3 mr-1" />
+                                  AI
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-400">
+                              <span>{doc.pages}</span>
+                              <span>•</span>
+                              <span>{doc.type}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {doc.restricted ? (
+                          <Lock className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                        ) : (
+                          <Unlock className="w-5 h-5 text-green-400 flex-shrink-0" />
+                        )}
+                      </div>
 
-                <p className="text-gray-300 text-sm mb-4">{doc.description}</p>
+                      <p className="text-gray-300 text-sm mb-4">
+                        {doc.description}
+                      </p>
 
-                <div className="p-3 bg-white/5 rounded-lg mb-4">
-                  <p className="text-xs text-gray-400 italic">
-                    &ldquo;{doc.preview}&rdquo;
-                  </p>
-                </div>
+                      <div className="p-3 bg-white/5 rounded-lg mb-4">
+                        <p className="text-xs text-gray-400 italic">
+                          &ldquo;{doc.preview}&rdquo;
+                        </p>
+                      </div>
 
-                <div className="flex space-x-3">
-                  {doc.restricted ? (
-                    <button className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-200 rounded-lg hover:from-amber-500/30 hover:to-orange-500/30 transition-all duration-300">
-                      <Lock className="w-4 h-4 mr-2" />
-                      Request Access
-                    </button>
-                  ) : (
-                    <button className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 text-blue-200 rounded-lg hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-300">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </button>
-                  )}
-                  <button className="px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-all duration-300">
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                      <div className="flex space-x-3">
+                        {doc.restricted ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDocumentAction(doc);
+                            }}
+                            className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-200 rounded-lg hover:from-amber-500/30 hover:to-orange-500/30 transition-all duration-300"
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Request Access
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDocumentAction(doc);
+                            }}
+                            className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 text-blue-200 rounded-lg hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-300"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            {doc.external_url ? "View" : "Download"}
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDocumentAction(doc);
+                          }}
+                          className="px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-all duration-300"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
           </div>
 
           <div className="mt-8 text-center">
