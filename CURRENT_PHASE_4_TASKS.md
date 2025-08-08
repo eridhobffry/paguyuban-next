@@ -68,7 +68,12 @@ Outcome
 
 - [x] Admin routing: add `/admin/user` and `/admin/documents` pages; wire tabs to navigate (no jitter).
 - [x] Financial CRUD API: add POST/PUT/DELETE under `/api/admin/financial` (minimal zod validation).
-- [ ] Financial editor UI: add basic row editor using shadcn + RHF + zod; optimistic updates.
+- [x] Financial editor UI: selection-based CRUD with dialogs; optimistic updates.
+- [x] Evidence field: add explicit `evidence_url` on items and surface in UI; allow multiple links later.
+  - Implemented in `FinancialItemDialog` with RHF validation; surfaced in `FinancialOverview` dialog and search.
+  - Header controls now include search and page length (10/25/50/100/All) via RHF Select.
+  - Table lists are constrained with `max-h-80` and scroll.
+  - Removed obsolete `FinancialEditor` component and export.
 
 ### UI Shell Migration (Planned)
 

@@ -82,6 +82,7 @@ const BaseItemSchema = z.object({
   category: z.string().min(1),
   amount: z.number().finite(),
   notes: z.string().optional().nullable(),
+  evidenceUrl: z.string().url().optional().nullable(),
   sortOrder: z.number().optional().nullable(),
 });
 

@@ -1,22 +1,8 @@
 import { useEffect, useState } from "react";
-
-export type FinancialItem = {
-  id: string;
-  category: string;
-  amount: number;
-  notes?: string | null;
-  sortOrder?: number | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
-
-export type FinancialResponse = {
-  revenues: FinancialItem[];
-  costs: FinancialItem[];
-};
+import { FinancialItemBase, FinancialResponseDto } from "@/types/financial";
 
 export function useFinancial() {
-  const [data, setData] = useState<FinancialResponse | null>(null);
+  const [data, setData] = useState<FinancialResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +15,7 @@ export function useFinancial() {
       if (!res.ok) {
         throw new Error(`Failed to fetch: ${res.status}`);
       }
-      const json = (await res.json()) as FinancialResponse;
+      const json = (await res.json()) as FinancialResponseDto;
       setData(json);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -40,11 +26,14 @@ export function useFinancial() {
 
   useEffect(() => {
     refresh();
+    const onUpdated = () => refresh();
+    window.addEventListener("financial-updated", onUpdated);
+    return () => window.removeEventListener("financial-updated", onUpdated);
   }, []);
 
   async function createItem(
     itemType: "revenue" | "cost",
-    item: Omit<FinancialItem, "id">
+    item: FinancialItemBase
   ) {
     const res = await fetch("/api/admin/financial", {
       method: "POST",
@@ -54,13 +43,14 @@ export function useFinancial() {
     });
     if (!res.ok) throw new Error("Create failed");
     await refresh();
+    window.dispatchEvent(new CustomEvent("financial-updated"));
     return res.json();
   }
 
   async function updateItem(
     itemType: "revenue" | "cost",
     id: string,
-    item: Partial<FinancialItem>
+    item: Partial<FinancialItemBase>
   ) {
     const res = await fetch("/api/admin/financial", {
       method: "PUT",
@@ -70,6 +60,7 @@ export function useFinancial() {
     });
     if (!res.ok) throw new Error("Update failed");
     await refresh();
+    window.dispatchEvent(new CustomEvent("financial-updated"));
     return res.json();
   }
 
@@ -82,6 +73,7 @@ export function useFinancial() {
     });
     if (!res.ok) throw new Error("Delete failed");
     await refresh();
+    window.dispatchEvent(new CustomEvent("financial-updated"));
     return res.json();
   }
 
