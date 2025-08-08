@@ -99,6 +99,54 @@ Next steps for routing:
   - [x] Implement `/admin/financial/cost` detail page (read-only)
   - [x] Link "View" actions from overview to detail pages
 
+### Next Up — Financial Detail Pages & CRUD
+
+Small, incremental steps to enrich revenue and cost detail pages with full details and CRUD:
+
+1. Revenue detail: UI enhancements
+
+- [ ] Item panel showing full fields: `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
+- [ ] Sorting by `category`, `amount`, `sort_order` and persistent search via query param.
+- [ ] Row actions: Edit, Delete. Top-level Add button.
+- [ ] Deep links: `/admin/financial/revenue/[id]` opens selected item.
+- Acceptance:
+  - [ ] Evidence link opens in new tab.
+  - [ ] Totals recompute and charts update after mutations.
+  - [ ] Back/forward keep search/sort and selection.
+
+2. Cost detail: mirror revenue
+
+- [ ] Same UI capabilities as revenue detail.
+- [ ] Deep links: `/admin/financial/cost/[id]`.
+- Acceptance:
+  - [ ] Same as revenue acceptance.
+
+3. CRUD wiring (reuse existing API and dialog)
+
+- [ ] Reuse `FinancialItemDialog` for add/edit on detail pages (pre-filled on edit).
+- [ ] Toasts for success/error; optimistic update where safe; fallback to refresh.
+- [ ] Keep Drizzle-derived types as the single source of truth for frontend types.
+
+4. Backend readiness
+
+- [x] Ensure GET/POST/PUT include `evidenceUrl`.
+- [ ] Optional: add GET-by-id endpoint (`/api/admin/financial/item?id=...&itemType=...`) for future SSR/server components.
+
+5. Routing & state
+
+- [ ] Persist search and sort in the URL query (restores on reload/navigation).
+- [ ] Selecting a row updates the URL without full-page navigation.
+
+6. QA
+
+- [ ] Numbers are consistent across overview, detail pages, and charts.
+- [ ] Access control enforced both in middleware and API routes.
+- [ ] Mobile layout remains usable (horizontal table scroll, readable panel).
+
+Order of execution:
+
+1. Revenue detail UI → 2. Cost detail UI → 3. CRUD buttons → 4. Deep links → 5. URL state → 6. Optional GET-by-id.
+
 ### Financial Reports & Excel Ingestion (Planned)
 
 - Export reports (small wins first)
