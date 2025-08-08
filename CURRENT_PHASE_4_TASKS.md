@@ -16,17 +16,18 @@ This file tracks small, verifiable steps to implement Phase 4. We will proceed i
 
 ### Iteration Map (Small Wins)
 
-1. Financial (read) — create tables only, verify, no UI changes yet.
-2. Financial (admin API GET) — return items; no writes yet.
-3. Financial (seed + POST/PUT/DELETE) — minimal CRUD with zod.
-4. Financial (admin UI) — basic table editor with totals; save to DB.
-5. Speakers (schema + GET) — then CRUD + UI.
-6. Agenda (schema + GET) — then CRUD + UI.
-7. Sponsors (schema + GET) — then CRUD + UI.
-8. Investment Opportunities (schema + GET) — then CRUD + UI.
-9. Artists (schema + GET) — then CRUD + UI.
-10. Executive Documentation (schema align) — reuse existing docs infra, add fields if needed.
-11. Analytics (schema + GET) — track user behavior and chatbot interactions per logged-in user; then CRUD + UI tab.
+1. Financial (DB-only) — create tables, verify.
+2. Financial (read API) — GET revenues/costs.
+3. Financial (CRUD API) — seed + POST/PUT/DELETE with zod.
+4. Financial (admin UI) — read-only overview + charts, then editor.
+5. Admin routing — nested pages for tabs.
+6. Speakers (schema + GET) — then CRUD + UI.
+7. Agenda (schema + GET) — then CRUD + UI.
+8. Sponsors (schema + GET) — then CRUD + UI.
+9. Investment Opportunities (schema + GET) — then CRUD + UI.
+10. Artists (schema + GET) — then CRUD + UI.
+11. Executive Documentation (schema align) — reuse docs infra, add fields if needed.
+12. Analytics (schema + GET) — track user behavior and chatbot interactions per logged-in user; then CRUD + UI tab.
 
 We will only move the public site to DB-backed reads after each domain’s admin CRUD proves stable.
 
@@ -41,9 +42,15 @@ Checklist
 - [x] Migration prepared on temp branch
 - [x] Tables verified on temp branch
 - [x] Seeded real financial data on temp branch
-- [ ] Approval received to commit
-- [ ] Commit migration to main
-- [ ] Document outcome here
+- [x] Approval received to commit
+- [x] Commit migration to main
+- [x] Document outcome here
+
+Outcome
+
+- Tables live on main (`financial_revenue_items`, `financial_cost_items`).
+- Seeded with real figures; totals verified (Revenue €1,018,660; Costs €953,474).
+- Dropped unused `financial_categories` to prevent drift.
 
 ### Risks & Mitigations (for this iteration)
 
@@ -51,10 +58,17 @@ Checklist
 - Extension availability for UUID → Use `gen_random_uuid()` consistent with existing `documents` table.
 - Backward compatibility → No public UI code change in this step.
 
-### Next (after approval)
+### Completed After Task 1
 
-- Implement `/api/admin/financial` GET to read both tables and return `{ revenues: [], costs: [] }`.
-- Add basic zod schemas for API responses.
+- `/api/admin/financial` GET with zod-validated response.
+- Admin Financial read-only overview + shadcn charts (donut + bar) with themed tooltips/legends.
+- Nested route `/admin/financial` with direct navigation from `/admin`.
+
+### Next Up (smallest steps)
+
+- [ ] Admin routing: add `/admin/user` and `/admin/documents` pages; wire tabs to navigate (no jitter).
+- [ ] Financial CRUD API: add POST/PUT/DELETE under `/api/admin/financial` (minimal zod validation).
+- [ ] Financial editor UI: add basic row editor using shadcn + RHF + zod; optimistic updates.
 
 ### Admin Routing Improvements (Planned)
 

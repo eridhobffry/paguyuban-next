@@ -43,8 +43,24 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="documents">Document Management</TabsTrigger>
+            <TabsTrigger
+              value="users"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/admin/user");
+              }}
+            >
+              User Management
+            </TabsTrigger>
+            <TabsTrigger
+              value="documents"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/admin/documents");
+              }}
+            >
+              Document Management
+            </TabsTrigger>
             <TabsTrigger
               value="financial"
               onClick={(e) => {
