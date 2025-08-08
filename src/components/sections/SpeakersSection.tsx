@@ -3,114 +3,24 @@
 import { motion } from "framer-motion";
 import { Mic2, Twitter, Linkedin, Globe } from "lucide-react";
 import Image from "next/image";
-
-const featuredArtists = [
-  {
-    name: "Dewa 19",
-    role: "Legendary Rock Band",
-    company: "Grand Finale Performance",
-    image: "/images/artists/dewa19.jpg",
-    type: "artist",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "Tulus",
-    role: "Premier Vocalist",
-    company: "Contemporary Indonesian Music",
-    image: "/images/artists/tulus.jpg",
-    type: "artist",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "Efek Rumah Kaca",
-    role: "Alternative Rock",
-    company: "Environmental Music Advocates",
-    image: "/images/artists/erk.jpg",
-    type: "artist",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "The Panturas",
-    role: "Indie Rock",
-    company: "Contemporary Youth Culture",
-    image: "/images/artists/panturas.jpg",
-    type: "artist",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-];
-
-const businessSpeakers = [
-  {
-    name: "Gita Wirjawan",
-    role: "Leadership Talk Moderator",
-    company: "Former Minister & Investment Expert",
-    image: "/images/speakers/gita-wirjawan.jpg",
-    type: "speaker",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "Joko Anwar",
-    role: "Film Director",
-    company: "Digital Storytelling Summit",
-    image: "/images/speakers/joko-anwar.jpg",
-    type: "speaker",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "Rahayu Saraswati",
-    role: "Policy Expert",
-    company: "Creative Industry Diversity",
-    image: "/images/speakers/rahayu-saraswati.jpg",
-    type: "speaker",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-  {
-    name: "Iyas Lawrence",
-    role: "Innovation Leader",
-    company: "Sustainable Tech & AI",
-    image: "/images/speakers/iyas-lawrence.jpg",
-    type: "speaker",
-    social: {
-      twitter: "#",
-      linkedin: "#",
-      website: "#",
-    },
-  },
-];
+import { useEffect, useState } from "react";
+import { PublicArtistDto, PublicSpeakerDto } from "@/types/people";
 
 const SpeakerCard = ({
   speaker,
   index,
 }: {
-  speaker: (typeof featuredArtists)[0] | (typeof businessSpeakers)[0];
+  speaker: {
+    name: string;
+    role?: string | null;
+    company?: string | null;
+    image: string;
+    social: {
+      twitter?: string | null;
+      linkedin?: string | null;
+      website?: string | null;
+    };
+  };
   index: number;
 }) => {
   return (
@@ -140,24 +50,30 @@ const SpeakerCard = ({
       </p>
 
       <div className="flex justify-center space-x-3">
-        <a
-          href={speaker.social.twitter}
-          className="text-gray-400 hover:text-cyan-400 transition-colors"
-        >
-          <Twitter className="w-4 h-4" />
-        </a>
-        <a
-          href={speaker.social.linkedin}
-          className="text-gray-400 hover:text-cyan-400 transition-colors"
-        >
-          <Linkedin className="w-4 h-4" />
-        </a>
-        <a
-          href={speaker.social.website}
-          className="text-gray-400 hover:text-cyan-400 transition-colors"
-        >
-          <Globe className="w-4 h-4" />
-        </a>
+        {speaker.social.twitter && (
+          <a
+            href={speaker.social.twitter}
+            className="text-gray-400 hover:text-cyan-400 transition-colors"
+          >
+            <Twitter className="w-4 h-4" />
+          </a>
+        )}
+        {speaker.social.linkedin && (
+          <a
+            href={speaker.social.linkedin}
+            className="text-gray-400 hover:text-cyan-400 transition-colors"
+          >
+            <Linkedin className="w-4 h-4" />
+          </a>
+        )}
+        {speaker.social.website && (
+          <a
+            href={speaker.social.website}
+            className="text-gray-400 hover:text-cyan-400 transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+          </a>
+        )}
       </div>
 
       <div className="absolute top-4 right-4 p-2 bg-cyan-500/10 rounded-full">
@@ -168,6 +84,52 @@ const SpeakerCard = ({
 };
 
 const SpeakersSection = () => {
+  const [artists, setArtists] = useState<PublicArtistDto[]>([]);
+  const [speakers, setSpeakers] = useState<PublicSpeakerDto[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [aRes, sRes] = await Promise.all([
+          fetch("/api/artists/public", { cache: "no-store" }),
+          fetch("/api/speakers/public", { cache: "no-store" }),
+        ]);
+        const aData = await aRes.json();
+        const sData = await sRes.json();
+        setArtists(aData.artists ?? []);
+        setSpeakers(sData.speakers ?? []);
+      } catch {
+        // swallow
+      }
+    };
+    load();
+  }, []);
+
+  const featuredArtists = artists.map((a) => ({
+    name: a.name,
+    role: a.role ?? "",
+    company: a.company ?? "",
+    image: a.imageUrl ?? "/images/artists/dewa19.jpg",
+    type: "artist",
+    social: {
+      twitter: a.twitter ?? "",
+      linkedin: a.linkedin ?? "",
+      website: a.website ?? "",
+    },
+  }));
+
+  const businessSpeakers = speakers.map((s) => ({
+    name: s.name,
+    role: s.role ?? "",
+    company: s.company ?? "",
+    image: s.image_url ?? "/images/speakers/gita-wirjawan.jpg",
+    type: "speaker",
+    social: {
+      twitter: s.twitter ?? "",
+      linkedin: s.linkedin ?? "",
+      website: s.website ?? "",
+    },
+  }));
   return (
     <section id="speakers" className="relative py-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 to-slate-900/80 -z-10"></div>
