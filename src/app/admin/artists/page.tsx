@@ -16,6 +16,28 @@ import {
   type ArtistFormValues,
 } from "@/components/admin/ArtistsDialog";
 import { useArtistsAdmin } from "@/hooks/useArtists";
+import type { Artist as DbArtist } from "@/types/people";
+
+const createDataMapper = (artist: ArtistFormValues): Omit<DbArtist, "id"> => {
+  const now = new Date();
+  return {
+    name: artist.name,
+    role: artist.role ?? null,
+    company: artist.company ?? null,
+    imageUrl: artist.imageUrl ?? null,
+    bio: artist.bio ?? null,
+    tags: artist.tags ?? null,
+    slug: artist.slug ?? null,
+    instagram: artist.instagram ?? null,
+    youtube: artist.youtube ?? null,
+    twitter: artist.twitter ?? null,
+    linkedin: artist.linkedin ?? null,
+    website: artist.website ?? null,
+    sortOrder: artist.sortOrder ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+};
 
 export default function ArtistsAdminPage() {
   const { artists, fetchArtists, createArtist, updateArtist, deleteArtist } =
@@ -112,17 +134,12 @@ export default function ArtistsAdminPage() {
         onSubmit={async (values: ArtistFormValues) => {
           const payload = {
             ...values,
-            tags: values.tags
-              ? values.tags
-                  .split(",")
-                  .map((t) => t.trim())
-                  .filter(Boolean)
-              : [],
+            tags: values.tags ?? [],
           };
           if (editingId) {
             await updateArtist(editingId, payload);
           } else {
-            await createArtist(payload);
+            await createArtist(createDataMapper(payload));
           }
           await fetchArtists();
         }}

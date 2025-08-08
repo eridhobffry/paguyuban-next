@@ -14,24 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { artistAdminCreateSchema } from "@/types/validation";
 
-const Schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  role: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
-  imageUrl: z.string().url().optional().nullable(),
-  bio: z.string().optional().nullable(),
-  tags: z.string().optional().nullable(),
-  slug: z.string().optional().nullable(),
-  instagram: z.string().url({ message: "Instagram URL is required" }),
-  youtube: z.string().url({ message: "YouTube URL is required" }),
-  twitter: z.string().url().optional().nullable(),
-  linkedin: z.string().url().optional().nullable(),
-  website: z.string().url().optional().nullable(),
-  sortOrder: z.coerce.number().optional().nullable(),
-});
-
-export type ArtistFormValues = z.infer<typeof Schema>;
+export type ArtistFormValues = z.infer<typeof artistAdminCreateSchema>;
 
 export function ArtistsDialog({
   open,
@@ -45,14 +30,16 @@ export function ArtistsDialog({
   onSubmit: (values: ArtistFormValues) => Promise<void>;
 }) {
   const form = useForm<ArtistFormValues>({
-    resolver: zodResolver(Schema) as Resolver<ArtistFormValues>,
+    resolver: zodResolver(
+      artistAdminCreateSchema
+    ) as Resolver<ArtistFormValues>,
     defaultValues: {
       name: "",
       role: "",
       company: "",
       imageUrl: "",
       bio: "",
-      tags: "",
+      tags: [],
       slug: "",
       instagram: "",
       youtube: "",
@@ -67,11 +54,7 @@ export function ArtistsDialog({
     if (initial) {
       form.reset({
         ...initial,
-        tags: Array.isArray(initial?.tags)
-          ? (initial?.tags as string[]).join(", ")
-          : typeof initial?.tags === "string"
-          ? (initial?.tags as string)
-          : "",
+        tags: initial?.tags ?? [],
       } as ArtistFormValues);
     } else {
       form.reset({
@@ -80,7 +63,7 @@ export function ArtistsDialog({
         company: "",
         imageUrl: "",
         bio: "",
-        tags: "",
+        tags: [],
         slug: "",
         instagram: "",
         youtube: "",
@@ -103,7 +86,7 @@ export function ArtistsDialog({
           onSubmit={form.handleSubmit(async (values: ArtistFormValues) => {
             await onSubmit({
               ...values,
-              tags: values.tags ?? "",
+              tags: values.tags ?? [],
             });
             onOpenChange(false);
           })}
@@ -130,8 +113,15 @@ export function ArtistsDialog({
             </div>
           </div>
           <div className="grid gap-1">
-            <Label>Image URL</Label>
+            <Label>
+              Image URL <span className="text-red-500">*</span>
+            </Label>
             <Input {...form.register("imageUrl")} />
+            {form.formState.errors.imageUrl && (
+              <p className="text-sm text-red-500 mt-1">
+                {form.formState.errors.imageUrl.message as string}
+              </p>
+            )}
           </div>
           <div className="grid gap-1">
             <Label>Bio</Label>

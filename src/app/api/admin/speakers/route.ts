@@ -3,30 +3,15 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db/drizzle";
 import { speakers } from "@/lib/db/schema";
 import { z } from "zod";
+import {
+  speakerAdminCreateSchema,
+  speakerAdminUpdateSchema,
+} from "@/types/validation";
 import type { User } from "@/lib/db";
 import { asc, eq } from "drizzle-orm";
 
-const SpeakerTypeEnum = z.enum(["summit", "main_stage"]);
-const SpeakerBaseSchema = z.object({
-  name: z.string().min(1),
-  role: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
-  imageUrl: z.string().url().optional().nullable(),
-  bio: z.string().optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  slug: z.string().min(1).optional().nullable(),
-  twitter: z.string().url().optional().nullable(),
-  linkedin: z.string().url().optional().nullable(),
-  website: z.string().url().optional().nullable(),
-  speakerType: SpeakerTypeEnum.optional().nullable(),
-  sortOrder: z.number().optional().nullable(),
-});
-
-const CreateSchema = z.object({ speaker: SpeakerBaseSchema });
-const UpdateSchema = z.object({
-  id: z.string().uuid(),
-  speaker: SpeakerBaseSchema.partial(),
-});
+const CreateSchema = z.object({ speaker: speakerAdminCreateSchema });
+const UpdateSchema = speakerAdminUpdateSchema;
 const DeleteSchema = z.object({ id: z.string().uuid() });
 
 export async function GET(request: NextRequest) {
