@@ -61,3 +61,10 @@ Checklist
 - Define admin Analytics tab scope (metrics, events, per-user chatbot logs, retention window).
 - Draft minimal analytics schema (events, user_id, route, action, metadata, created_at) and chatbot logs (user_id, message, role, tokens, created_at).
 - Sequence: analytics schema → GET (admin) → basic charts UI → progressive enrichment.
+
+### Future Schema Enhancements (Optional, Non-Blocking)
+
+- Optional presentational fields: `color`, `percentage` for server-side control.
+- Multi-period/versioning: `fiscal_year` and `scenario` (enum: `draft`, `approved`) to support forecasting and versions.
+- Provenance & audit: `source` (text) and `updated_by` (user id).
+- Indexes: current `sort_order` index is enough; if periodization is added, consider composite `(fiscal_year, sort_order)`.
