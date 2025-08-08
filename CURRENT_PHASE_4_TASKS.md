@@ -66,9 +66,13 @@ Outcome
 
 ### Next Up (smallest steps)
 
-- [ ] Admin routing: add `/admin/user` and `/admin/documents` pages; wire tabs to navigate (no jitter).
-- [ ] Financial CRUD API: add POST/PUT/DELETE under `/api/admin/financial` (minimal zod validation).
+- [x] Admin routing: add `/admin/user` and `/admin/documents` pages; wire tabs to navigate (no jitter).
+- [x] Financial CRUD API: add POST/PUT/DELETE under `/api/admin/financial` (minimal zod validation).
 - [ ] Financial editor UI: add basic row editor using shadcn + RHF + zod; optimistic updates.
+
+### UI Shell Migration (Planned)
+
+- After Financial CRUD + editor are stable, integrate shadcn dashboard block for a cohesive admin shell (sidebar, breadcrumbs, layout, theme consistency).
 
 ### Admin Routing Improvements (Planned)
 
