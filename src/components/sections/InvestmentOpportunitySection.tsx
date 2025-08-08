@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Brain,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { FinancialResponseDto } from "@/types/financial";
 import { Badge } from "@/components/ui/badge";
 
 // Safe formatting function to prevent hydration mismatches
@@ -72,31 +73,15 @@ const marketData = [
   },
 ];
 
-const financialBreakdown = [
-  {
-    category: "Sponsorships",
-    amount: 415000,
-    percentage: 67,
-    color: "#10b981",
-  },
-  {
-    category: "Ticket Sales",
-    amount: 104660,
-    percentage: 17,
-    color: "#8b5cf6",
-  },
-  {
-    category: "Exhibitor Fees",
-    amount: 66000,
-    percentage: 11,
-    color: "#3b82f6",
-  },
-  {
-    category: "Additional Revenue",
-    amount: 30000,
-    percentage: 5,
-    color: "#f59e0b",
-  },
+const SERIES_COLORS = [
+  "#10b981",
+  "#8b5cf6",
+  "#3b82f6",
+  "#f59e0b",
+  "#ef4444",
+  "#06b6d4",
+  "#84cc16",
+  "#f97316",
 ];
 
 const sponsorshipTiers = [
@@ -204,11 +189,71 @@ const InvestmentOpportunitySection = () => {
   const [isClient, setIsClient] = useState(false);
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(true);
+  const [financial, setFinancial] = useState<FinancialResponseDto | null>(null);
 
   useEffect(() => {
     setIsClient(true);
     fetchDocuments();
+    fetchFinancial();
   }, []);
+  const fetchFinancial = async () => {
+    try {
+      const res = await fetch("/api/financial/public", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const json = (await res.json()) as FinancialResponseDto;
+        setFinancial(json);
+      }
+    } catch {
+      // ignore; this section will keep static placeholders if fetch fails
+    }
+  };
+
+  const revenueItems = useMemo(() => financial?.revenues ?? [], [financial]);
+  const totalRevenue = useMemo(
+    () => revenueItems.reduce((sum, r) => sum + (r.amount || 0), 0),
+    [revenueItems]
+  );
+  const financialBreakdown = useMemo(
+    () =>
+      revenueItems.length && totalRevenue
+        ? revenueItems.map((item, index) => ({
+            category: item.category,
+            amount: item.amount,
+            percentage: Math.round((item.amount / totalRevenue) * 100),
+            color: SERIES_COLORS[index % SERIES_COLORS.length],
+          }))
+        : [
+            // fallback (will be superseded once fetch succeeds)
+            {
+              category: "Sponsorships",
+              amount: 415000,
+              percentage: 67,
+              color: "#10b981",
+            },
+            {
+              category: "Ticket Sales",
+              amount: 104660,
+              percentage: 17,
+              color: "#8b5cf6",
+            },
+            {
+              category: "Exhibitor Fees",
+              amount: 66000,
+              percentage: 11,
+              color: "#3b82f6",
+            },
+            {
+              category: "Additional Revenue",
+              amount: 30000,
+              percentage: 5,
+              color: "#f59e0b",
+            },
+          ],
+    [revenueItems, totalRevenue]
+  );
 
   const fetchDocuments = async () => {
     try {
@@ -397,7 +442,13 @@ const InvestmentOpportunitySection = () => {
             <div>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
                 <PieChart className="w-7 h-7 mr-3 text-blue-400" />
-                Revenue Breakdown - €616,000 Total
+                Revenue Breakdown -{" "}
+                {formatCurrency(
+                  totalRevenue ||
+                    financialBreakdown.reduce((s, i) => s + i.amount, 0),
+                  isClient
+                )}{" "}
+                Total
               </h3>
 
               <div className="space-y-4">
@@ -483,7 +534,13 @@ const InvestmentOpportunitySection = () => {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">€616K</div>
+                    <div className="text-2xl font-bold text-white">
+                      {formatCurrency(
+                        totalRevenue ||
+                          financialBreakdown.reduce((s, i) => s + i.amount, 0),
+                        isClient
+                      )}
+                    </div>
                     <div className="text-sm text-gray-400">Total Revenue</div>
                   </div>
                 </div>
