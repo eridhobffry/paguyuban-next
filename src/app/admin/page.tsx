@@ -11,6 +11,7 @@ import {
   DocumentUpload,
   DocumentLibrary,
   EditDocumentModal,
+  FinancialOverview,
 } from "@/components/admin";
 import { Document } from "@/types/admin";
 
@@ -40,10 +41,14 @@ export default function AdminDashboard() {
         <AdminHeader />
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="documents">Document Management</TabsTrigger>
+            <TabsTrigger value="financial">Financial</TabsTrigger>
           </TabsList>
+          <TabsContent value="financial" className="space-y-6">
+            <FinancialOverview />
+          </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
             <PendingRequests
