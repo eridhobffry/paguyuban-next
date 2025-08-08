@@ -85,6 +85,7 @@ Outcome
   - [ ] Admin UI list + detail dialog (read-only first), then create/edit with image field.
 - Acceptance (for this step):
   - [x] Endpoint returns array of speakers; stable across refresh; cache headers present.
+  - [x] Homepage speakers area fetches from `/api/speakers/public`.
 
 Planned enrichments (Speakers):
 
@@ -100,6 +101,8 @@ Planned enrichments (Speakers):
   - [x] Admin CRUD API under `/api/admin/artists` (zod validation).
   - [x] Admin UI list + detail dialog (dialog-first), then create/edit with image URL.
   - [x] Seed endpoint `/api/admin/seed-people` to populate initial Artists and Speakers from existing arrays (idempotent).
+  - [x] Homepage artists area fetches from `/api/artists/public`.
+  - [x] Unified types: DB-mirrored types via Drizzle (`src/types/people.ts`) and shared zod schemas (`src/types/validation.ts`).
 - Feature parity with Speakers:
   - Upload/attach photo (Vercel Blob), rich description (`bio`, `highlights` via `tags`), socials.
   - Clickable cards on homepage open detail dialog; optional dedicated route `/artists/[slug]` later.

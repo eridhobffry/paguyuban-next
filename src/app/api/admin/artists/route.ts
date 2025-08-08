@@ -3,31 +3,15 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db/drizzle";
 import { artists } from "@/lib/db/schema";
 import { z } from "zod";
+import {
+  artistAdminCreateSchema,
+  artistAdminUpdateSchema,
+} from "@/types/validation";
 import type { User } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
-const ArtistBaseSchema = z.object({
-  name: z.string().min(1),
-  role: z.string().optional().nullable(),
-  company: z.string().optional().nullable(),
-  imageUrl: z.string().url().optional().nullable(),
-  bio: z.string().optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  // slug optional; if missing or blank we auto-generate from name
-  slug: z.string().optional().nullable(),
-  instagram: z.string().url({ message: "Instagram URL is required" }),
-  youtube: z.string().url({ message: "YouTube URL is required" }),
-  twitter: z.string().url().optional().nullable(),
-  linkedin: z.string().url().optional().nullable(),
-  website: z.string().url().optional().nullable(),
-  sortOrder: z.coerce.number().optional().nullable(),
-});
-
-const CreateSchema = z.object({ artist: ArtistBaseSchema });
-const UpdateSchema = z.object({
-  id: z.string().uuid(),
-  artist: ArtistBaseSchema.partial(),
-});
+const CreateSchema = z.object({ artist: artistAdminCreateSchema });
+const UpdateSchema = artistAdminUpdateSchema;
 const DeleteSchema = z.object({ id: z.string().uuid() });
 
 export async function GET(request: NextRequest) {
