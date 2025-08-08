@@ -92,9 +92,45 @@ Outcome
 Next steps for routing:
 
 - [x] Create `/admin/financial` page and redirect Financial tab via onClick (no useEffect) to avoid jitter
-- [ ] Add `/admin/user` page and route User Management there
-- [ ] Add `/admin/documents` page and route Document Management there
-- [ ] Plan `/admin/financial/revenue` detail page scaffolding (read-only first)
+- [x] Add `/admin/user` page and route User Management there
+- [x] Add `/admin/documents` page and route Document Management there
+- [x] Plan `/admin/financial/revenue` detail page scaffolding (read-only first)
+  - [x] Implement `/admin/financial/revenue` detail page (read-only)
+  - [x] Implement `/admin/financial/cost` detail page (read-only)
+  - [x] Link "View" actions from overview to detail pages
+
+### Financial Reports & Excel Ingestion (Planned)
+
+- Export reports (small wins first)
+
+  - [ ] CSV export of filtered/sorted financial items from the admin UI (revenue, costs) with totals.
+  - [ ] XLSX export with separate sheets: `Revenue`, `Costs`, and `Summary` (totals and pivots by category).
+  - [ ] Backend endpoint under `/api/admin/financial/export` with zod-validated params; streaming response for large datasets.
+  - Acceptance: exported numbers equal on-screen totals; file opens in Google Sheets/Excel without warnings.
+
+- Excel upload and alignment
+
+  - [ ] Downloadable `.xlsx` template with required columns: `category`, `amount`, `notes`, `evidence_url`, `sort_order`.
+  - [ ] Admin upload flow: parse server-side, validate schema, and show preview with differences vs current DB.
+  - [ ] Initial import writes to staging tables via Drizzle (`financial_revenue_items_staging`, `financial_cost_items_staging`), then "Promote" upserts into main tables.
+  - [ ] Keep original file as evidence and link to imported items; store normalized CSV snapshot for provenance.
+  - Acceptance: uploading a valid template shows a preview, totals recompute, and promoting reflects in dashboard immediately.
+
+- Gemini-assisted analysis (advisory)
+
+  - [ ] After upload, send sanitized CSV to Gemini to summarize trends, outliers, and possible misclassifications.
+  - [ ] Persist analysis JSON with provenance (model, timestamp, source file) and surface it in an "AI Insights" panel in `/admin/financial`.
+  - [ ] Cache/rehydrate previous analyses for identical inputs; never auto-apply AI changes.
+  - Acceptance: insights load within target SLA (≤5s cached, ≤20s first-run) and include clear caveats/provenance.
+
+- Iteration order
+
+  1. CSV export → 2) XLSX export → 3) Template + upload parse/preview → 4) Staging import → 5) Promote to main → 6) Gemini insights.
+
+- Risks & mitigations
+  - Excel quirks (locale, formulas, merged cells) → restrict to first sheet, typed columns, and numeric validation.
+  - Row identity for upsert → start with manual confirm/replace; introduce stable keys later if needed.
+  - Dataset size → stream exports and paginate previews.
 
 ### Next Plan Session
 

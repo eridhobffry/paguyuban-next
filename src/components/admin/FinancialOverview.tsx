@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +37,7 @@ const formatCurrency = (amount: number) =>
   }).format(amount);
 
 export function FinancialOverview() {
+  const router = useRouter();
   const {
     data,
     loading,
@@ -237,8 +239,7 @@ export function FinancialOverview() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={!selectedId || selectedType !== "revenue"}
-                onClick={() => setModal("view")}
+                onClick={() => router.push("/admin/financial/revenue")}
               >
                 View
               </Button>
@@ -372,8 +373,7 @@ export function FinancialOverview() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={!selectedId || selectedType !== "cost"}
-                onClick={() => setModal("view")}
+                onClick={() => router.push("/admin/financial/cost")}
               >
                 View
               </Button>

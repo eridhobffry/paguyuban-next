@@ -13,6 +13,7 @@ const FinancialResponse = z.object({
       category: z.string(),
       amount: z.number(),
       notes: z.string().nullable().optional(),
+      evidenceUrl: z.string().nullable().optional(),
       sortOrder: z.number().nullable().optional(),
       createdAt: z.date().nullable().optional(),
       updatedAt: z.date().nullable().optional(),
@@ -24,6 +25,7 @@ const FinancialResponse = z.object({
       category: z.string(),
       amount: z.number(),
       notes: z.string().nullable().optional(),
+      evidenceUrl: z.string().nullable().optional(),
       sortOrder: z.number().nullable().optional(),
       createdAt: z.date().nullable().optional(),
       updatedAt: z.date().nullable().optional(),
@@ -134,6 +136,7 @@ export async function POST(request: NextRequest) {
         category: item.category,
         amount: item.amount,
         notes: item.notes ?? null,
+        evidenceUrl: item.evidenceUrl ?? null,
         sortOrder: item.sortOrder ?? null,
       })
       .returning();
@@ -180,6 +183,9 @@ export async function PUT(request: NextRequest) {
         ...(item.category !== undefined ? { category: item.category } : {}),
         ...(item.amount !== undefined ? { amount: item.amount } : {}),
         ...(item.notes !== undefined ? { notes: item.notes } : {}),
+        ...(item.evidenceUrl !== undefined
+          ? { evidenceUrl: item.evidenceUrl }
+          : {}),
         ...(item.sortOrder !== undefined ? { sortOrder: item.sortOrder } : {}),
       })
       .where(eq(table.id, id))
