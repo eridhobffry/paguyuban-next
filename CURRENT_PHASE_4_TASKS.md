@@ -75,6 +75,44 @@ Outcome
   - Table lists are constrained with `max-h-80` and scroll.
   - Removed obsolete `FinancialEditor` component and export.
 
+### Current Iteration: Task 2 — Speakers (Schema + Public GET)
+
+- Rationale: easiest next domain to mirror the Financial pattern; unblocks Artists with same shapes.
+- Scope (smallest step first):
+  - [x] Define table `speakers` (name, role, company, image_url, bio, tags, slug, twitter, linkedin, website, sort_order, timestamps).
+  - [x] Public GET endpoint `/api/speakers/public` (no auth; cached; ordered by `sort_order`).
+  - [x] Admin CRUD API under `/api/admin/speakers` (zod validation). Enforced `speakerType` enum: `summit` | `main_stage`.
+  - [ ] Admin UI list + detail dialog (read-only first), then create/edit with image field.
+- Acceptance (for this step):
+  - [x] Endpoint returns array of speakers; stable across refresh; cache headers present.
+
+Planned enrichments (Speakers):
+
+- Image handling: start with `image_url` as URL; then add upload flow with signed upload and stored URL.
+- Detail fields: `bio`, `tags`, `slug` for deep linking (`/speakers/[slug]`) and dialog view on homepage card click.
+- Admin: RHF + shadcn dialog for create/edit with validation, toasts, optimistic updates; search/sort by name/company.
+
+### Current Iteration: Task 3 — Artists (Schema + Public GET, richer fields)
+
+- Approved scope (richer now to avoid follow-up migration):
+  - [x] Define table `artists` (name, role/genre, company/label, image_url, bio, tags, slug, twitter, linkedin, website, sort_order, timestamps).
+  - [x] Public GET endpoint `/api/artists/public` (no auth; cached; ordered).
+  - [x] Admin CRUD API under `/api/admin/artists` (zod validation).
+  - [x] Admin UI list + detail dialog (dialog-first), then create/edit with image URL.
+  - [x] Seed endpoint `/api/admin/seed-people` to populate initial Artists and Speakers from existing arrays (idempotent).
+- Feature parity with Speakers:
+  - Upload/attach photo (Vercel Blob), rich description (`bio`, `highlights` via `tags`), socials.
+  - Clickable cards on homepage open detail dialog; optional dedicated route `/artists/[slug]` later.
+- Storage plan:
+  - Phase A (MVP): URL-based `image_url`.
+  - Phase B: Vercel Blob upload; store returned URL in DB.
+
+Dependencies & Notes
+
+- Keep Drizzle as source of truth for frontend types via `InferSelectModel`.
+- Ensure middleware keeps public endpoints open (no auth) for homepage fetches.
+- After CRUD is stable, wire homepage sections to fetch from the new public endpoints.
+
 ### UI Shell Migration (Planned)
 
 - After Financial CRUD + editor are stable, integrate shadcn dashboard block for a cohesive admin shell (sidebar, breadcrumbs, layout, theme consistency).
