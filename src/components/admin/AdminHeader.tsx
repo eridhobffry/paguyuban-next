@@ -25,6 +25,9 @@ export function AdminHeader() {
         </p>
       </div>
       <div className="flex gap-4">
+        <Button onClick={() => router.push("/admin")} variant="secondary">
+          Dashboard
+        </Button>
         <Button onClick={() => router.push("/")} variant="outline">
           View Site
         </Button>
