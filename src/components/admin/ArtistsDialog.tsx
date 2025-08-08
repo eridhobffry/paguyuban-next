@@ -189,15 +189,8 @@ export function ArtistsDialog({
             </div>
           </div>
           <div className="grid gap-1">
-            <Label>
-              Sort Order <span className="text-red-500">*</span>
-            </Label>
+            <Label>Sort Order</Label>
             <Input type="number" {...form.register("sortOrder")} />
-            {form.formState.errors.sortOrder && (
-              <p className="text-sm text-red-500 mt-1">
-                Sort order is required
-              </p>
-            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button

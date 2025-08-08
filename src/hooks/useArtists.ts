@@ -1,26 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-export interface Artist {
-  id: string;
-  name: string;
-  role?: string | null;
-  company?: string | null;
-  imageUrl?: string | null;
-  bio?: string | null;
-  tags?: string[] | null;
-  slug?: string | null;
-  instagram?: string | null;
-  youtube?: string | null;
-  twitter?: string | null;
-  linkedin?: string | null;
-  website?: string | null;
-  sortOrder?: number | null;
-}
+import type { Artist as DbArtist } from "@/types/people";
 
 export function useArtistsAdmin() {
-  const [artists, setArtists] = useState<Artist[]>([]);
+  const [artists, setArtists] = useState<DbArtist[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +23,7 @@ export function useArtistsAdmin() {
     }
   }, []);
 
-  const createArtist = useCallback(async (artist: Omit<Artist, "id">) => {
+  const createArtist = useCallback(async (artist: Omit<DbArtist, "id">) => {
     const res = await fetch("/api/admin/artists", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -47,11 +31,11 @@ export function useArtistsAdmin() {
     });
     if (!res.ok) throw new Error("Failed to create artist");
     const data = await res.json();
-    return data.artist as Artist;
+    return data.artist as DbArtist;
   }, []);
 
   const updateArtist = useCallback(
-    async (id: string, artist: Partial<Artist>) => {
+    async (id: string, artist: Partial<DbArtist>) => {
       const res = await fetch("/api/admin/artists", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -59,7 +43,7 @@ export function useArtistsAdmin() {
       });
       if (!res.ok) throw new Error("Failed to update artist");
       const data = await res.json();
-      return data.artist as Artist;
+      return data.artist as DbArtist;
     },
     []
   );
@@ -70,7 +54,7 @@ export function useArtistsAdmin() {
     });
     if (!res.ok) throw new Error("Failed to delete artist");
     const data = await res.json();
-    return data.artist as Artist;
+    return data.artist as DbArtist;
   }, []);
 
   useEffect(() => {
