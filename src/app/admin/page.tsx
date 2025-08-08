@@ -12,6 +12,7 @@ import {
   DocumentLibrary,
   EditDocumentModal,
   FinancialOverview,
+  FinancialCharts,
 } from "@/components/admin";
 import { Document } from "@/types/admin";
 
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
           </TabsList>
           <TabsContent value="financial" className="space-y-6">
             <FinancialOverview />
+            <FinancialCharts />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">

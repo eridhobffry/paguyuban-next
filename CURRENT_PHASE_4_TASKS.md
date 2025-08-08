@@ -56,6 +56,16 @@ Checklist
 - Implement `/api/admin/financial` GET to read both tables and return `{ revenues: [], costs: [] }`.
 - Add basic zod schemas for API responses.
 
+### Admin Routing Improvements (Planned)
+
+- Move from a single `/admin` route to nested routes for state persistence and deep links:
+  - `/admin/user`
+  - `/admin/financial`
+  - `/admin/financial/revenue`
+  - `/admin/artist/[id]`
+  - Similar patterns for speakers, agenda, sponsors, investment-opportunity, analytics
+- Benefits: refresh-safe tabs, direct links for detail views, easier future editing pages.
+
 ### Next Plan Session
 
 - Define admin Analytics tab scope (metrics, events, per-user chatbot logs, retention window).
@@ -68,3 +78,13 @@ Checklist
 - Multi-period/versioning: `fiscal_year` and `scenario` (enum: `draft`, `approved`) to support forecasting and versions.
 - Provenance & audit: `source` (text) and `updated_by` (user id).
 - Indexes: current `sort_order` index is enough; if periodization is added, consider composite `(fiscal_year, sort_order)`.
+
+### Decisions (History)
+
+- Dropped unused table `financial_categories` to prevent schema drift. If controlled categories are needed later, reintroduce with `fiscal_year`/`scenario` and foreign keys.
+
+### Evidence & External Sources (for AI Analysis)
+
+- Financial master sheet (restricted, do not fetch programmatically yet): `https://docs.google.com/spreadsheets/d/1bZFvjBk7AkfyMAIfUy5P0EjiqDgoFxa_oipObHjExv8/edit?usp=sharing`
+- Plan: Admin can attach files/links as evidence; Gemini API will summarize/validate and store structured insights (title, source, preview, pages, executive summary) alongside provenance.
+  - for financials docs in financial tabs, we can also anlyze or convert it as csv first then to JSON so we can use it as a source of truth for the financials and do deep analysis on it.
