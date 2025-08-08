@@ -4,15 +4,11 @@ import { useFinancial } from "@/hooks/useFinancial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Table,
   TableBody,
@@ -21,6 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FinancialItemBase } from "@/types/financial";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FinancialItemDialog } from "@/components/admin/FinancialItemDialog";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("de-DE", {
@@ -48,12 +53,38 @@ export function FinancialOverview() {
     null
   );
   const [modal, setModal] = useState<null | "add" | "edit" | "view">(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FinancialItemBase>({
     category: "",
     amount: 0,
     notes: "",
-    sortOrder: undefined as number | undefined,
+    evidenceUrl: "",
+    sortOrder: null,
   });
+  const ToolbarSchema = z.object({
+    query: z.string(),
+    limit: z.number(),
+  });
+  type ToolbarForm = z.infer<typeof ToolbarSchema>;
+  const revenueForm = useForm<ToolbarForm>({
+    resolver: zodResolver(ToolbarSchema),
+    defaultValues: { query: "", limit: 25 },
+  });
+  const costForm = useForm<ToolbarForm>({
+    resolver: zodResolver(ToolbarSchema),
+    defaultValues: { query: "", limit: 25 },
+  });
+  const revenueQuery = (
+    useWatch({ control: revenueForm.control, name: "query" }) ?? ""
+  ).toString();
+  const costQuery = (
+    useWatch({ control: costForm.control, name: "query" }) ?? ""
+  ).toString();
+  const revenueLimit = Number(
+    useWatch({ control: revenueForm.control, name: "limit" }) ?? 25
+  );
+  const costLimit = Number(
+    useWatch({ control: costForm.control, name: "limit" }) ?? 25
+  );
 
   return (
     <div className="space-y-6">
@@ -101,59 +132,107 @@ export function FinancialOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <CardTitle>Revenues</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setSelectedType("revenue");
-                  setForm({
-                    category: "",
-                    amount: 0,
-                    notes: "",
-                    sortOrder: undefined,
-                  });
-                  setModal("add");
-                }}
-              >
-                Add
-              </Button>
+              <div className="flex w-full items-center gap-2 md:w-auto">
+                <form
+                  className="flex w-full items-center gap-2"
+                  onSubmit={(e) => e.preventDefault()}
+                >
+                  <Input
+                    placeholder="Search..."
+                    className="w-full md:w-64"
+                    {...revenueForm.register("query")}
+                  />
+                  <Controller
+                    control={revenueForm.control}
+                    name="limit"
+                    render={({ field: { value, onChange } }) => (
+                      <Select
+                        value={String(value ?? 25)}
+                        onValueChange={(v) => onChange(Number(v))}
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Rows" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="0">All</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </form>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedType("revenue");
+                    setForm({
+                      category: "",
+                      amount: 0,
+                      notes: "",
+                      sortOrder: null,
+                      evidenceUrl: "",
+                    });
+                    setModal("add");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Selection table with actions */}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.revenues?.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    data-state={selectedId === r.id ? "selected" : undefined}
-                    onClick={() => {
-                      setSelectedId(r.id);
-                      setSelectedType("revenue");
-                      setForm({
-                        category: r.category,
-                        amount: r.amount,
-                        notes: r.notes ?? "",
-                        sortOrder: r.sortOrder ?? undefined,
-                      });
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <TableCell>{r.category}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(r.amount)}
-                    </TableCell>
+            <div className="mb-2 text-sm text-muted-foreground">
+              {data?.revenues?.length ?? 0} items
+            </div>
+            <div className="max-h-80 overflow-auto rounded-md border">
+              <Table id="revenue-table" className="min-w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data?.revenues
+                    ?.filter((r) =>
+                      (r.category + (r.notes ?? "") + (r.evidenceUrl ?? ""))
+                        .toLowerCase()
+                        .includes(revenueQuery.toLowerCase())
+                    )
+                    .slice(0, revenueLimit === 0 ? undefined : revenueLimit)
+                    .map((r) => (
+                      <TableRow
+                        key={r.id}
+                        data-state={
+                          selectedId === r.id ? "selected" : undefined
+                        }
+                        onClick={() => {
+                          setSelectedId(r.id);
+                          setSelectedType("revenue");
+                          setForm({
+                            category: r.category,
+                            amount: r.amount,
+                            notes: r.notes ?? "",
+                            evidenceUrl: r.evidenceUrl ?? "",
+                            sortOrder: r.sortOrder ?? null,
+                          });
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <TableCell>{r.category}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(r.amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
             <div className="mt-3 flex gap-2">
               <Button
                 size="sm"
@@ -188,58 +267,107 @@ export function FinancialOverview() {
         </Card>
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <CardTitle>Costs</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setSelectedType("cost");
-                  setForm({
-                    category: "",
-                    amount: 0,
-                    notes: "",
-                    sortOrder: undefined,
-                  });
-                  setModal("add");
-                }}
-              >
-                Add
-              </Button>
+              <div className="flex w-full items-center gap-2 md:w-auto">
+                <form
+                  className="flex w-full items-center gap-2"
+                  onSubmit={(e) => e.preventDefault()}
+                >
+                  <Input
+                    placeholder="Search..."
+                    className="w-full md:w-64"
+                    {...costForm.register("query")}
+                  />
+                  <Controller
+                    control={costForm.control}
+                    name="limit"
+                    render={({ field: { value, onChange } }) => (
+                      <Select
+                        value={String(value ?? 25)}
+                        onValueChange={(v) => onChange(Number(v))}
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Rows" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="0">All</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </form>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedType("cost");
+                    setForm({
+                      category: "",
+                      amount: 0,
+                      notes: "",
+                      sortOrder: null,
+                      evidenceUrl: "",
+                    });
+                    setModal("add");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.costs?.map((c) => (
-                  <TableRow
-                    key={c.id}
-                    data-state={selectedId === c.id ? "selected" : undefined}
-                    onClick={() => {
-                      setSelectedId(c.id);
-                      setSelectedType("cost");
-                      setForm({
-                        category: c.category,
-                        amount: c.amount,
-                        notes: c.notes ?? "",
-                        sortOrder: c.sortOrder ?? undefined,
-                      });
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <TableCell>{c.category}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(c.amount)}
-                    </TableCell>
+            <div className="mb-2 text-sm text-muted-foreground">
+              {data?.costs?.length ?? 0} items
+            </div>
+            <div className="max-h-80 overflow-auto rounded-md border">
+              <Table id="cost-table" className="min-w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data?.costs
+                    ?.filter((c) =>
+                      (c.category + (c.notes ?? "") + (c.evidenceUrl ?? ""))
+                        .toLowerCase()
+                        .includes(costQuery.toLowerCase())
+                    )
+                    .slice(0, costLimit === 0 ? undefined : costLimit)
+                    .map((c) => (
+                      <TableRow
+                        key={c.id}
+                        data-state={
+                          selectedId === c.id ? "selected" : undefined
+                        }
+                        onClick={() => {
+                          setSelectedId(c.id);
+                          setSelectedType("cost");
+                          setForm({
+                            category: c.category,
+                            amount: c.amount,
+                            notes: c.notes ?? "",
+                            evidenceUrl: c.evidenceUrl ?? "",
+                            sortOrder: c.sortOrder ?? null,
+                          });
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <TableCell>{c.category}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(c.amount)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
             <div className="mt-3 flex gap-2">
               <Button
                 size="sm"
@@ -274,83 +402,24 @@ export function FinancialOverview() {
         </Card>
       </div>
 
-      <Dialog open={modal !== null} onOpenChange={(o) => !o && setModal(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {modal === "add" ? "Add" : modal === "edit" ? "Edit" : "Details"}{" "}
-              {selectedType === "revenue" ? "Revenue" : "Cost"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Input
-              placeholder="Category"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              disabled={modal === "view"}
-            />
-            <Input
-              placeholder="Amount"
-              type="number"
-              value={form.amount}
-              onChange={(e) =>
-                setForm({ ...form, amount: Number(e.target.value) })
-              }
-              disabled={modal === "view"}
-            />
-            <Input
-              placeholder="Notes"
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              disabled={modal === "view"}
-            />
-            <Input
-              placeholder="Sort"
-              type="number"
-              value={form.sortOrder ?? ""}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  sortOrder: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                })
-              }
-              disabled={modal === "view"}
-            />
-          </div>
-          {modal !== "view" && (
-            <DialogFooter>
-              <Button
-                onClick={async () => {
-                  if (!selectedType) return;
-                  if (modal === "add") {
-                    await createItem(selectedType, {
-                      category: form.category,
-                      amount: form.amount,
-                      notes: form.notes ?? null,
-                      sortOrder: form.sortOrder ?? undefined,
-                    } as { category: string; amount: number; notes: string | null; sortOrder?: number | undefined });
-                  } else if (modal === "edit" && selectedId) {
-                    await updateItem(selectedType, selectedId, {
-                      category: form.category,
-                      amount: form.amount,
-                      notes: form.notes ?? null,
-                      sortOrder: form.sortOrder ?? undefined,
-                    });
-                  }
-                  setModal(null);
-                }}
-              >
-                Save
-              </Button>
-              <Button variant="secondary" onClick={() => setModal(null)}>
-                Cancel
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
+      <FinancialItemDialog
+        open={modal !== null}
+        mode={modal ?? "view"}
+        type={selectedType ?? "revenue"}
+        defaultValues={form}
+        onOpenChange={(o: boolean) => {
+          if (!o) setModal(null);
+        }}
+        onSave={async (values: FinancialItemBase) => {
+          if (!selectedType) return;
+          if (modal === "add") {
+            await createItem(selectedType, values);
+          } else if (modal === "edit" && selectedId) {
+            await updateItem(selectedType, selectedId, values);
+          }
+          setModal(null);
+        }}
+      />
     </div>
   );
 }

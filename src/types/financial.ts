@@ -14,5 +14,5 @@ export interface FinancialResponseDto {
 // Shared upsert payload for both revenue and cost items
 export type FinancialItemBase = Pick<
   FinancialRevenueItem,
-  "category" | "amount" | "notes" | "sortOrder"
+  "category" | "amount" | "notes" | "sortOrder" | "evidenceUrl"
 >;

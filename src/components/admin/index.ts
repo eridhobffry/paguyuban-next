@@ -7,4 +7,3 @@ export { DocumentLibrary } from "./DocumentLibrary";
 export { EditDocumentModal } from "./EditDocumentModal";
 export { FinancialOverview } from "./FinancialOverview";
 export { FinancialCharts } from "./FinancialCharts";
-export { FinancialEditor } from "./FinancialEditor";
