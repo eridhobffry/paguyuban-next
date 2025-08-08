@@ -11,12 +11,12 @@ import {
   DocumentUpload,
   DocumentLibrary,
   EditDocumentModal,
-  FinancialOverview,
-  FinancialCharts,
 } from "@/components/admin";
 import { Document } from "@/types/admin";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const {
     accessRequests,
     users,
@@ -45,12 +45,17 @@ export default function AdminDashboard() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="documents">Document Management</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
+            <TabsTrigger
+              value="financial"
+              onClick={(e) => {
+                e.preventDefault();
+                router.push("/admin/financial");
+              }}
+            >
+              Financial
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="financial" className="space-y-6">
-            <FinancialOverview />
-            <FinancialCharts />
-          </TabsContent>
+          {/* Intentionally omit <TabsContent value="financial"> to avoid jitter; clicking navigates to /admin/financial */}
 
           <TabsContent value="users" className="space-y-6">
             <PendingRequests

@@ -66,6 +66,13 @@ Checklist
   - Similar patterns for speakers, agenda, sponsors, investment-opportunity, analytics
 - Benefits: refresh-safe tabs, direct links for detail views, easier future editing pages.
 
+Next steps for routing:
+
+- [x] Create `/admin/financial` page and redirect Financial tab via onClick (no useEffect) to avoid jitter
+- [ ] Add `/admin/user` page and route User Management there
+- [ ] Add `/admin/documents` page and route Document Management there
+- [ ] Plan `/admin/financial/revenue` detail page scaffolding (read-only first)
+
 ### Next Plan Session
 
 - Define admin Analytics tab scope (metrics, events, per-user chatbot logs, retention window).
