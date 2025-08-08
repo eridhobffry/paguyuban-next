@@ -16,7 +16,8 @@ import {
   DollarSign,
   Target,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { FinancialResponseDto } from "@/types/financial";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number) => {
@@ -29,108 +30,18 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const revenueBreakdown = [
-  {
-    category: "Sponsorships",
-    amount: 790000,
-    percentage: 78,
-    color: "#10b981",
-    description: "Primary funding from strategic partners",
-    details: [
-      "Title Sponsor: €120,000 × 1",
-      "Platinum: €60,000 × 3",
-      "Gold: €40,000 × 4",
-      "Silver: €25,000 × 6",
-      "Bronze: €15,000 × 8",
-    ],
-  },
-  {
-    category: "Ticket Sales",
-    amount: 104660,
-    percentage: 10,
-    color: "#8b5cf6",
-    description: "Registration fees from attendees",
-    details: [
-      "2-Day Pass Standard: €70 × 400",
-      "Day 1 Standard: €45 × 400",
-      "Day 2 Standard: €40 × 280",
-      "Student Discounts: 30% off",
-      "VIP Packages: €120 × 100",
-      "Techno Night Tickets: €20 × 800",
-    ],
-  },
-  {
-    category: "Exhibitor Fees",
-    amount: 66000,
-    percentage: 6,
-    color: "#3b82f6",
-    description: "Exhibition booth rentals",
-    details: [
-      "Standard Booths (3×3m): €2,400 × 15",
-      "Premium Booths (4×4m): €3,000 × 10",
-      "25-30 total exhibition spaces",
-      "Includes setup and basic utilities",
-    ],
-  },
-  {
-    category: "Additional Revenue",
-    amount: 58000,
-    percentage: 6,
-    color: "#f59e0b",
-    description: "Merchandise, streaming, workshops",
-    details: [
-      "Merchandise: €8,000",
-      "Streaming Passes: €25,000 × 1,000",
-      "Food & Beverage (pre-paid tokens): €18,000",
-      "Workshop Tickets: €5,000",
-      "Commission on Sales: €2,000",
-    ],
-  },
-];
-
-const majorCosts = [
-  {
-    category: "Venue & Operations",
-    amount: 235920,
-    percentage: 25,
-    color: "#ef4444",
-    description: "Arena Berlin rental, utilities, technical setup",
-  },
-  {
-    category: "Marketing & Media",
-    amount: 168000,
-    percentage: 18,
-    color: "#8b5cf6",
-    description: "Digital campaigns, influencers, PR, content creation",
-  },
-  {
-    category: "Artists & Entertainment",
-    amount: 156654,
-    percentage: 16,
-    color: "#f59e0b",
-    description: "Dewa 19, Tulus, ERK, Panturas, DJs, technical riders",
-  },
-  {
-    category: "Staffing & Management",
-    amount: 158000,
-    percentage: 17,
-    color: "#3b82f6",
-    description: "Core team, event agency, freelancers, volunteers",
-  },
-  {
-    category: "Operations & Logistics",
-    amount: 132000,
-    percentage: 14,
-    color: "#6b7280",
-    description: "Insurance, catering, equipment, permits, logistics",
-  },
-  {
-    category: "Technology & Speakers",
-    amount: 102900,
-    percentage: 10,
-    color: "#10b981",
-    description: "App development, AI platform, speaker fees & travel",
-  },
+// Color palette for generated series
+const SERIES_COLORS = [
+  "#10b981",
+  "#8b5cf6",
+  "#3b82f6",
+  "#f59e0b",
+  "#ef4444",
+  "#06b6d4",
+  "#84cc16",
+  "#f97316",
+  "#14b8a6",
+  "#22c55e",
 ];
 
 const sponsorBenefits = [
@@ -187,12 +98,81 @@ const sponsorBenefits = [
 const FinancialTransparencySection = () => {
   const [activeTab, setActiveTab] = useState("revenue");
   const [selectedRevenue, setSelectedRevenue] = useState(0);
+  const [dbData, setDbData] = useState<FinancialResponseDto | null>(null);
 
-  const totalRevenue = revenueBreakdown.reduce(
-    (sum, item) => sum + item.amount,
-    0
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/financial/public", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const json = (await res.json()) as FinancialResponseDto;
+          if (!cancelled) setDbData(json);
+        }
+      } catch {
+        // ignore: fall back to static placeholders below
+      } finally {
+      }
+    }
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const revenueItems = useMemo(() => dbData?.revenues ?? [], [dbData]);
+  const costItems = useMemo(() => dbData?.costs ?? [], [dbData]);
+
+  const totalRevenue = useMemo(
+    () => revenueItems.reduce((sum, item) => sum + (item.amount || 0), 0),
+    [revenueItems]
   );
-  const totalCosts = majorCosts.reduce((sum, item) => sum + item.amount, 0);
+  const totalCosts = useMemo(
+    () => costItems.reduce((sum, item) => sum + (item.amount || 0), 0),
+    [costItems]
+  );
+
+  const revenueBreakdown = useMemo(() => {
+    if (!revenueItems.length || totalRevenue === 0)
+      return [] as Array<{
+        category: string;
+        amount: number;
+        percentage: number;
+        color: string;
+        description: string;
+        details: string[];
+      }>;
+    return revenueItems.map((item, index) => ({
+      category: item.category,
+      amount: item.amount,
+      percentage: Math.round((item.amount / totalRevenue) * 100),
+      color: SERIES_COLORS[index % SERIES_COLORS.length],
+      description: "",
+      details: [],
+    }));
+  }, [revenueItems, totalRevenue]);
+
+  const majorCosts = useMemo(() => {
+    if (!costItems.length || totalCosts === 0)
+      return [] as Array<{
+        category: string;
+        amount: number;
+        percentage: number;
+        color: string;
+        description: string;
+      }>;
+    return costItems.map((item, index) => ({
+      category: item.category,
+      amount: item.amount,
+      percentage: Math.round((item.amount / totalCosts) * 100),
+      color: SERIES_COLORS[index % SERIES_COLORS.length],
+      description: "",
+    }));
+  }, [costItems, totalCosts]);
+
   const netResult = totalRevenue - totalCosts;
   const isProfit = netResult > 0;
 
@@ -367,44 +347,39 @@ const FinancialTransparencySection = () => {
               </div>
             </div>
 
-            {/* Revenue Details */}
+            {/* Revenue Details: list all categories */}
             <div>
               <div className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-3xl p-8 border border-white/10">
                 <h4 className="text-xl font-bold text-white mb-6 flex items-center">
                   <ArrowRight className="w-5 h-5 mr-3 text-green-400" />
-                  {revenueBreakdown[selectedRevenue].category} Details
+                  Categories
                 </h4>
 
-                <p className="text-gray-300 mb-6">
-                  {revenueBreakdown[selectedRevenue].description}
-                </p>
-
-                <div className="space-y-3 mb-8">
-                  {revenueBreakdown[selectedRevenue].details.map(
-                    (detail, index) => (
-                      <div key={index} className="flex items-center">
-                        <CheckCircle className="w-4 h-4 text-green-400 mr-3 flex-shrink-0" />
-                        <span className="text-gray-300 text-sm">{detail}</span>
+                <div className="space-y-3">
+                  {revenueBreakdown.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-white/90 font-medium">
+                          {item.category}
+                        </span>
                       </div>
-                    )
-                  )}
-                </div>
-
-                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-green-400 font-bold">
-                        Category Total
-                      </div>
-                      <div className="text-gray-300 text-sm">
-                        {revenueBreakdown[selectedRevenue].percentage}% of
-                        revenue
+                      <div className="text-right">
+                        <div className="text-white font-semibold">
+                          {formatCurrency(item.amount)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {item.percentage}% of revenue
+                        </div>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold text-green-400">
-                      {formatCurrency(revenueBreakdown[selectedRevenue].amount)}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>

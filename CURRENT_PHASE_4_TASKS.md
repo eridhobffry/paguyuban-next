@@ -147,6 +147,13 @@ Order of execution:
 
 1. Revenue detail UI → 2. Cost detail UI → 3. CRUD buttons → 4. Deep links → 5. URL state → 6. Optional GET-by-id.
 
+### Public Site Alignment — Financial Section
+
+- [x] Add public financial endpoint under `/api/financial/public` (no auth; cached).
+- [x] Wire `FinancialTransparencySection` on the homepage to fetch revenues/costs from DB and compute percentages.
+- [ ] QA: Verify homepage totals equal admin totals and charts update after mutations.
+- [ ] Optional: add ISR/revalidate on homepage or client-side refresh listener for live updates.
+
 ### Financial Reports & Excel Ingestion (Planned)
 
 - Export reports (small wins first)
