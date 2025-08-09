@@ -1,252 +1,252 @@
-## Phase 4: Content Management Dashboard — Incremental Plan (Neon-aligned)
+## Phase 4: Content Management Dashboard (Neon + Drizzle)
 
-This file tracks small, verifiable steps to implement Phase 4. We will proceed in tiny iterations: plan → implement one smallest task → test → ask to commit → repeat.
+Small, verifiable iterations: plan → implement the smallest step → test → commit → repeat. Keep public pages stable while progressively moving content to Neon-backed APIs.
 
 ### Goals
 
-- Move hardcoded content (financial, speakers, agenda, sponsors, investment opportunities, artists, executive documents) into Neon DB.
-- Provide secure Admin CRUD APIs and UI with validation (Zod, React Hook Form, shadcn UI).
-- Keep existing public pages stable; progressively switch reads to API-backed data.
+- Move hardcoded content (financial, speakers, artists, agenda, sponsors, investment opportunities, executive documents) into Neon.
+- Provide secure admin CRUD APIs and UI with Zod/RHF/shadcn; keep Drizzle as single source of truth for types.
+- Switch public reads to API gradually after each domain’s admin CRUD is stable.
 
-### Architecture Breakdown
+### Status Snapshot
 
-- Database (Neon): normalized tables per domain with simple columns first; add optional metadata later.
-- Backend (Next.js API routes): admin-protected CRUD endpoints under `/api/admin/*`, using `zod` request validation and `src/lib/db.ts` Pool.
-- Frontend Admin: extend `/admin` with tabs and forms per domain; wire to APIs; optimistic UI with toasts; live recompute totals for financials.
+- **Done**
+  - Financial: Neon tables live; seeded and verified. Admin overview + charts. CRUD API with `evidence_url`. Public endpoint wired to homepage.
+  - Routing: `/admin/financial`, `/admin/user`, `/admin/documents`, and read-only detail pages for revenue and cost; overview “View” links to details.
+  - Speakers: table + public GET + admin CRUD API.
+  - Artists: table + public GET + admin CRUD API + admin list/detail dialog; seed endpoint; unified Drizzle types and shared zod schemas.
+- **In Progress**
+  - Financial detail pages: enrich UI with full fields, sorting/search, CRUD actions, deep links, and URL state.
+- **Next**
+  - Public financial QA: verify homepage totals match admin and charts update after mutations; optional ISR/client refresh.
+  - Speakers admin UI: list + detail dialog (read-only first), then create/edit with image.
+  - URL state: persist search/sort and selection without full navigation.
+- **Later (Roadmap)**
+  - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
+  - Admin UI shell migration to shadcn dashboard block.
+  - Analytics: schema, admin GET, and basic charts.
 
-### Iteration Map (Small Wins)
+### Architecture
 
-1. Financial (DB-only) — create tables, verify.
-2. Financial (read API) — GET revenues/costs.
-3. Financial (CRUD API) — seed + POST/PUT/DELETE with zod.
-4. Financial (admin UI) — read-only overview + charts, then editor.
-5. Admin routing — nested pages for tabs.
-6. Speakers (schema + GET) — then CRUD + UI.
-7. Agenda (schema + GET) — then CRUD + UI.
-8. Sponsors (schema + GET) — then CRUD + UI.
-9. Investment Opportunities (schema + GET) — then CRUD + UI.
-10. Artists (schema + GET) — then CRUD + UI.
-11. Executive Documentation (schema align) — reuse docs infra, add fields if needed.
-12. Analytics (schema + GET) — track user behavior and chatbot interactions per logged-in user; then CRUD + UI tab.
+- **Database (Neon)**: normalized tables; start simple; add metadata later.
+- **Backend (Next.js)**: admin-protected CRUD under `/api/admin/*` with `zod` validation, DB via `src/lib/db.ts`.
+- **Frontend (Admin)**: `/admin`-scoped pages; RHF + shadcn; optimistic UI with toasts; live recompute for financials.
 
-We will only move the public site to DB-backed reads after each domain’s admin CRUD proves stable.
+---
 
-### Current Iteration: Task 1 — Create Financial Tables (DB only)
+## Workstreams
 
-- Create two Neon tables: `financial_revenue_items`, `financial_cost_items` (id, category, amount, notes, sort_order, timestamps).
-- Verify on a temporary Neon branch.
-- Ask approval to commit migration to main.
+### Financial
 
-Checklist
+- **Current**
 
-- [x] Migration prepared on temp branch
-- [x] Tables verified on temp branch
-- [x] Seeded real financial data on temp branch
-- [x] Approval received to commit
-- [x] Commit migration to main
-- [x] Document outcome here
+  - Tables: `financial_revenue_items`, `financial_cost_items` live and seeded; UUID via `gen_random_uuid()`.
+  - Admin: overview + charts (donut/bar); selection-based editor with dialogs and `evidence_url` field; search + page length controls; scrollable tables.
+  - Routing: `/admin/financial` plus read-only detail pages for revenue and cost; overview actions link to details.
+  - Public: `/api/financial/public` wired to `FinancialTransparencySection`.
+  - Cleanup: dropped `financial_categories` to prevent drift.
 
-Outcome
+- **Next (Prioritized)**
 
-- Tables live on main (`financial_revenue_items`, `financial_cost_items`).
-- Seeded with real figures; totals verified (Revenue €1,018,660; Costs €953,474).
-- Dropped unused `financial_categories` to prevent drift.
+  1. Revenue detail UI
 
-### Risks & Mitigations (for this iteration)
+  - [ ] Item panel shows `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
+  - [ ] Sorting by `category`, `amount`, `sort_order`; search persisted via query param.
+  - [ ] Row actions: Edit, Delete; top-level Add.
 
-- Accidental schema complexity → Keep columns minimal; add indexes/constraints later.
-- Extension availability for UUID → Use `gen_random_uuid()` consistent with existing `documents` table.
-- Backward compatibility → No public UI code change in this step.
-
-### Completed After Task 1
-
-- `/api/admin/financial` GET with zod-validated response.
-- Admin Financial read-only overview + shadcn charts (donut + bar) with themed tooltips/legends.
-- Nested route `/admin/financial` with direct navigation from `/admin`.
-
-### Next Up (smallest steps)
-
-- [x] Admin routing: add `/admin/user` and `/admin/documents` pages; wire tabs to navigate (no jitter).
-- [x] Financial CRUD API: add POST/PUT/DELETE under `/api/admin/financial` (minimal zod validation).
-- [x] Financial editor UI: selection-based CRUD with dialogs; optimistic updates.
-- [x] Evidence field: add explicit `evidence_url` on items and surface in UI; allow multiple links later.
-  - Implemented in `FinancialItemDialog` with RHF validation; surfaced in `FinancialOverview` dialog and search.
-  - Header controls now include search and page length (10/25/50/100/All) via RHF Select.
-  - Table lists are constrained with `max-h-80` and scroll.
-  - Removed obsolete `FinancialEditor` component and export.
-
-### Current Iteration: Task 2 — Speakers (Schema + Public GET)
-
-- Rationale: easiest next domain to mirror the Financial pattern; unblocks Artists with same shapes.
-- Scope (smallest step first):
-  - [x] Define table `speakers` (name, role, company, image_url, bio, tags, slug, twitter, linkedin, website, sort_order, timestamps).
-  - [x] Public GET endpoint `/api/speakers/public` (no auth; cached; ordered by `sort_order`).
-  - [x] Admin CRUD API under `/api/admin/speakers` (zod validation). Enforced `speakerType` enum: `summit` | `main_stage`.
-  - [ ] Admin UI list + detail dialog (read-only first), then create/edit with image field.
-- Acceptance (for this step):
-  - [x] Endpoint returns array of speakers; stable across refresh; cache headers present.
-  - [x] Homepage speakers area fetches from `/api/speakers/public`.
-
-Planned enrichments (Speakers):
-
-- Image handling: start with `image_url` as URL; then add upload flow with signed upload and stored URL.
-- Detail fields: `bio`, `tags`, `slug` for deep linking (`/speakers/[slug]`) and dialog view on homepage card click.
-- Admin: RHF + shadcn dialog for create/edit with validation, toasts, optimistic updates; search/sort by name/company.
-
-### Current Iteration: Task 3 — Artists (Schema + Public GET, richer fields)
-
-- Approved scope (richer now to avoid follow-up migration):
-  - [x] Define table `artists` (name, role/genre, company/label, image_url, bio, tags, slug, twitter, linkedin, website, sort_order, timestamps).
-  - [x] Public GET endpoint `/api/artists/public` (no auth; cached; ordered).
-  - [x] Admin CRUD API under `/api/admin/artists` (zod validation).
-  - [x] Admin UI list + detail dialog (dialog-first), then create/edit with image URL.
-  - [x] Seed endpoint `/api/admin/seed-people` to populate initial Artists and Speakers from existing arrays (idempotent).
-  - [x] Homepage artists area fetches from `/api/artists/public`.
-  - [x] Unified types: DB-mirrored types via Drizzle (`src/types/people.ts`) and shared zod schemas (`src/types/validation.ts`).
-- Feature parity with Speakers:
-  - Upload/attach photo (Vercel Blob), rich description (`bio`, `highlights` via `tags`), socials.
-  - Clickable cards on homepage open detail dialog; optional dedicated route `/artists/[slug]` later.
-- Storage plan:
-  - Phase A (MVP): URL-based `image_url`.
-  - Phase B: Vercel Blob upload; store returned URL in DB.
-
-Dependencies & Notes
-
-- Keep Drizzle as source of truth for frontend types via `InferSelectModel`.
-- Ensure middleware keeps public endpoints open (no auth) for homepage fetches.
-- After CRUD is stable, wire homepage sections to fetch from the new public endpoints.
-
-### UI Shell Migration (Planned)
-
-- After Financial CRUD + editor are stable, integrate shadcn dashboard block for a cohesive admin shell (sidebar, breadcrumbs, layout, theme consistency).
-
-### Admin Routing Improvements (Planned)
-
-- Move from a single `/admin` route to nested routes for state persistence and deep links:
-  - `/admin/user`
-  - `/admin/financial`
-  - `/admin/financial/revenue`
-  - `/admin/artist/[id]`
-  - Similar patterns for speakers, agenda, sponsors, investment-opportunity, analytics
-- Benefits: refresh-safe tabs, direct links for detail views, easier future editing pages.
-
-Next steps for routing:
-
-- [x] Create `/admin/financial` page and redirect Financial tab via onClick (no useEffect) to avoid jitter
-- [x] Add `/admin/user` page and route User Management there
-- [x] Add `/admin/documents` page and route Document Management there
-- [x] Plan `/admin/financial/revenue` detail page scaffolding (read-only first)
-  - [x] Implement `/admin/financial/revenue` detail page (read-only)
-  - [x] Implement `/admin/financial/cost` detail page (read-only)
-  - [x] Link "View" actions from overview to detail pages
-
-### Next Up — Financial Detail Pages & CRUD
-
-Small, incremental steps to enrich revenue and cost detail pages with full details and CRUD:
-
-1. Revenue detail: UI enhancements
-
-- [ ] Item panel showing full fields: `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
-- [ ] Sorting by `category`, `amount`, `sort_order` and persistent search via query param.
-- [ ] Row actions: Edit, Delete. Top-level Add button.
 - [ ] Deep links: `/admin/financial/revenue/[id]` opens selected item.
-- Acceptance:
-  - [ ] Evidence link opens in new tab.
-  - [ ] Totals recompute and charts update after mutations.
-  - [ ] Back/forward keep search/sort and selection.
 
-2. Cost detail: mirror revenue
+  - Acceptance: evidence opens in new tab; totals/charts recompute after mutations; browser nav keeps state.
 
-- [ ] Same UI capabilities as revenue detail.
-- [ ] Deep links: `/admin/financial/cost/[id]`.
-- Acceptance:
-  - [ ] Same as revenue acceptance.
+  2. Cost detail UI (mirror revenue)
 
-3. CRUD wiring (reuse existing API and dialog)
+  - [ ] Same capabilities; deep link `/admin/financial/cost/[id]`.
 
-- [ ] Reuse `FinancialItemDialog` for add/edit on detail pages (pre-filled on edit).
-- [ ] Toasts for success/error; optimistic update where safe; fallback to refresh.
-- [ ] Keep Drizzle-derived types as the single source of truth for frontend types.
+  3. CRUD wiring
+
+  - [ ] Reuse `FinancialItemDialog` for add/edit (pre-filled on edit).
+  - [ ] Toasts + optimistic update where safe; fallback to refresh.
+  - [ ] Keep Drizzle-derived types the single source of truth.
 
 4. Backend readiness
 
 - [x] Ensure GET/POST/PUT include `evidenceUrl`.
-- [ ] Optional: add GET-by-id endpoint (`/api/admin/financial/item?id=...&itemType=...`) for future SSR/server components.
+  - [ ] Optional: GET-by-id endpoint `/api/admin/financial/item?id=...&itemType=...`.
 
 5. Routing & state
 
-- [ ] Persist search and sort in the URL query (restores on reload/navigation).
-- [ ] Selecting a row updates the URL without full-page navigation.
+- [ ] Persist search/sort to URL; selecting a row updates URL without full-page nav.
 
 6. QA
 
-- [ ] Numbers are consistent across overview, detail pages, and charts.
-- [ ] Access control enforced both in middleware and API routes.
-- [ ] Mobile layout remains usable (horizontal table scroll, readable panel).
+- [ ] Numbers consistent across overview, detail pages, and charts.
+- [ ] Access control enforced in middleware and APIs.
+- [ ] Mobile layout usable (horizontal scroll, readable panel).
 
-Order of execution:
+- **Public Alignment**
+  - [x] Endpoint exists and homepage wired.
+  - [ ] QA totals vs admin; ensure charts update after mutations.
+  - [ ] Optional ISR/revalidate or client refresh listener.
 
-1. Revenue detail UI → 2. Cost detail UI → 3. CRUD buttons → 4. Deep links → 5. URL state → 6. Optional GET-by-id.
+### Speakers
 
-### Public Site Alignment — Financial Section
+- **Current**
 
-- [x] Add public financial endpoint under `/api/financial/public` (no auth; cached).
-- [x] Wire `FinancialTransparencySection` on the homepage to fetch revenues/costs from DB and compute percentages.
-- [ ] QA: Verify homepage totals equal admin totals and charts update after mutations.
-- [ ] Optional: add ISR/revalidate on homepage or client-side refresh listener for live updates.
+  - Table, public GET `/api/speakers/public` (ordered, cached), admin CRUD API with `speakerType` enum.
 
-### Financial Reports & Excel Ingestion (Planned)
+- **Next**
+  - [ ] Admin UI list + detail dialog (read-only first), then create/edit with image field.
+  - Planned enrichments: image upload (signed URL), richer `bio/tags/slug` for deep links (`/speakers/[slug]`), homepage dialog on card click; RHF + shadcn + toasts; search/sort by name/company.
 
-- Export reports (small wins first)
+### Artists
 
-  - [ ] CSV export of filtered/sorted financial items from the admin UI (revenue, costs) with totals.
-  - [ ] XLSX export with separate sheets: `Revenue`, `Costs`, and `Summary` (totals and pivots by category).
-  - [ ] Backend endpoint under `/api/admin/financial/export` with zod-validated params; streaming response for large datasets.
-  - Acceptance: exported numbers equal on-screen totals; file opens in Google Sheets/Excel without warnings.
+- **Current**
 
-- Excel upload and alignment
+  - Table, public GET, admin CRUD API, admin list + detail dialog, seed endpoint, homepage wired, unified types via Drizzle (`InferSelectModel`) and shared zod schemas.
 
-  - [ ] Downloadable `.xlsx` template with required columns: `category`, `amount`, `notes`, `evidence_url`, `sort_order`.
-  - [ ] Admin upload flow: parse server-side, validate schema, and show preview with differences vs current DB.
-  - [ ] Initial import writes to staging tables via Drizzle (`financial_revenue_items_staging`, `financial_cost_items_staging`), then "Promote" upserts into main tables.
-  - [ ] Keep original file as evidence and link to imported items; store normalized CSV snapshot for provenance.
-  - Acceptance: uploading a valid template shows a preview, totals recompute, and promoting reflects in dashboard immediately.
+- **Next**
+  - Feature parity with Speakers enrichments.
+  - Storage plan: Phase A `image_url` (URL-based); Phase B Vercel Blob upload and store URL.
 
-- Gemini-assisted analysis (advisory)
+### Executive Documents
 
-  - [ ] After upload, send sanitized CSV to Gemini to summarize trends, outliers, and possible misclassifications.
-  - [ ] Persist analysis JSON with provenance (model, timestamp, source file) and surface it in an "AI Insights" panel in `/admin/financial`.
-  - [ ] Cache/rehydrate previous analyses for identical inputs; never auto-apply AI changes.
-  - Acceptance: insights load within target SLA (≤5s cached, ≤20s first-run) and include clear caveats/provenance.
+- **Current**
 
-- Iteration order
+  - Admin API `/api/admin/documents` supports file upload, URL analysis, and manual entry. Uses Gemini to generate `title`, `description`, `preview`, `pages`, `type`, `icon`, and `suggestedRestricted`. Fields stored include `file_url` or `external_url`, `restricted`, and `ai_generated`.
+  - Public API `/api/documents/public` returns transformed documents for the site.
+  - Admin UI includes upload tabs and library with view/edit/delete.
 
-  1. CSV export → 2) XLSX export → 3) Template + upload parse/preview → 4) Staging import → 5) Promote to main → 6) Gemini insights.
+- **Next (Prioritized)**
 
-- Risks & mitigations
-  - Excel quirks (locale, formulas, merged cells) → restrict to first sheet, typed columns, and numeric validation.
-  - Row identity for upsert → start with manual confirm/replace; introduce stable keys later if needed.
+  - [ ] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
+  - [ ] Ensure public endpoint filters to non-restricted only and is cached appropriately.
+  - [ ] Open links (file or external) in new tab from admin and public views.
+  - [ ] Optional: persist `marketingHighlights` as JSON for richer UI summaries.
+  - [ ] Storage: move file uploads to Vercel Blob; store returned URL in DB; keep `external_url` path supported.
+
+- **Acceptance**
+  - Admin can upload or link a document; Gemini summary saved (title, description, preview, pages); link opens; access control respected.
+  - Types are Drizzle-derived and shared across BE/FE.
+
+### Admin Routing
+
+- **Current**
+
+  - Nested pages: `/admin/financial`, `/admin/user`, `/admin/documents`, `/admin/financial/revenue`, `/admin/financial/cost`; overview links to details; no jitter on tab nav.
+
+- **Next**
+  - Deep links for selected financial items; persist search/sort/selection in URL; mirror patterns for speakers/artists later.
+
+### UI Shell Migration (Later)
+
+- Integrate shadcn dashboard layout (sidebar, breadcrumbs, layout, theme consistency) after financial CRUD is stable.
+
+---
+
+## Reports, Excel Ingestion, and Insights (Roadmap)
+
+### Exports
+
+- [ ] CSV export of filtered/sorted financial items with totals.
+- [ ] XLSX export with sheets: `Revenue`, `Costs`, `Summary` (totals + pivots by category).
+- [ ] Backend export endpoint with validated params; streaming for large datasets.
+- Acceptance: exported numbers match on-screen totals; opens in Sheets/Excel without warnings.
+
+### Excel Upload & Alignment
+
+- [ ] Downloadable `.xlsx` template with `category, amount, notes, evidence_url, sort_order`.
+- [ ] Admin upload → server parse → validate → preview differences.
+- [ ] Staging tables (`financial_revenue_items_staging`, `financial_cost_items_staging`) then "Promote" upserts to main.
+- [ ] Keep original file as evidence; store normalized CSV snapshot for provenance.
+- Acceptance: preview shows totals; promoting updates dashboard immediately.
+
+### Gemini-Assisted Analysis (Advisory)
+
+- [ ] Summarize trends/outliers/misclassifications on sanitized CSV.
+- [ ] Persist analysis JSON with provenance; show in "AI Insights" panel in `/admin/financial`.
+- [ ] Cache/rehydrate for identical inputs; never auto-apply.
+- Acceptance: SLA ≤5s cached, ≤20s first-run; include caveats/provenance.
+
+### Risks & Mitigations
+
+- Excel quirks (locale, formulas, merged cells) → restrict to first sheet, typed columns, numeric validation.
+- Row identity for upsert → start with manual confirm/replace; add stable keys later if needed.
   - Dataset size → stream exports and paginate previews.
 
-### Next Plan Session
+---
 
-- Define admin Analytics tab scope (metrics, events, per-user chatbot logs, retention window).
-- Draft minimal analytics schema (events, user_id, route, action, metadata, created_at) and chatbot logs (user_id, message, role, tokens, created_at).
-- Sequence: analytics schema → GET (admin) → basic charts UI → progressive enrichment.
+## Analytics (Planning)
 
-### Future Schema Enhancements (Optional, Non-Blocking)
+- **Goal**: 360° insight into user behavior to drive personalized UX while respecting privacy.
 
-- Optional presentational fields: `color`, `percentage` for server-side control.
-- Multi-period/versioning: `fiscal_year` and `scenario` (enum: `draft`, `approved`) to support forecasting and versions.
-- Provenance & audit: `source` (text) and `updated_by` (user id).
-- Indexes: current `sort_order` index is enough; if periodization is added, consider composite `(fiscal_year, sort_order)`.
+- **What to capture**
 
-### Decisions (History)
+  - Page & session: `page_view`, `session_start/end`, referrer, UTM, device, country, viewport.
+  - Engagement by section: `section_visible` (IntersectionObserver), dwell_ms, scroll_depth, exit_position.
+  - Interaction: `click` (sanitized selector/role/text), `form_submit`, `video_play`, `dialog_open`.
+  - Heartbeat & dwell: activity heartbeat (e.g., 15s) paused on idle/blur.
+  - Chat: `chat_message` (role, tokens, latency), `chat_summary` per session (topics, intents, sentiment).
+  - Derived: `engagement_score`, `top_sections`, `predicted_next_action` (heuristics first).
 
-- Dropped unused table `financial_categories` to prevent schema drift. If controlled categories are needed later, reintroduce with `fiscal_year`/`scenario` and foreign keys.
+- **Schema (Drizzle + Neon)**
 
-### Evidence & External Sources (for AI Analysis)
+  - [ ] `analytics_sessions`: id, user_id?, started_at, ended_at, route_first, referrer, utm, device, country, engagement_score.
+  - [ ] `analytics_events`: id, session_id, user_id?, route, type, section?, element?, metadata JSON, created_at.
+  - [ ] `analytics_section_durations`: id, session_id, section, dwell_ms, created_at.
+  - [ ] `chatbot_logs`: id, session_id, user_id?, role, message, tokens, created_at.
+  - [ ] `chatbot_summaries`: id, session_id, summary, topics JSON, sentiment, created_at.
 
-- Financial master sheet (restricted, do not fetch programmatically yet): `https://docs.google.com/spreadsheets/d/1bZFvjBk7AkfyMAIfUy5P0EjiqDgoFxa_oipObHjExv8/edit?usp=sharing`
-- Plan: Admin can attach files/links as evidence; Gemini API will summarize/validate and store structured insights (title, source, preview, pages, executive summary) alongside provenance.
-  - for financials docs in financial tabs, we can also anlyze or convert it as csv first then to JSON so we can use it as a source of truth for the financials and do deep analysis on it.
+- **Backend**
+
+  - [ ] `/api/analytics/track` with zod-validated payload, CORS, rate limiting; batching support.
+  - [ ] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
+  - [ ] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
+
+- **Frontend**
+
+  - [ ] Tiny `analyticsClient` for `page_view`, global `click`, section observer, heartbeat; batching with backoff.
+  - [ ] Route-change hook to log page views and referrer/UTM once per session.
+  - [ ] Configurable sample rate; disabled in dev.
+  - [ ] Optional GA4 or `@vercel/analytics` alongside custom events.
+
+- **Admin UI (initial)**
+
+  - [ ] Time series: sessions, events, avg engagement, bounce.
+  - [ ] Top routes/sections, scroll depth distribution, funnels.
+  - [ ] Chat: volume, topics cloud, sentiment, per-session summaries.
+
+- **Privacy & retention**
+
+  - [ ] No PII; sanitize/ redact fields; honor Do Not Track / consent.
+  - [ ] Retention: raw events 90d, aggregates 12m; opt-out mechanism.
+
+- **Acceptance (first cut)**
+
+  - [ ] Events captured without jank; section dwell stable within ±10% across reloads.
+  - [ ] Charts render within 1s on 30d data; no PII leaks; chat summaries within 20s of session end.
+
+- **Small next steps (incremental)**
+  1. Schema + MCP: sessions, events, section_durations, chatbot_logs, chatbot_summaries.
+  2. Backend: `/api/analytics/track` + sessionizer; minimal aggregations.
+  3. Frontend: `analyticsClient` with page_view, click, section observer, heartbeat.
+  4. Chat: log messages; async Gemini summaries per session.
+
+### Neon MCP Alignment (Migrations & Types)
+
+- Use Neon MCP to prepare and verify DB changes on a temp branch, then commit upon approval.
+  - [ ] Prepare migration: add Drizzle `documents` table (and optional `marketing_highlights` JSON) and update APIs to use Drizzle.
+  - [ ] Prepare migration: create analytics tables: `analytics_sessions`, `analytics_events`, `analytics_section_durations`, `chatbot_logs`, `chatbot_summaries`.
+  - [ ] Verify on temp branch; update FE types via Drizzle `InferSelectModel` and zod schemas; then commit.
+
+---
+
+## Decisions & Notes
+
+- Dropped `financial_categories` to prevent schema drift.
+- Keep Drizzle-derived types as the single source of truth for frontend types.
+- Public endpoints remain open (no auth) for homepage fetches; access control enforced in admin routes and middleware.
+
+## Evidence & Links
+
+- Financial master sheet (restricted; do not fetch programmatically): `https://docs.google.com/spreadsheets/d/1bZFvjBk7AkfyMAIfUy5P0EjiqDgoFxa_oipObHjExv8/edit?usp=sharing`
+- Admin can attach links/files as evidence; later Gemini will summarize/validate with provenance.
