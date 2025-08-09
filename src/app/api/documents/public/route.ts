@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllDocuments } from "@/lib/db";
+import { getPublicDocuments } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    // Get all documents for authenticated users (site users can see all documents)
-    // but external access is still controlled by the document's restricted flag
-    const documents = await getAllDocuments();
+    const documents = await getPublicDocuments();
 
     // Transform the data to match the frontend interface
     const transformedDocuments = documents.map((doc) => ({
