@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { FinancialResponseDto } from "@/types/financial";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -62,4 +63,18 @@ export function formatDate(
     : { year: "numeric", month: "short", day: "2-digit" };
 
   return new Intl.DateTimeFormat(locale, { ...base, timeZone }).format(date);
+}
+
+/**
+ * Fetch public financial data with optional cache-busting to bypass CDN.
+ */
+export async function fetchPublicFinancial(options?: { bust?: boolean }) {
+  const bust = options?.bust ?? true;
+  const url = `/api/financial/public${bust ? `?v=${Date.now()}` : ""}`;
+  const res = await fetch(url, {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to load financial data");
+  return (await res.json()) as FinancialResponseDto;
 }

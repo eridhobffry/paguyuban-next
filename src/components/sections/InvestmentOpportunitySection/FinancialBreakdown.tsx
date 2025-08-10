@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { PieChart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { FinancialResponseDto } from "@/types/financial";
+import { fetchPublicFinancial } from "@/lib/utils";
 import { SERIES_COLORS } from "./data";
 import { formatCurrency } from "@/lib/utils";
 
@@ -32,14 +33,8 @@ export function FinancialBreakdown() {
 
   const fetchFinancial = async () => {
     try {
-      const res = await fetch("/api/financial/public", {
-        credentials: "include",
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const json = (await res.json()) as FinancialResponseDto;
-        setFinancial(json);
-      }
+      const json = await fetchPublicFinancial({ bust: true });
+      setFinancial(json);
     } catch {
       // ignore; this section will keep static placeholders if fetch fails
     }
