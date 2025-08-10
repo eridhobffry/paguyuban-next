@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       external_url: doc.externalUrl ?? undefined,
       ai_generated: doc.aiGenerated,
       id: doc.id,
+      marketing_highlights: doc.marketingHighlights ?? undefined,
     }));
 
     return NextResponse.json(
