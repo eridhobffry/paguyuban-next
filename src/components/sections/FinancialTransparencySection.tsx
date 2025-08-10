@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FinancialResponseDto } from "@/types/financial";
+import { fetchPublicFinancial } from "@/lib/utils";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number) => {
@@ -104,16 +105,9 @@ const FinancialTransparencySection = () => {
     let cancelled = false;
     async function fetchData() {
       try {
-        const res = await fetch("/api/financial/public", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        if (res.ok) {
-          const json = (await res.json()) as FinancialResponseDto;
-          if (!cancelled) setDbData(json);
-        }
+        const json = await fetchPublicFinancial({ bust: true });
+        if (!cancelled) setDbData(json);
       } catch {
-        // ignore: fall back to static placeholders below
       } finally {
       }
     }
