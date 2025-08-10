@@ -13,10 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Document, documentTypes } from "@/types/admin";
+import { documentTypes } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
+import { useMediaUpload } from "@/hooks/useUpload";
+import { Eye, Upload } from "lucide-react";
 
 interface EditDocumentModalProps {
-  document: Document;
+  document: DocumentRow;
   onClose: () => void;
   onRefresh: () => Promise<void>;
 }
@@ -26,8 +29,10 @@ export function EditDocumentModal({
   onClose,
   onRefresh,
 }: EditDocumentModalProps) {
-  const [editingDoc, setEditingDoc] = useState<Document>(document);
+  const [editingDoc, setEditingDoc] = useState<DocumentRow>(document);
   const [processing, setProcessing] = useState(false);
+  const { uploading, uploadFile, commitTemp, discardTemp } =
+    useMediaUpload("documents");
 
   const handleDocumentUpdate = async () => {
     setProcessing(true);
@@ -35,20 +40,53 @@ export function EditDocumentModal({
       const response = await fetch("/api/admin/documents", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingDoc),
+        body: JSON.stringify({
+          id: editingDoc.id,
+          title: editingDoc.title,
+          description: editingDoc.description,
+          preview: editingDoc.preview,
+          pages: editingDoc.pages,
+          type: editingDoc.type,
+          icon: editingDoc.icon,
+          file_url: editingDoc.fileUrl,
+          external_url: editingDoc.externalUrl,
+          restricted: editingDoc.restricted,
+        }),
       });
 
       if (response.ok) {
         await onRefresh();
+        commitTemp();
         onClose();
       } else {
+        await discardTemp();
         alert("Failed to update document");
       }
     } catch (error) {
       console.error("Update error:", error);
+      await discardTemp();
       alert("Failed to update document");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    await discardTemp();
+    onClose();
+  };
+
+  const handleReplaceFile = async (file: File) => {
+    try {
+      const url = await uploadFile(file);
+      setEditingDoc((prev) => ({
+        ...prev,
+        file_url: url,
+        external_url: "",
+      }));
+    } catch (err) {
+      console.error("Replace file upload error:", err);
+      alert("Failed to upload new file");
     }
   };
 
@@ -145,13 +183,56 @@ export function EditDocumentModal({
             />
             <Label>Restricted Access</Label>
           </div>
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleDocumentUpdate} disabled={processing}>
-              {processing ? "Saving..." : "Save Changes"}
-            </Button>
+          <div className="flex flex-col gap-3 pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label>File</Label>
+                {editingDoc.fileUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      window.open(
+                        editingDoc.fileUrl!,
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    }
+                  >
+                    <Eye className="w-4 h-4 mr-1" /> View
+                  </Button>
+                )}
+              </div>
+              <div>
+                <input
+                  id="replace-file-input"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleReplaceFile(file);
+                  }}
+                  accept=".pdf,.doc,.docx,.txt"
+                />
+                <Label htmlFor="replace-file-input">
+                  <Button variant="secondary" size="sm" disabled={uploading}>
+                    <Upload className="w-4 h-4 mr-1" />
+                    {uploading ? "Uploading..." : "Replace File"}
+                  </Button>
+                </Label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDocumentUpdate}
+                disabled={processing || uploading}
+              >
+                {processing ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </div>

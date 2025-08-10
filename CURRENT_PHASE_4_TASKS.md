@@ -154,18 +154,23 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Admin API `/api/admin/documents` supports file upload, URL analysis, and manual entry. Uses Gemini to generate `title`, `description`, `preview`, `pages`, `type`, `icon`, and `suggestedRestricted`. Fields stored include `file_url` or `external_url`, `restricted`, and `ai_generated`.
   - Public API `/api/documents/public` returns transformed documents for the site.
   - Admin UI includes upload tabs and library with view/edit/delete.
+  - Vercel Blob upload route `/api/admin/upload` and `useMediaUpload("documents")` exist; documents UI not wired to this flow yet.
+
+- **Done**
+
+  - [x] Drizzle schema for `documents` defined (`src/lib/db/schemas/documents.ts`) with optional `marketingHighlights`.
+  - [x] Public endpoint reads via Drizzle and transforms output shape; filters non-restricted only and sets cache headers.
+  - [x] Links (file or external) open in a new tab from admin and public views.
+  - [x] Public types derived from Drizzle (`PublicDocument` in `src/types/documents.ts`).
 
 - **Next (Prioritized)**
 
-  - [ ] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
-  - [x] Ensure public endpoint filters to non-restricted only and is cached appropriately.
-  - [x] Open links (file or external) in new tab from admin and public views.
-  - [x] Public endpoint uses Drizzle schema/types for reads.
-  - [ ] Migrate admin documents API from raw SQL helpers to Drizzle to unify BE/FE types.
-  - [ ] Optional: persist `marketingHighlights` as JSON for richer UI summaries.
-  - [ ] Storage: move file uploads to Vercel Blob; store returned URL in DB; keep `external_url` path supported.
-  - [ ] Register `documents` blob columns in shared blob registry for cleanup.
-  - Optional: evaluate read-side live updates for library views after pilots; keep public reads cached.
+  - [x] Switch admin documents API to Drizzle with Zod-validated payloads; align BE/FE types via `InferSelectModel`.
+  - [x] Wire storage: use `useMediaUpload("documents")` + `/api/admin/upload` to store files in Vercel Blob; pass returned URL to admin create; remove in-endpoint file reading. (Create flow wired; edit flow supports Replace File.)
+  - [x] Register `documents.fileUrl` in shared blob registry and perform ref-counted cleanup on PUT/DELETE.
+  - [ ] Migrate admin UI components to Drizzle-derived types (`DocumentRow`/`NewDocumentRow` from `src/types/documents.ts`); deprecate `src/types/admin.ts` `Document`.
+  - [ ] Optional: persist `marketingHighlights` JSON from AI analysis; render in admin; expose on public.
+  - [ ] Optional: evaluate read-side live updates for library views post-pilot; keep public reads cached.
 
 - **Acceptance**
   - Admin can upload or link a document; Gemini summary saved (title, description, preview, pages); link opens; access control respected.

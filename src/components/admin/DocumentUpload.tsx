@@ -35,6 +35,7 @@ import {
   PieChart,
 } from "lucide-react";
 import { DocumentFormData, documentTypes, iconOptions } from "@/types/admin";
+import { useMediaUpload } from "@/hooks/useUpload";
 
 interface DocumentUploadProps {
   onRefresh: () => Promise<void>;
@@ -66,26 +67,44 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
     external_url: "",
     restricted: true,
   });
+  const { uploading, uploadFile, commitTemp, discardTemp } =
+    useMediaUpload("documents");
 
   const handleFileUpload = async (file: File) => {
     setUploadLoading(true);
     try {
+      // Upload file to Vercel Blob
+      const url = await uploadFile(file);
+
+      // Create document record referencing blob URL
+      const manual = {
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "",
+        preview: "",
+        pages: "",
+        type: "Business Strategy",
+        icon: "FileText",
+        external_url: "",
+        file_url: url,
+        restricted: true,
+      };
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("manual_data", JSON.stringify(manual));
 
       const response = await fetch("/api/admin/documents", {
         method: "POST",
         body: formData,
       });
 
-      if (response.ok) {
-        await onRefresh();
-        alert("Document uploaded and analyzed successfully!");
-      } else {
-        alert("Failed to upload document");
-      }
+      if (!response.ok) throw new Error("Create document failed");
+
+      await onRefresh();
+      commitTemp();
+      alert("Document uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
+      await discardTemp();
       alert("Failed to upload document");
     } finally {
       setUploadLoading(false);
@@ -206,7 +225,8 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
                     PDF, DOC, DOCX, or TXT files supported
                   </p>
                   <p className="text-xs text-blue-600">
-                    AI will automatically analyze and generate metadata
+                    Uploads use secure Blob storage; metadata can be edited
+                    after
                   </p>
                 </div>
               </Label>
@@ -235,7 +255,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
                   ) as HTMLInputElement;
                   if (input?.value) handleUrlUpload(input.value);
                 }}
-                disabled={uploadLoading}
+                disabled={uploadLoading || uploading}
                 className="w-full"
               >
                 {uploadLoading ? "Analyzing..." : "Analyze URL with AI"}
@@ -385,7 +405,10 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
             <Button
               onClick={handleManualCreate}
               disabled={
-                uploadLoading || !documentForm.title || !documentForm.type
+                uploadLoading ||
+                uploading ||
+                !documentForm.title ||
+                !documentForm.type
               }
               className="w-full"
             >

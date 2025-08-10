@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/drizzle";
-import { artists, speakers } from "@/lib/db/schema";
+import { artists, speakers, documents } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 
 export type BlobRefCounter = (url: string) => Promise<number>;
@@ -19,6 +19,13 @@ export const blobRefCounters: BlobRefCounter[] = [
       .select({ count: sql<number>`count(*)` })
       .from(artists)
       .where(eq(artists.imageUrl, url));
+    return Number(row?.count ?? 0);
+  },
+  async (url: string) => {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(documents)
+      .where(eq(documents.fileUrl, url));
     return Number(row?.count ?? 0);
   },
 ];

@@ -26,12 +26,12 @@ import {
   Unlock,
   Brain,
 } from "lucide-react";
-import { Document } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
 
 interface DocumentLibraryProps {
-  documents: Document[];
+  documents: DocumentRow[];
   onRefresh: () => Promise<void>;
-  onEdit: (doc: Document) => void;
+  onEdit: (doc: DocumentRow) => void;
 }
 
 const iconComponents = {
@@ -110,7 +110,7 @@ export function DocumentLibrary({
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-bold text-lg">{doc.title}</h3>
-                          {doc.ai_generated && (
+                          {doc.aiGenerated && (
                             <Badge variant="outline" className="text-xs">
                               <Brain className="w-3 h-3 mr-1" />
                               AI Generated
@@ -132,26 +132,28 @@ export function DocumentLibrary({
                           &quot;{doc.preview}&quot;
                         </p>
                         <div className="mt-3 text-xs text-gray-400">
-                          Created by {doc.created_by} on{" "}
-                          {new Date(doc.created_at).toLocaleDateString()}
+                          Created by {doc.createdBy} on{" "}
+                          {new Date(
+                            doc.createdAt as unknown as string
+                          ).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
-                      {(doc.file_url || doc.external_url) && (
+                      {(doc.fileUrl || doc.externalUrl) && (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            if (doc.external_url) {
+                            if (doc.externalUrl) {
                               window.open(
-                                doc.external_url,
+                                doc.externalUrl,
                                 "_blank",
                                 "noopener,noreferrer"
                               );
-                            } else if (doc.file_url) {
+                            } else if (doc.fileUrl) {
                               window.open(
-                                doc.file_url,
+                                doc.fileUrl,
                                 "_blank",
                                 "noopener,noreferrer"
                               );
