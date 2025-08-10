@@ -76,7 +76,7 @@ export default function CostItemPage() {
   return (
     <>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
           <Button variant="outline" asChild>
             <Link href="/admin/financial">Back</Link>
           </Button>
@@ -162,11 +162,11 @@ export default function CostItemPage() {
 
 function Row(props: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <div className="col-span-1 text-sm text-muted-foreground">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 py-1">
+      <div className="text-xs sm:text-sm text-muted-foreground">
         {props.label}
       </div>
-      <div className="col-span-2">{props.value}</div>
+      <div className="sm:col-span-2 break-words">{props.value}</div>
     </div>
   );
 }
