@@ -83,6 +83,21 @@ export function useFinancial() {
     id: string,
     item: Partial<FinancialItemBase>
   ) {
+    // Optimistic update
+    const previous = data;
+    if (data) {
+      const next: FinancialResponseDto = {
+        revenues:
+          itemType === "revenue"
+            ? data.revenues.map((r) => (r.id === id ? { ...r, ...item } : r))
+            : data.revenues,
+        costs:
+          itemType === "cost"
+            ? data.costs.map((c) => (c.id === id ? { ...c, ...item } : c))
+            : data.costs,
+      };
+      setData(next);
+    }
     try {
       const res = await fetch("/api/admin/financial", {
         method: "PUT",
@@ -91,17 +106,33 @@ export function useFinancial() {
         body: JSON.stringify({ itemType, id, item }),
       });
       if (!res.ok) throw new Error("Update failed");
-      await refresh();
       window.dispatchEvent(new CustomEvent("financial-updated"));
       toast.success("Updated");
       return res.json();
     } catch (e) {
+      // Revert on failure
+      if (previous) setData(previous);
       toast.error("Update failed");
       throw e;
     }
   }
 
   async function deleteItem(itemType: "revenue" | "cost", id: string) {
+    // Optimistic update
+    const previous = data;
+    if (data) {
+      const next: FinancialResponseDto = {
+        revenues:
+          itemType === "revenue"
+            ? data.revenues.filter((r) => r.id !== id)
+            : data.revenues,
+        costs:
+          itemType === "cost"
+            ? data.costs.filter((c) => c.id !== id)
+            : data.costs,
+      };
+      setData(next);
+    }
     try {
       const res = await fetch("/api/admin/financial", {
         method: "DELETE",
@@ -110,11 +141,12 @@ export function useFinancial() {
         body: JSON.stringify({ itemType, id }),
       });
       if (!res.ok) throw new Error("Delete failed");
-      await refresh();
       window.dispatchEvent(new CustomEvent("financial-updated"));
       toast.success("Deleted");
       return res.json();
     } catch (e) {
+      // Revert on failure
+      if (previous) setData(previous);
       toast.error("Delete failed");
       throw e;
     }
