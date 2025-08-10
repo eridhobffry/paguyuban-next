@@ -8,7 +8,7 @@ import {
   initializeDocumentTable,
   User,
   DocumentInput,
-} from "@/lib/db";
+} from "@/lib/sql";
 import { documentAnalyzer } from "@/lib/document-analyzer";
 
 // Ensure the documents table exists

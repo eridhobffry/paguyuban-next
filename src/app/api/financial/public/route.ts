@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { financialRevenueItems, financialCostItems } from "@/lib/db/schema";
 import { verifyToken } from "@/lib/auth";
-import type { User } from "@/lib/db";
+import type { User } from "@/lib/sql";
 
 export async function GET(request: NextRequest) {
   try {

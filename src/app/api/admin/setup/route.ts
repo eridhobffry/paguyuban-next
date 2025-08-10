@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
-import { initializeDocumentTable, User } from "@/lib/db";
+import { initializeDocumentTable, User } from "@/lib/sql";
 
 export async function POST(request: NextRequest) {
   try {

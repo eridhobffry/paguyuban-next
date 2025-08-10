@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPublicDocuments } from "@/lib/db";
+import { db, schema } from "@/lib/db/index";
+import { desc, eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
-    const documents = await getPublicDocuments();
+    const documents = await db
+      .select()
+      .from(schema.documents)
+      .where(eq(schema.documents.restricted, false))
+      .orderBy(desc(schema.documents.createdAt));
 
     // Transform the data to match the frontend interface
     const transformedDocuments = documents.map((doc) => ({
@@ -14,9 +19,9 @@ export async function GET(request: NextRequest) {
       type: doc.type,
       icon: doc.icon,
       restricted: doc.restricted,
-      file_url: doc.file_url,
-      external_url: doc.external_url,
-      ai_generated: doc.ai_generated,
+      file_url: doc.fileUrl ?? undefined,
+      external_url: doc.externalUrl ?? undefined,
+      ai_generated: doc.aiGenerated,
       id: doc.id,
     }));
 
