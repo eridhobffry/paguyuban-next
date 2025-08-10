@@ -99,6 +99,11 @@ export function useFinancial() {
         });
       }
       window.dispatchEvent(new CustomEvent("financial-updated"));
+      try {
+        const bc = new BroadcastChannel("financial");
+        bc.postMessage({ type: "updated" });
+        bc.close();
+      } catch {}
       toast.success("Created");
       return json;
     } catch (e) {
@@ -160,6 +165,11 @@ export function useFinancial() {
       });
       if (!res.ok) throw new Error("Update failed");
       window.dispatchEvent(new CustomEvent("financial-updated"));
+      try {
+        const bc = new BroadcastChannel("financial");
+        bc.postMessage({ type: "updated" });
+        bc.close();
+      } catch {}
       toast.success("Updated");
       return res.json();
     } catch (e) {
@@ -198,6 +208,11 @@ export function useFinancial() {
       });
       if (!res.ok) throw new Error("Delete failed");
       window.dispatchEvent(new CustomEvent("financial-updated"));
+      try {
+        const bc = new BroadcastChannel("financial");
+        bc.postMessage({ type: "updated" });
+        bc.close();
+      } catch {}
       toast.success("Deleted");
       return res.json();
     } catch (e) {
