@@ -17,3 +17,49 @@ export function formatCurrency(amount: number, isClient: boolean = false) {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+/**
+ * Format a date value into a human-readable string.
+ *
+ * Guidelines:
+ * - Pass `isClient: true` when calling from Client Components to use the user's timezone/locale.
+ * - When rendering on the server, the function defaults to a stable timezone (UTC)
+ *   to minimize hydration mismatches.
+ *
+ * @param value The date to format. Accepts Date, timestamp, or ISO/date string.
+ * @param options.includeTime Whether to include time (HH:MM). Default: true.
+ * @param options.locale BCP 47 locale string. Default: "de-DE".
+ * @param options.timeZone IANA timezone name. Default: undefined on client, "UTC" on server.
+ * @param options.isClient Set true in Client Components to use client defaults. Default: false.
+ * @returns A formatted date string, or "-" when value is null/undefined/invalid.
+ */
+export function formatDate(
+  value: Date | string | number | null | undefined,
+  options?: {
+    includeTime?: boolean;
+    locale?: string;
+    timeZone?: string;
+    isClient?: boolean;
+  }
+): string {
+  if (value === null || value === undefined) return "-";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  const includeTime = options?.includeTime ?? true;
+  const locale = options?.locale ?? "de-DE";
+  const isClient = options?.isClient ?? false;
+  const timeZone = isClient ? options?.timeZone : options?.timeZone ?? "UTC";
+
+  const base: Intl.DateTimeFormatOptions = includeTime
+    ? {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    : { year: "numeric", month: "short", day: "2-digit" };
+
+  return new Intl.DateTimeFormat(locale, { ...base, timeZone }).format(date);
+}

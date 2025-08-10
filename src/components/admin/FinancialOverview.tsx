@@ -116,7 +116,13 @@ export function FinancialOverview() {
               sortOrder: r.sortOrder ?? null,
             });
           }}
-          onView={() => router.push("/admin/financial/revenue")}
+          onView={() => {
+            if (selectedId) {
+              router.push(`/admin/financial/revenue/${selectedId}`);
+            } else {
+              router.push("/admin/financial/revenue");
+            }
+          }}
           onEdit={() => setModal("edit")}
           onDelete={async () => {
             if (selectedId && confirm("Delete this item?")) {
@@ -152,7 +158,13 @@ export function FinancialOverview() {
               sortOrder: c.sortOrder ?? null,
             });
           }}
-          onView={() => router.push("/admin/financial/cost")}
+          onView={() => {
+            if (selectedId) {
+              router.push(`/admin/financial/cost/${selectedId}`);
+            } else {
+              router.push("/admin/financial/cost");
+            }
+          }}
           onEdit={() => setModal("edit")}
           onDelete={async () => {
             if (selectedId && confirm("Delete this item?")) {
