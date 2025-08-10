@@ -3,22 +3,27 @@
 import { useFinancial } from "@/hooks/useFinancial";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FinancialItemBase } from "@/types/financial";
+import { formatCurrency } from "@/lib/utils";
 import { FinancialItemDialog } from "@/components/admin/FinancialItemDialog";
 import { FinancialList } from "@/components/admin/FinancialList";
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+const euro = (amount: number) => formatCurrency(amount, true);
 
 export function FinancialOverview() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // hydrate selection from URL on mount or URL changes
+  const selectedFromUrl = useMemo(() => {
+    const rev = searchParams?.get("revenue_selected");
+    const cost = searchParams?.get("cost_selected");
+    if (rev) return { id: rev, type: "revenue" as const };
+    if (cost) return { id: cost, type: "cost" as const };
+    return null;
+  }, [searchParams]);
   const {
     data,
     loading,
@@ -35,6 +40,26 @@ export function FinancialOverview() {
   const [selectedType, setSelectedType] = useState<"revenue" | "cost" | null>(
     null
   );
+
+  useEffect(() => {
+    if (selectedFromUrl) {
+      setSelectedId(selectedFromUrl.id);
+      setSelectedType(selectedFromUrl.type);
+    }
+  }, [selectedFromUrl]);
+
+  function updateSelectionInUrl(kind: "revenue" | "cost", id: string | null) {
+    const params = new URLSearchParams(searchParams?.toString());
+    if (kind === "revenue") {
+      if (id) params.set("revenue_selected", id);
+      else params.delete("revenue_selected");
+      // keep cost selection intact
+    } else {
+      if (id) params.set("cost_selected", id);
+      else params.delete("cost_selected");
+    }
+    router.replace(`?${params.toString()}`);
+  }
   const [modal, setModal] = useState<null | "add" | "edit" | "view">(null);
   const [form, setForm] = useState<FinancialItemBase>({
     category: "",
@@ -54,7 +79,7 @@ export function FinancialOverview() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalRevenue)}
+              {euro(totalRevenue)}
             </div>
           </CardContent>
         </Card>
@@ -64,7 +89,7 @@ export function FinancialOverview() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalCosts)}
+              {euro(totalCosts)}
             </div>
           </CardContent>
         </Card>
@@ -79,7 +104,7 @@ export function FinancialOverview() {
               }`}
             >
               {net >= 0 ? "+" : ""}
-              {formatCurrency(Math.abs(net))}
+              {euro(Math.abs(net))}
             </div>
           </CardContent>
         </Card>
@@ -108,6 +133,7 @@ export function FinancialOverview() {
           onSelect={(r) => {
             setSelectedId(r.id);
             setSelectedType("revenue");
+            updateSelectionInUrl("revenue", r.id);
             setForm({
               category: r.category,
               amount: r.amount,
@@ -150,6 +176,7 @@ export function FinancialOverview() {
           onSelect={(c) => {
             setSelectedId(c.id);
             setSelectedType("cost");
+            updateSelectionInUrl("cost", c.id);
             setForm({
               category: c.category,
               amount: c.amount,
