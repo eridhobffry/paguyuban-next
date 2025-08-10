@@ -52,4 +52,5 @@ export const documentAdminUpdateSnakeSchema = z.object({
   file_url: z.string().url().optional().nullable(),
   external_url: z.string().url().optional().nullable(),
   restricted: z.boolean().optional(),
+  marketing_highlights: z.array(z.string()).optional().nullable(),
 });

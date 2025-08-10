@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
         icon: manual.icon,
         externalUrl: manual.external_url || null,
         fileUrl: manual.file_url || null,
+        marketingHighlights: manual.marketing_highlights || null,
         restricted: manual.restricted !== false,
         aiGenerated: false,
         createdBy: decoded.email,
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
           type: analysis.type,
           icon: analysis.icon,
           externalUrl: externalUrl!,
+          marketingHighlights: analysis.marketingHighlights || null,
           restricted: analysis.suggestedRestricted,
           aiGenerated: true,
           createdBy: decoded.email,
@@ -133,6 +135,7 @@ export async function POST(request: NextRequest) {
       let analysisPages = "";
       let analysisType = "Executive Document";
       let analysisIcon = "FileText";
+      let analysisHighlights: string[] | null = null;
       try {
         const content = await file.text();
         const analysis = await documentAnalyzer.analyzeDocument({
@@ -147,6 +150,7 @@ export async function POST(request: NextRequest) {
         analysisPages = analysis.pages;
         analysisType = analysis.type;
         analysisIcon = analysis.icon;
+        analysisHighlights = analysis.marketingHighlights || null;
       } catch {
         // Non-fatal if analysis fails; fallback metadata
       }
@@ -162,6 +166,7 @@ export async function POST(request: NextRequest) {
         restricted: true,
         fileSize: file.size,
         mimeType: file.type,
+        marketingHighlights: analysisHighlights,
         aiGenerated: !!analysisPreview || !!analysisDesc,
         createdBy: decoded.email,
       };
@@ -238,6 +243,7 @@ export async function PUT(request: NextRequest) {
       fileUrl: rest.file_url ?? undefined,
       externalUrl: rest.external_url ?? undefined,
       restricted: rest.restricted,
+      marketingHighlights: rest.marketing_highlights ?? undefined,
       updatedAt: new Date(),
     };
 
