@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
 import type { User } from "@/lib/sql";
-import { put } from "@vercel/blob";
+import { put, del as deleteBlob } from "@vercel/blob";
+import { isVercelBlobUrl } from "@/lib/blob-utils";
 
 const ALLOWED_FOLDERS = new Set([
   "speakers",
@@ -47,6 +48,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (error) {
     console.error("/api/admin/upload error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = request.cookies.get("auth-token")?.value;
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const decoded = verifyToken(token) as User | null;
+    if (!decoded || !isAdmin(decoded))
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+
+    const { searchParams } = new URL(request.url);
+    const url = searchParams.get("url");
+    if (!url || !isVercelBlobUrl(url)) {
+      return NextResponse.json({ error: "Invalid url" }, { status: 400 });
+    }
+    await deleteBlob(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    console.error("/api/admin/upload DELETE error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

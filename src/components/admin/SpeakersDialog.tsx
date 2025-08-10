@@ -51,7 +51,8 @@ export function SpeakersDialog({
       sortOrder: undefined,
     },
   });
-  const { uploading, uploadFile } = useMediaUpload("speakers");
+  const { uploading, uploadFile, discardTemp, commitTemp } =
+    useMediaUpload("speakers");
 
   useEffect(() => {
     if (open) {
@@ -73,7 +74,16 @@ export function SpeakersDialog({
     }
   }, [open, speaker, form]);
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) {
+          // dialog closing without submit -> cleanup any temp uploads
+          void discardTemp();
+        }
+        onOpenChange(v);
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -119,6 +129,8 @@ export function SpeakersDialog({
             className="grid gap-3"
             onSubmit={form.handleSubmit(async (values) => {
               await onSubmit?.(values);
+              // commit any temp uploads since data has been saved
+              commitTemp();
               onOpenChange(false);
             })}
           >
