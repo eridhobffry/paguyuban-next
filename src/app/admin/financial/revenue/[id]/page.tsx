@@ -36,6 +36,11 @@ export default function RevenueItemPage() {
       }
     }
     load();
+    // also refresh when global financial updates happen (e.g., after dialogs)
+    const onUpdated = () => load();
+    window.addEventListener("financial-updated", onUpdated);
+    return () => window.removeEventListener("financial-updated", onUpdated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const defaults = useMemo<FinancialItemBase>(() => {
@@ -52,7 +57,13 @@ export default function RevenueItemPage() {
     if (!id) return;
     await updateItem("revenue", id, values);
     setModalOpen(false);
-    router.refresh();
+    // ensure details card shows latest values immediately
+    try {
+      const it = (await getItem("revenue", id)) as FinancialRevenueItem;
+      setItem(it);
+    } catch {
+      // ignore; listener will update on event
+    }
   }
 
   async function onDelete() {
@@ -69,7 +80,22 @@ export default function RevenueItemPage() {
           <Button variant="outline" asChild>
             <Link href="/admin/financial">Back</Link>
           </Button>
-          <Button variant="secondary" onClick={() => router.refresh()}>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              if (!id) return;
+              setLoading(true);
+              try {
+                const it = (await getItem(
+                  "revenue",
+                  id
+                )) as FinancialRevenueItem;
+                setItem(it);
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
             Refresh
           </Button>
           <Button disabled={!item} onClick={() => setModalOpen(true)}>

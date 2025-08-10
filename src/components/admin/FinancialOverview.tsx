@@ -71,6 +71,23 @@ export function FinancialOverview() {
   });
   // Toolbar state handled inside FinancialList
 
+  // Keep the dialog form values in sync with the currently selected item and
+  // latest data so when reopening Edit, it shows the updated values.
+  useEffect(() => {
+    if (!selectedId || !selectedType || !data) return;
+    const list = selectedType === "revenue" ? data.revenues : data.costs;
+    const found = list.find((i) => i.id === selectedId);
+    if (found) {
+      setForm({
+        category: found.category,
+        amount: found.amount,
+        notes: found.notes ?? "",
+        evidenceUrl: found.evidenceUrl ?? "",
+        sortOrder: found.sortOrder ?? null,
+      });
+    }
+  }, [data, selectedId, selectedType]);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
