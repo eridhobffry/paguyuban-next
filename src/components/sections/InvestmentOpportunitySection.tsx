@@ -342,9 +342,9 @@ const InvestmentOpportunitySection = () => {
 
   const handleDocumentAction = (doc: DocumentData) => {
     if (doc.external_url) {
-      window.open(doc.external_url, "_blank");
+      window.open(doc.external_url, "_blank", "noopener,noreferrer");
     } else if (doc.file_url) {
-      window.open(doc.file_url, "_blank");
+      window.open(doc.file_url, "_blank", "noopener,noreferrer");
     } else {
       // Request access for restricted documents
       const subject = encodeURIComponent(`Access Request: ${doc.title}`);

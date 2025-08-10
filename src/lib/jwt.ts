@@ -1,6 +1,6 @@
 // Lightweight JWT utilities for middleware (Edge Runtime compatible)
 
-import { User } from "./db";
+import { User } from "./sql";
 
 // Simple JWT decode without verification for middleware (Edge Runtime limitation)
 export function verifyTokenMiddleware(token: string) {

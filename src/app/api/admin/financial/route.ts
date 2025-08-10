@@ -3,7 +3,7 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db/drizzle";
 import { financialRevenueItems, financialCostItems } from "@/lib/db/schema";
 import { z } from "zod";
-import { User } from "@/lib/db";
+import { User } from "@/lib/sql";
 import { eq } from "drizzle-orm";
 
 const FinancialResponse = z.object({

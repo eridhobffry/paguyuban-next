@@ -118,9 +118,9 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Next (Prioritized)**
 
-  - [ ] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
-  - [ ] Ensure public endpoint filters to non-restricted only and is cached appropriately.
-  - [ ] Open links (file or external) in new tab from admin and public views.
+  - [x] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
+  - [x] Ensure public endpoint filters to non-restricted only and is cached appropriately.
+  - [x] Open links (file or external) in new tab from admin and public views.
   - [ ] Optional: persist `marketingHighlights` as JSON for richer UI summaries.
   - [ ] Storage: move file uploads to Vercel Blob; store returned URL in DB; keep `external_url` path supported.
 

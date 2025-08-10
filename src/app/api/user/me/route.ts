@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { getUserByEmail, User } from "@/lib/db";
+import { getUserByEmail, User } from "@/lib/sql";
 
 export async function GET(request: NextRequest) {
   try {

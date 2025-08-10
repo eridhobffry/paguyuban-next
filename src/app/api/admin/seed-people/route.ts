@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
-import type { User } from "@/lib/db";
+import type { User } from "@/lib/sql";
 import { db } from "@/lib/db/drizzle";
 import { artists } from "@/lib/db/schema";
 import { eq, sql as dsql } from "drizzle-orm";

@@ -7,7 +7,7 @@ import {
   speakerAdminCreateSchema,
   speakerAdminUpdateSchema,
 } from "@/types/validation";
-import type { User } from "@/lib/db";
+import type { User } from "@/lib/sql";
 import { asc, eq } from "drizzle-orm";
 
 const CreateSchema = z.object({ speaker: speakerAdminCreateSchema });
