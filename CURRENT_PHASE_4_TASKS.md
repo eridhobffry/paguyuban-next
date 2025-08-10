@@ -16,7 +16,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Speakers: table + public GET + admin CRUD API.
   - Artists: table + public GET + admin CRUD API + admin list/detail dialog; seed endpoint; unified Drizzle types and shared zod schemas.
 - **In Progress**
-  - Financial detail pages: enrich UI with full fields, sorting/search, CRUD actions, deep links, and URL state.
+  - Financial detail pages: full fields and deep links done; sorting/search persistence, CRUD actions in-detail pages, and URL state still pending.
 - **Next**
   - Public financial QA: verify homepage totals match admin and charts update after mutations; optional ISR/client refresh.
   - Speakers admin UI: list + detail dialog (read-only first), then create/edit with image.
@@ -50,17 +50,17 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
   1. Revenue detail UI
 
-  - [ ] Item panel shows `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
+  - [x] Item panel shows `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
   - [ ] Sorting by `category`, `amount`, `sort_order`; search persisted via query param.
   - [ ] Row actions: Edit, Delete; top-level Add.
 
-- [ ] Deep links: `/admin/financial/revenue/[id]` opens selected item.
+- [x] Deep links: `/admin/financial/revenue/[id]` opens selected item.
 
   - Acceptance: evidence opens in new tab; totals/charts recompute after mutations; browser nav keeps state.
 
   2. Cost detail UI (mirror revenue)
 
-  - [ ] Same capabilities; deep link `/admin/financial/cost/[id]`.
+  - [x] Same capabilities; deep link `/admin/financial/cost/[id]`.
 
   3. CRUD wiring
 
@@ -71,7 +71,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 4. Backend readiness
 
 - [x] Ensure GET/POST/PUT include `evidenceUrl`.
-  - [ ] Optional: GET-by-id endpoint `/api/admin/financial/item?id=...&itemType=...`.
+  - [x] Optional: GET-by-id endpoint `/api/admin/financial/item?id=...&itemType=...`.
 
 5. Routing & state
 
@@ -134,7 +134,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Current**
 
-  - Nested pages: `/admin/financial`, `/admin/user`, `/admin/documents`, `/admin/financial/revenue`, `/admin/financial/cost`; overview links to details; no jitter on tab nav.
+  - Nested pages: `/admin/financial`, `/admin/user`, `/admin/documents`, `/admin/financial/revenue`, `/admin/financial/cost`; overview links to details; `[id]` deep-link item pages for revenue and cost are implemented; no jitter on tab nav.
 
 - **Next**
   - Deep links for selected financial items; persist search/sort/selection in URL; mirror patterns for speakers/artists later.
