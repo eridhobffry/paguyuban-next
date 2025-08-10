@@ -64,9 +64,9 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
   3. CRUD wiring
 
-  - [ ] Reuse `FinancialItemDialog` for add/edit (pre-filled on edit).
+  - [x] Reuse `FinancialItemDialog` for add/edit (pre-filled on edit).
   - [ ] Toasts + optimistic update where safe; fallback to refresh.
-  - [ ] Keep Drizzle-derived types the single source of truth.
+  - [x] Keep Drizzle-derived types the single source of truth.
 
 4. Backend readiness
 
@@ -80,7 +80,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 6. QA
 
 - [ ] Numbers consistent across overview, detail pages, and charts.
-- [ ] Access control enforced in middleware and APIs.
+- [x] Access control enforced in middleware and APIs.
 - [ ] Mobile layout usable (horizontal scroll, readable panel).
 
 - **Public Alignment**
@@ -118,9 +118,11 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Next (Prioritized)**
 
-  - [x] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
+  - [ ] Switch documents to Drizzle schema and generated types (BE/FE alignment via `InferSelectModel`).
   - [x] Ensure public endpoint filters to non-restricted only and is cached appropriately.
   - [x] Open links (file or external) in new tab from admin and public views.
+  - [x] Public endpoint uses Drizzle schema/types for reads.
+  - [ ] Migrate admin documents API from raw SQL helpers to Drizzle to unify BE/FE types.
   - [ ] Optional: persist `marketingHighlights` as JSON for richer UI summaries.
   - [ ] Storage: move file uploads to Vercel Blob; store returned URL in DB; keep `external_url` path supported.
 
