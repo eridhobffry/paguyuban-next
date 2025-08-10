@@ -24,6 +24,20 @@ export function DocumentsSection() {
 
   useEffect(() => {
     void fetchDocuments();
+    // Listen for admin-side updates via BroadcastChannel (cross-tab) and fallback event
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("documents");
+      bc.onmessage = (e) => {
+        if (e?.data?.type === "updated") void fetchDocuments();
+      };
+    } catch {}
+    const onUpdated = () => void fetchDocuments();
+    window.addEventListener("documents-updated", onUpdated);
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("documents-updated", onUpdated);
+    };
   }, []);
 
   const fetchDocuments = async () => {
