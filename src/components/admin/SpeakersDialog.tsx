@@ -16,7 +16,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { speakerAdminCreateSchema } from "@/types/validation";
 import { Button } from "@/components/ui/button";
-import { useSpeakersAdmin } from "@/hooks/useSpeakers";
+import { useMediaUpload } from "@/hooks/useUpload";
 
 export function SpeakersDialog({
   open,
@@ -51,7 +51,7 @@ export function SpeakersDialog({
       sortOrder: undefined,
     },
   });
-  const { uploadSpeakerImage, uploading } = useSpeakersAdmin();
+  const { uploading, uploadFile } = useMediaUpload("speakers");
 
   useEffect(() => {
     if (open) {
@@ -153,7 +153,7 @@ export function SpeakersDialog({
                     (e.target as HTMLInputElement).files?.[0] ?? undefined;
                   if (!file) return;
                   try {
-                    const url = await uploadSpeakerImage(file);
+                    const url = await uploadFile(file);
                     form.setValue("imageUrl", url, { shouldValidate: true });
                   } catch {}
                 }}
