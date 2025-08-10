@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/lib/db/index";
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
+    // Show both public and restricted docs on the homepage. For restricted docs,
+    // mask file/external URLs; the UI shows a lock and uses a mailto request.
     const documents = await db
       .select()
       .from(schema.documents)
-      .where(eq(schema.documents.restricted, false))
       .orderBy(desc(schema.documents.createdAt));
 
     // Transform the data to match the frontend interface
@@ -19,8 +20,8 @@ export async function GET(request: NextRequest) {
       type: doc.type,
       icon: doc.icon,
       restricted: doc.restricted,
-      file_url: doc.fileUrl ?? undefined,
-      external_url: doc.externalUrl ?? undefined,
+      file_url: doc.restricted ? undefined : doc.fileUrl ?? undefined,
+      external_url: doc.restricted ? undefined : doc.externalUrl ?? undefined,
       ai_generated: doc.aiGenerated,
       id: doc.id,
       marketing_highlights: doc.marketingHighlights ?? undefined,

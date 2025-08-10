@@ -6,6 +6,42 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Return a safe image source for Next/Image based on allowed hosts and relative paths.
+ * Falls back when the provided URL points to an unapproved host (e.g., Google redirect URLs).
+ */
+export function getSafeImageSrc(
+  input: string | null | undefined,
+  fallback: string
+): string {
+  if (!input || input.trim().length === 0) return fallback;
+
+  // Allow relative paths (served from /public)
+  if (input.startsWith("/")) return input;
+
+  try {
+    const url = new URL(input);
+    const hostname = url.hostname.toLowerCase();
+
+    // Allow Vercel Blob hosts (as configured in next.config.ts)
+    const allowedHosts = new Set(["public.blob.vercel-storage.com"]);
+
+    const isSubdomainOfVercelBlob = hostname.endsWith(
+      ".public.blob.vercel-storage.com"
+    );
+
+    if (allowedHosts.has(hostname) || isSubdomainOfVercelBlob) {
+      return input;
+    }
+
+    // Anything else (e.g., www.google.com/url?...) -> use fallback
+    return fallback;
+  } catch {
+    // If it's not a valid URL, keep as-is if it's a relative path; otherwise fallback
+    return input.startsWith("/") ? input : fallback;
+  }
+}
+
 // Safe currency formatting to avoid hydration mismatches
 export function formatCurrency(amount: number, isClient: boolean = false) {
   if (!isClient) {
