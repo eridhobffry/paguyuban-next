@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { FinancialItemBase, FinancialResponseDto } from "@/types/financial";
+import {
+  FinancialCostItem,
+  FinancialItemBase,
+  FinancialResponseDto,
+  FinancialRevenueItem,
+} from "@/types/financial";
 
 export function useFinancial() {
   const [data, setData] = useState<FinancialResponseDto | null>(null);
@@ -52,6 +57,25 @@ export function useFinancial() {
       toast.error("Create failed");
       throw e;
     }
+  }
+
+  async function getItem(
+    itemType: "revenue" | "cost",
+    id: string
+  ): Promise<FinancialRevenueItem | FinancialCostItem> {
+    const res = await fetch(
+      `/api/admin/financial/item?id=${encodeURIComponent(
+        id
+      )}&itemType=${itemType}`,
+      {
+        credentials: "include",
+      }
+    );
+    if (!res.ok) throw new Error("Fetch item failed");
+    const json = (await res.json()) as {
+      item: FinancialRevenueItem | FinancialCostItem;
+    };
+    return json.item;
   }
 
   async function updateItem(
@@ -109,6 +133,7 @@ export function useFinancial() {
     totalCosts,
     net,
     refresh,
+    getItem,
     createItem,
     updateItem,
     deleteItem,

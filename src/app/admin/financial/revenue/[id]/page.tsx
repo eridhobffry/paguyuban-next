@@ -19,7 +19,7 @@ export default function RevenueItemPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const { updateItem, deleteItem } = useFinancial();
+  const { getItem, updateItem, deleteItem } = useFinancial();
 
   useEffect(() => {
     async function load() {
@@ -27,15 +27,8 @@ export default function RevenueItemPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `/api/admin/financial/item?id=${id}&itemType=revenue`,
-          {
-            credentials: "include",
-          }
-        );
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const json = (await res.json()) as { item: FinancialRevenueItem };
-        setItem(json.item);
+        const it = (await getItem("revenue", id)) as FinancialRevenueItem;
+        setItem(it);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Unknown error");
       } finally {
@@ -43,7 +36,7 @@ export default function RevenueItemPage() {
       }
     }
     load();
-  }, [id]);
+  }, [id, getItem]);
 
   const defaults = useMemo<FinancialItemBase>(() => {
     return {
