@@ -34,6 +34,7 @@ export function FinancialOverview() {
     createItem,
     updateItem,
     deleteItem,
+    isMutating,
   } = useFinancial();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -119,6 +120,7 @@ export function FinancialOverview() {
           kind="revenue"
           items={data?.revenues ?? []}
           selectedId={selectedId}
+          disabled={isMutating}
           onAdd={() => {
             setSelectedType("revenue");
             setForm({
@@ -162,6 +164,7 @@ export function FinancialOverview() {
           kind="cost"
           items={data?.costs ?? []}
           selectedId={selectedId}
+          disabled={isMutating}
           onAdd={() => {
             setSelectedType("cost");
             setForm({

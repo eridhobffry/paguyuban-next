@@ -36,7 +36,7 @@ export default function RevenueItemPage() {
       }
     }
     load();
-  }, [id, getItem]);
+  }, [id]);
 
   const defaults = useMemo<FinancialItemBase>(() => {
     return {

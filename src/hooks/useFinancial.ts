@@ -11,6 +11,7 @@ export function useFinancial() {
   const [data, setData] = useState<FinancialResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
 
   async function refresh() {
     try {
@@ -41,6 +42,34 @@ export function useFinancial() {
     itemType: "revenue" | "cost",
     item: FinancialItemBase
   ) {
+    setIsMutating(true);
+    // Optimistic create with temporary ID
+    const previous = data;
+    const tempId = (globalThis.crypto?.randomUUID?.() ??
+      Math.random().toString(36).slice(2)) as string;
+    if (data) {
+      const optimisticItem = {
+        id: tempId,
+        category: item.category,
+        amount: item.amount,
+        notes: item.notes ?? null,
+        evidenceUrl: item.evidenceUrl ?? null,
+        sortOrder: item.sortOrder ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as FinancialRevenueItem & FinancialCostItem;
+      const next: FinancialResponseDto = {
+        revenues:
+          itemType === "revenue"
+            ? [optimisticItem as FinancialRevenueItem, ...data.revenues]
+            : data.revenues,
+        costs:
+          itemType === "cost"
+            ? [optimisticItem as FinancialCostItem, ...data.costs]
+            : data.costs,
+      };
+      setData(next);
+    }
     try {
       const res = await fetch("/api/admin/financial", {
         method: "POST",
@@ -49,13 +78,36 @@ export function useFinancial() {
         body: JSON.stringify({ itemType, item }),
       });
       if (!res.ok) throw new Error("Create failed");
-      await refresh();
+      const json = (await res.json()) as {
+        item: FinancialRevenueItem | FinancialCostItem;
+      };
+      // Reconcile temp ID with server item
+      if (data) {
+        setData((curr) => {
+          if (!curr) return curr;
+          if (itemType === "revenue") {
+            const replaced = curr.revenues.map((r) =>
+              r.id === tempId ? (json.item as FinancialRevenueItem) : r
+            );
+            return { ...curr, revenues: replaced };
+          } else {
+            const replaced = curr.costs.map((c) =>
+              c.id === tempId ? (json.item as FinancialCostItem) : c
+            );
+            return { ...curr, costs: replaced };
+          }
+        });
+      }
       window.dispatchEvent(new CustomEvent("financial-updated"));
       toast.success("Created");
-      return res.json();
+      return json;
     } catch (e) {
+      // Revert on failure
+      if (previous) setData(previous);
       toast.error("Create failed");
       throw e;
+    } finally {
+      setIsMutating(false);
     }
   }
 
@@ -83,6 +135,7 @@ export function useFinancial() {
     id: string,
     item: Partial<FinancialItemBase>
   ) {
+    setIsMutating(true);
     // Optimistic update
     const previous = data;
     if (data) {
@@ -114,10 +167,13 @@ export function useFinancial() {
       if (previous) setData(previous);
       toast.error("Update failed");
       throw e;
+    } finally {
+      setIsMutating(false);
     }
   }
 
   async function deleteItem(itemType: "revenue" | "cost", id: string) {
+    setIsMutating(true);
     // Optimistic update
     const previous = data;
     if (data) {
@@ -149,6 +205,8 @@ export function useFinancial() {
       if (previous) setData(previous);
       toast.error("Delete failed");
       throw e;
+    } finally {
+      setIsMutating(false);
     }
   }
 
@@ -166,6 +224,7 @@ export function useFinancial() {
     net,
     refresh,
     getItem,
+    isMutating,
     createItem,
     updateItem,
     deleteItem,
