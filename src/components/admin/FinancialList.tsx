@@ -46,6 +46,7 @@ export function FinancialList(props: {
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void | Promise<void>;
+  disabled?: boolean;
 }) {
   const {
     title,
@@ -56,6 +57,7 @@ export function FinancialList(props: {
     onView,
     onEdit,
     onDelete,
+    disabled,
   } = props;
 
   const router = useRouter();
@@ -187,7 +189,7 @@ export function FinancialList(props: {
                 )}
               />
             </form>
-            <Button size="sm" onClick={onAdd}>
+            <Button size="sm" onClick={onAdd} disabled={disabled}>
               Add
             </Button>
           </div>
@@ -253,14 +255,19 @@ export function FinancialList(props: {
           </Table>
         </div>
         <div className="mt-3 flex gap-2">
-          <Button size="sm" variant="outline" onClick={onView}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onView}
+            disabled={disabled}
+          >
             View
           </Button>
-          <Button disabled={!selectedId} size="sm" onClick={onEdit}>
+          <Button disabled={!selectedId || disabled} size="sm" onClick={onEdit}>
             Edit
           </Button>
           <Button
-            disabled={!selectedId}
+            disabled={!selectedId || disabled}
             size="sm"
             variant="destructive"
             onClick={onDelete}

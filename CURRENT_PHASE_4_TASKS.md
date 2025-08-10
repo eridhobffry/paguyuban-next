@@ -12,15 +12,14 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Done**
   - Financial: Neon tables live; seeded and verified. Admin overview + charts. CRUD API with `evidence_url`. Public endpoint wired to homepage.
-  - Routing: `/admin/financial`, `/admin/user`, `/admin/documents`, and read-only detail pages for revenue and cost; overview “View” links to details.
+  - Routing: `/admin/financial`, `/admin/user`, `/admin/documents`, and revenue/cost detail pages (read + edit/delete) with deep links.
+  - Financial detail UI: sorting/search persistence, URL state for selection/sort/search, CRUD in-detail with dialogs, toasts, and optimistic updates.
   - Speakers: table + public GET + admin CRUD API.
   - Artists: table + public GET + admin CRUD API + admin list/detail dialog; seed endpoint; unified Drizzle types and shared zod schemas.
 - **In Progress**
-  - Financial detail pages: full fields and deep links done; sorting/search persistence, CRUD actions in-detail pages, and URL state still pending.
-- **Next**
   - Public financial QA: verify homepage totals match admin and charts update after mutations; optional ISR/client refresh.
+- **Next**
   - Speakers admin UI: list + detail dialog (read-only first), then create/edit with image.
-  - URL state: persist search/sort and selection without full navigation.
 - **Later (Roadmap)**
   - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
   - Admin UI shell migration to shadcn dashboard block.
@@ -66,7 +65,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
   - [x] Reuse `FinancialItemDialog` for add/edit (pre-filled on edit).
   - [x] Toasts added; fallback to refresh.
-  - [ ] Optimistic update where safe.
+  - [x] Optimistic update (create/update/delete) with rollback on error.
   - [x] Keep Drizzle-derived types the single source of truth.
 
 4. Backend readiness
@@ -240,6 +239,19 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [ ] Prepare migration: add Drizzle `documents` table (and optional `marketing_highlights` JSON) and update APIs to use Drizzle.
   - [ ] Prepare migration: create analytics tables: `analytics_sessions`, `analytics_events`, `analytics_section_durations`, `chatbot_logs`, `chatbot_summaries`.
   - [ ] Verify on temp branch; update FE types via Drizzle `InferSelectModel` and zod schemas; then commit.
+
+### React Query Migration Plan (optional, when scope grows)
+
+- Trigger: multiple domains need shared cache/invalidation (financial, speakers, artists, documents), pagination, background refetch, and cross-page coherence.
+- Steps (incremental):
+  1. Install and wrap app with QueryClientProvider in `src/app/layout.tsx`.
+  2. Convert `useFinancial` into React Query hooks:
+     - `useQuery(['financial'], fetcher)` for overview data.
+     - `useMutation` for create/update/delete with `onMutate` (optimistic), `onError` (rollback), `onSettled` (invalidate `['financial']`).
+     - `useQuery(['financial', id, type], fetcher)` for GET-by-id.
+  3. Replace manual event bus with query invalidation.
+  4. Keep Drizzle-derived types; keep toasts; preserve URL state logic.
+  5. Roll out to Speakers/Artists/Documents similarly.
 
 ---
 
