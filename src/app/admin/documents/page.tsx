@@ -8,11 +8,11 @@ import {
 } from "@/components/admin";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useState } from "react";
-import { Document } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
 
 export default function AdminDocumentsPage() {
   const { documents, loading, fetchDocuments } = useAdminData();
-  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [editingDoc, setEditingDoc] = useState<DocumentRow | null>(null);
 
   if (loading) {
     return (
@@ -23,25 +23,21 @@ export default function AdminDocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <AdminHeader />
-        <div className="space-y-6">
-          <DocumentUpload onRefresh={fetchDocuments} />
-          <DocumentLibrary
-            documents={documents}
-            onRefresh={fetchDocuments}
-            onEdit={setEditingDoc}
-          />
-          {editingDoc && (
-            <EditDocumentModal
-              document={editingDoc}
-              onClose={() => setEditingDoc(null)}
-              onRefresh={fetchDocuments}
-            />
-          )}
-        </div>
-      </div>
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <AdminHeader />
+      <DocumentUpload onRefresh={fetchDocuments} />
+      <DocumentLibrary
+        documents={documents}
+        onRefresh={fetchDocuments}
+        onEdit={setEditingDoc}
+      />
+      {editingDoc && (
+        <EditDocumentModal
+          document={editingDoc}
+          onClose={() => setEditingDoc(null)}
+          onRefresh={fetchDocuments}
+        />
+      )}
     </div>
   );
 }
