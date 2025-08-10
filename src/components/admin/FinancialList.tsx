@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,23 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatCurrency } from "@/lib/utils";
 
-export type BasicFinancialItem = {
-  id: string;
-  category: string;
-  amount: number;
-  notes: string | null;
-  evidenceUrl: string | null;
-  sortOrder: number | null;
-};
+import type { FinancialListItem } from "@/types/financial";
+export type BasicFinancialItem = FinancialListItem;
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+const euro = (amount: number) => formatCurrency(amount, true);
 
 const ToolbarSchema = z.object({
   query: z.string(),
@@ -67,9 +58,27 @@ export function FinancialList(props: {
     onDelete,
   } = props;
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const kindKey = props.kind; // "revenue" | "cost"
+  const qp = useMemo(() => {
+    const q = searchParams?.get(`${kindKey}_q`) ?? "";
+    const limitStr = searchParams?.get(`${kindKey}_limit`) ?? "25";
+    const sort =
+      (searchParams?.get(`${kindKey}_sort`) as
+        | "category"
+        | "amount"
+        | "sortOrder"
+        | null) ?? null;
+    const dir =
+      (searchParams?.get(`${kindKey}_dir`) as "asc" | "desc" | null) ?? null;
+    return { q, limitStr, sort, dir };
+  }, [searchParams, kindKey]);
+
   const form = useForm<ToolbarForm>({
     resolver: zodResolver(ToolbarSchema),
-    defaultValues: { query: "", limit: 25 },
+    defaultValues: { query: qp.q, limit: Number(qp.limitStr) || 25 },
   });
   const query = (
     useWatch({ control: form.control, name: "query" }) ?? ""
@@ -78,13 +87,68 @@ export function FinancialList(props: {
     useWatch({ control: form.control, name: "limit" }) ?? 25
   );
 
+  type SortBy = "category" | "amount" | "sortOrder";
+  type SortDir = "asc" | "desc";
+  const [sortBy, setSortBy] = useState<SortBy>(qp.sort ?? "sortOrder");
+  const [sortDir, setSortDir] = useState<SortDir>(qp.dir ?? "asc");
+
+  // keep form in sync if URL changes externally (e.g., back/forward)
+  useEffect(() => {
+    const nextQuery = qp.q;
+    const nextLimit = Number(qp.limitStr) || 25;
+    // only reset if different to avoid cursor jumps while typing
+    const current = form.getValues();
+    if (current.query !== nextQuery || Number(current.limit) !== nextLimit) {
+      form.reset({ query: nextQuery, limit: nextLimit });
+    }
+    if ((qp.sort ?? "sortOrder") !== sortBy)
+      setSortBy((qp.sort as SortBy) ?? "sortOrder");
+    if ((qp.dir ?? "asc") !== sortDir) setSortDir((qp.dir as SortDir) ?? "asc");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qp.q, qp.limitStr, qp.sort, qp.dir]);
+
+  // push URL updates when user changes toolbar
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set(`${kindKey}_q`, query);
+    params.set(`${kindKey}_limit`, String(limit || 25));
+    params.set(`${kindKey}_sort`, sortBy);
+    params.set(`${kindKey}_dir`, sortDir);
+    router.replace(`?${params.toString()}`);
+  }, [query, limit, sortBy, sortDir, kindKey, router, searchParams]);
+
+  function handleSort(next: SortBy) {
+    if (sortBy === next) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(next);
+      setSortDir("asc");
+    }
+  }
+
   const filtered =
     items?.filter((it) =>
       (it.category + (it.notes ?? "") + (it.evidenceUrl ?? ""))
         .toLowerCase()
         .includes(query.toLowerCase())
     ) ?? [];
-  const sliced = filtered.slice(0, limit === 0 ? undefined : limit);
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortBy === "category") {
+      return a.category.localeCompare(b.category) * dir;
+    }
+    if (sortBy === "amount") {
+      return ((a.amount ?? 0) - (b.amount ?? 0)) * dir;
+    }
+    // sortOrder: place nulls at the end in asc, start in desc
+    const aVal = a.sortOrder;
+    const bVal = b.sortOrder;
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return dir; // null after in asc, before in desc
+    if (bVal == null) return -dir;
+    return (aVal - bVal) * dir;
+  });
+  const sliced = sorted.slice(0, limit === 0 ? undefined : limit);
 
   return (
     <Card>
@@ -137,8 +201,35 @@ export function FinancialList(props: {
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead
+                  onClick={() => handleSort("category")}
+                  className="cursor-pointer select-none"
+                >
+                  Category
+                  {sortBy === "category"
+                    ? sortDir === "asc"
+                      ? " ▲"
+                      : " ▼"
+                    : ""}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort("amount")}
+                  className="cursor-pointer select-none text-right"
+                >
+                  Amount
+                  {sortBy === "amount" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort("sortOrder")}
+                  className="cursor-pointer select-none text-right"
+                >
+                  Sort
+                  {sortBy === "sortOrder"
+                    ? sortDir === "asc"
+                      ? " ▲"
+                      : " ▼"
+                    : ""}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -151,7 +242,10 @@ export function FinancialList(props: {
                 >
                   <TableCell>{it.category}</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(it.amount)}
+                    {euro(it.amount)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {it.sortOrder ?? "-"}
                   </TableCell>
                 </TableRow>
               ))}

@@ -30,13 +30,8 @@ const COLORS = [
   "#06b6d4",
 ];
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+import { formatCurrency } from "@/lib/utils";
+const euro = (amount: number) => formatCurrency(amount, true);
 
 export function FinancialCharts() {
   const { data, totalRevenue, totalCosts } = useFinancial();
@@ -85,10 +80,7 @@ export function FinancialCharts() {
                       fill={COLORS[index % COLORS.length]}
                     />
                   ))}
-                  <Label
-                    position="center"
-                    value={formatCurrency(totalRevenue)}
-                  />
+                  <Label position="center" value={euro(totalRevenue)} />
                 </Pie>
                 <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -127,7 +119,7 @@ export function FinancialCharts() {
                       fill={COLORS[index % COLORS.length]}
                     />
                   ))}
-                  <Label position="center" value={formatCurrency(totalCosts)} />
+                  <Label position="center" value={euro(totalCosts)} />
                 </Pie>
                 <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                 <ChartTooltip content={<ChartTooltipContent />} />

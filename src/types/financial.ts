@@ -16,3 +16,9 @@ export type FinancialItemBase = Pick<
   FinancialRevenueItem,
   "category" | "amount" | "notes" | "sortOrder" | "evidenceUrl"
 >;
+
+// List item type for UI lists, mirroring DB-backed fields
+export type FinancialListItem = Pick<
+  FinancialRevenueItem,
+  "id" | "category" | "amount" | "notes" | "evidenceUrl" | "sortOrder"
+>;
