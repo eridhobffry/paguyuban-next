@@ -9,6 +9,7 @@ import type { FinancialCostItem } from "@/types/financial";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { FinancialItemDialog } from "@/components/admin/FinancialItemDialog";
 import type { FinancialItemBase } from "@/types/financial";
+import { useFinancial } from "@/hooks/useFinancial";
 
 export default function CostItemPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function CostItemPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const { updateItem, deleteItem } = useFinancial();
 
   useEffect(() => {
     async function load() {
@@ -55,30 +57,16 @@ export default function CostItemPage() {
 
   async function onSave(values: FinancialItemBase) {
     if (!id) return;
-    const res = await fetch("/api/admin/financial", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ itemType: "cost", id, item: values }),
-    });
-    if (!res.ok) throw new Error("Update failed");
+    await updateItem("cost", id, values);
     setModalOpen(false);
     router.refresh();
-    window.dispatchEvent(new CustomEvent("financial-updated"));
   }
 
   async function onDelete() {
     if (!id) return;
     if (!confirm("Delete this item?")) return;
-    const res = await fetch("/api/admin/financial", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ itemType: "cost", id }),
-    });
-    if (!res.ok) throw new Error("Delete failed");
+    await deleteItem("cost", id);
     router.push("/admin/financial/cost");
-    window.dispatchEvent(new CustomEvent("financial-updated"));
   }
 
   return (
