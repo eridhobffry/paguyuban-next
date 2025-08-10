@@ -118,8 +118,20 @@ const FinancialTransparencySection = () => {
       }
     }
     fetchData();
+    // Listen for admin-side updates via BroadcastChannel (cross-tab) and fallback event
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("financial");
+      bc.onmessage = (e) => {
+        if (e?.data?.type === "updated") fetchData();
+      };
+    } catch {}
+    const onUpdated = () => fetchData();
+    window.addEventListener("financial-updated", onUpdated);
     return () => {
       cancelled = true;
+      if (bc) bc.close();
+      window.removeEventListener("financial-updated", onUpdated);
     };
   }, []);
 

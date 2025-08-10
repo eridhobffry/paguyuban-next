@@ -14,6 +14,20 @@ export function FinancialBreakdown() {
   useEffect(() => {
     setIsClient(true);
     void fetchFinancial();
+    // Listen for admin-side updates to refresh public data
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("financial");
+      bc.onmessage = (e) => {
+        if (e?.data?.type === "updated") void fetchFinancial();
+      };
+    } catch {}
+    const onUpdated = () => void fetchFinancial();
+    window.addEventListener("financial-updated", onUpdated);
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener("financial-updated", onUpdated);
+    };
   }, []);
 
   const fetchFinancial = async () => {
