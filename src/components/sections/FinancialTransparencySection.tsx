@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FinancialResponseDto } from "@/types/financial";
+import { computeTotals } from "@/lib/financial";
 import { fetchPublicFinancial } from "@/lib/utils";
 
 // Safe formatting function to prevent hydration mismatches
@@ -132,13 +133,9 @@ const FinancialTransparencySection = () => {
   const revenueItems = useMemo(() => dbData?.revenues ?? [], [dbData]);
   const costItems = useMemo(() => dbData?.costs ?? [], [dbData]);
 
-  const totalRevenue = useMemo(
-    () => revenueItems.reduce((sum, item) => sum + (item.amount || 0), 0),
-    [revenueItems]
-  );
-  const totalCosts = useMemo(
-    () => costItems.reduce((sum, item) => sum + (item.amount || 0), 0),
-    [costItems]
+  const { totalRevenue, totalCosts, net } = useMemo(
+    () => computeTotals(dbData),
+    [dbData]
   );
 
   const revenueBreakdown = useMemo(() => {
@@ -179,8 +176,8 @@ const FinancialTransparencySection = () => {
     }));
   }, [costItems, totalCosts]);
 
-  const netResult = totalRevenue - totalCosts;
-  const isProfit = netResult > 0;
+  const netResult = net;
+  const isProfit = net > 0;
 
   return (
     <section

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   FinancialCostItem,
@@ -225,18 +225,22 @@ export function useFinancial() {
     }
   }
 
-  const totalRevenue =
-    data?.revenues?.reduce((s, r) => s + (r.amount || 0), 0) ?? 0;
-  const totalCosts = data?.costs?.reduce((s, c) => s + (c.amount || 0), 0) ?? 0;
-  const net = totalRevenue - totalCosts;
+  const totals = useMemo(() => {
+    const totalRevenue =
+      data?.revenues?.reduce((s, r) => s + (r.amount || 0), 0) ?? 0;
+    const totalCosts =
+      data?.costs?.reduce((s, c) => s + (c.amount || 0), 0) ?? 0;
+    const net = totalRevenue - totalCosts;
+    return { totalRevenue, totalCosts, net };
+  }, [data]);
 
   return {
     data,
     loading,
     error,
-    totalRevenue,
-    totalCosts,
-    net,
+    totalRevenue: totals.totalRevenue,
+    totalCosts: totals.totalCosts,
+    net: totals.net,
     refresh,
     getItem,
     isMutating,

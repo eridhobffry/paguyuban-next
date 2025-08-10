@@ -7,6 +7,7 @@ import type { FinancialResponseDto } from "@/types/financial";
 import { fetchPublicFinancial } from "@/lib/utils";
 import { SERIES_COLORS } from "./data";
 import { formatCurrency } from "@/lib/utils";
+import { computeTotals } from "@/lib/financial";
 
 export function FinancialBreakdown() {
   const [isClient, setIsClient] = useState(false);
@@ -41,10 +42,7 @@ export function FinancialBreakdown() {
   };
 
   const revenueItems = useMemo(() => financial?.revenues ?? [], [financial]);
-  const totalRevenue = useMemo(
-    () => revenueItems.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [revenueItems]
-  );
+  const { totalRevenue } = useMemo(() => computeTotals(financial), [financial]);
   const financialBreakdown = useMemo(
     () =>
       revenueItems.length && totalRevenue

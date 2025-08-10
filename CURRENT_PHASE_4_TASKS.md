@@ -94,9 +94,16 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
   - Table, public GET `/api/speakers/public` (ordered, cached), admin CRUD API with `speakerType` enum.
 
+- **Done**
+
+  - Admin UI list + read-only detail dialog.
+  - Create/edit with image URL field and validation; delete with confirm + toasts.
+  - Search, sort, and row-limit controls on list. Sidebar integration.
+
 - **Next**
-  - [ ] Admin UI list + detail dialog (read-only first), then create/edit with image field.
-  - Planned enrichments: image upload (signed URL), richer `bio/tags/slug` for deep links (`/speakers/[slug]`), homepage dialog on card click; RHF + shadcn + toasts; search/sort by name/company.
+  - Image upload (signed URL) and store returned URL; keep URL-based path supported.
+  - Richer `bio/tags/slug` for deep links (`/speakers/[slug]`); homepage dialog on card click.
+  - Optional: admin-side filters by `speakerType`, company.
 
 ### Artists
 

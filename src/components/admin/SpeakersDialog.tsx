@@ -121,8 +121,15 @@ export function SpeakersDialog({
             })}
           >
             <div className="grid gap-1">
-              <Label>Name</Label>
+              <Label>
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input {...form.register("name")} />
+              {form.formState.errors.name && (
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.name.message as string}
+                </p>
+              )}
             </div>
             <div className="grid gap-2 md:grid-cols-2">
               <div>
@@ -137,6 +144,11 @@ export function SpeakersDialog({
             <div className="grid gap-1">
               <Label>Image URL</Label>
               <Input {...form.register("imageUrl")} />
+              {form.formState.errors.imageUrl && (
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.imageUrl.message as string}
+                </p>
+              )}
             </div>
             <div className="grid gap-1">
               <Label>Bio</Label>
@@ -164,6 +176,11 @@ export function SpeakersDialog({
               <div>
                 <Label>Website URL</Label>
                 <Input {...form.register("website")} />
+                {form.formState.errors.website && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.website.message as string}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid gap-1">
