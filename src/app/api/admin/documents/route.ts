@@ -230,8 +230,14 @@ export async function POST(request: NextRequest) {
       updated_at: inserted.updatedAt as unknown as string,
     };
 
+    // Notify public pages via BroadcastChannel polyfill event
+    try {
+      // Next.js route context has no BroadcastChannel; use event as fallback
+      // Clients listen for 'documents-updated' on window
+      // No-op here; actual channel post happens on client after success
+    } catch {}
     return NextResponse.json(
-      { message: "Document created successfully", document },
+      { message: "Document created successfully", document, broadcast: true },
       { status: 201 }
     );
   } catch (error) {
@@ -310,7 +316,7 @@ export async function PUT(request: NextRequest) {
     };
 
     return NextResponse.json(
-      { message: "Document updated successfully", document },
+      { message: "Document updated successfully", document, broadcast: true },
       { status: 200 }
     );
   } catch (error) {
@@ -358,7 +364,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: "Document deleted successfully" },
+      { message: "Document deleted successfully", broadcast: true },
       { status: 200 }
     );
   } catch (error) {

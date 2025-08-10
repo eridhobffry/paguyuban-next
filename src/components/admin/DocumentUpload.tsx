@@ -144,6 +144,13 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
             .catch(() => {});
         }
       } catch {}
+      // Broadcast to public pages
+      try {
+        const bc = new BroadcastChannel("documents");
+        bc.postMessage({ type: "updated" });
+        bc.close();
+        window.dispatchEvent(new Event("documents-updated"));
+      } catch {}
       await onRefresh();
       commitTemp();
       alert("Document uploaded successfully!");
@@ -169,6 +176,12 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
 
       if (response.ok) {
         await onRefresh();
+        try {
+          const bc = new BroadcastChannel("documents");
+          bc.postMessage({ type: "updated" });
+          bc.close();
+          window.dispatchEvent(new Event("documents-updated"));
+        } catch {}
         alert("Document analyzed from URL successfully!");
       } else {
         alert("Failed to analyze document from URL");

@@ -84,6 +84,12 @@ export function EditDocumentModal({
       if (response.ok) {
         toast.success("Document updated");
         await onRefresh();
+        try {
+          const bc = new BroadcastChannel("documents");
+          bc.postMessage({ type: "updated" });
+          bc.close();
+          window.dispatchEvent(new Event("documents-updated"));
+        } catch {}
         commitTemp();
         onClose();
       } else {
