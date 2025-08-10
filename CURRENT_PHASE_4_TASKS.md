@@ -85,8 +85,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Public Alignment**
   - [x] Endpoint exists and homepage wired.
+  - [x] Client refresh listener wired (BroadcastChannel + event) and cache-busting fetch.
   - [ ] QA totals vs admin; ensure charts update after mutations.
-  - [ ] Optional ISR/revalidate or client refresh listener.
 
 ### Speakers
 

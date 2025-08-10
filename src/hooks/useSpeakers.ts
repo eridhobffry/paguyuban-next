@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { Speaker } from "@/types/people";
 
 export function useSpeakersAdmin() {
@@ -28,40 +29,58 @@ export function useSpeakersAdmin() {
   }, [fetchSpeakers]);
 
   const createSpeaker = useCallback(async (speaker: Omit<Speaker, "id">) => {
-    const res = await fetch("/api/admin/speakers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ speaker }),
-    });
-    if (!res.ok) throw new Error("Failed to create speaker");
-    const data = await res.json();
-    return data.speaker as Speaker;
+    try {
+      const res = await fetch("/api/admin/speakers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ speaker }),
+      });
+      if (!res.ok) throw new Error("Failed to create speaker");
+      const data = await res.json();
+      toast.success("Speaker created");
+      return data.speaker as Speaker;
+    } catch (e) {
+      toast.error("Create failed");
+      throw e;
+    }
   }, []);
 
   const updateSpeaker = useCallback(
     async (id: string, speaker: Partial<Speaker>) => {
-      const res = await fetch("/api/admin/speakers", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, speaker }),
-      });
-      if (!res.ok) throw new Error("Failed to update speaker");
-      const data = await res.json();
-      return data.speaker as Speaker;
+      try {
+        const res = await fetch("/api/admin/speakers", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id, speaker }),
+        });
+        if (!res.ok) throw new Error("Failed to update speaker");
+        const data = await res.json();
+        toast.success("Speaker updated");
+        return data.speaker as Speaker;
+      } catch (e) {
+        toast.error("Update failed");
+        throw e;
+      }
     },
     []
   );
 
   const deleteSpeaker = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/speakers?id=${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("Failed to delete speaker");
-    const data = await res.json();
-    return data.speaker as Speaker;
+    try {
+      const res = await fetch(`/api/admin/speakers?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete speaker");
+      const data = await res.json();
+      toast.success("Speaker deleted");
+      return data.speaker as Speaker;
+    } catch (e) {
+      toast.error("Delete failed");
+      throw e;
+    }
   }, []);
 
   return {
