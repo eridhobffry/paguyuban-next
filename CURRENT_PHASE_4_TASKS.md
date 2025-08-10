@@ -7,6 +7,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - Move hardcoded content (financial, speakers, artists, agenda, sponsors, investment opportunities, executive documents) into Neon.
 - Provide secure admin CRUD APIs and UI with Zod/RHF/shadcn; keep Drizzle as single source of truth for types.
 - Switch public reads to API gradually after each domain’s admin CRUD is stable.
+- Add real-time, optimistic UX via TanStack DB + ElectricSQL for domains that benefit from live reads; keep mutations on our API.
 
 ### Status Snapshot
 
@@ -28,12 +29,39 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 ### Architecture
 
 - **Database (Neon)**: normalized tables; start simple; add metadata later.
-- **Backend (Next.js)**: admin-protected CRUD under `/api/admin/*` with `zod` validation, DB via `src/lib/db.ts`.
-- **Frontend (Admin)**: `/admin`-scoped pages; RHF + shadcn; optimistic UI with toasts; live recompute for financials.
+- **Backend (Next.js)**: admin-protected CRUD under `/api/admin/*` with `zod` validation, DB via Drizzle.
+- **Frontend (Admin)**: `/admin`-scoped pages; RHF + shadcn; optimistic UI with toasts; replace manual refresh with live queries where applicable.
+- **Types**: Drizzle-derived types as the single source of truth; generate Zod schemas from Drizzle definitions for API validation and FE parsing.
+- **Real-time Reads**: ElectricSQL shape proxy endpoint in app (auth-enforced) + TanStack DB collections on the client for live queries and optimistic mutations. Mutations stay on our API.
+- **Caching**: Keep public endpoints cacheable (ISR/edge) with explicit busting; admin reads live where needed.
 
 ---
 
 ## Workstreams
+
+### Real-time Sync (TanStack DB + ElectricSQL)
+
+- **Rationale**: End-to-end reactivity without maintaining WebSocket infra; ElectricSQL streams Postgres changes to clients via HTTP long-polling; TanStack DB provides optimistic mutations and live queries while keeping our writes on the existing API. Reference: TanStack DB with Sync (Neon blog).
+
+- **Pilot Scope**: `speakers` (narrow, low risk). Rollout to `artists` → `financial` (admin first) → `documents` reads if beneficial.
+
+- **Plan (incremental, feature-flagged)**
+
+  1. Dependencies: `@tanstack/react-db`, `@tanstack/electric-db-collection`.
+  2. Proxy endpoint: create `src/app/api/realtime/shape/route.ts` to forward whitelisted query params to ElectricSQL, inject credentials from env, and enforce auth + row-level filters. Remove `content-encoding`/`content-length` headers in proxy response.
+  3. Schemas: derive Zod schemas from Drizzle (`InferSelectModel` → Zod generator or maintained schema). Keep FE/BE types aligned with Drizzle.
+  4. Client collections: define `speakersCollection` with `createCollection(electricCollectionOptions(...))`, `getKey`, and mutation callbacks (`onInsert/onUpdate/onDelete`) that call our existing `/api/admin/speakers` endpoints and return txids (timestamp suffices initially).
+  5. UI integration: change `useSpeakersAdmin` reads to `useLiveQuery` against `speakersCollection`; keep current hook behind `NEXT_PUBLIC_EXPERIMENT_SPEAKERS_SYNC` for rollback.
+  6. Rollout: observe error rates and UX, then repeat for `artists`. For `financial`, start with admin pages; public charts can remain cached with existing refresh, or adopt live queries on client after pilot.
+  7. Performance & backoff: ensure shape query selects necessary columns only; paginate if needed.
+  8. Security: proxy must validate caller auth (Stack Auth), sanitize/whitelist params (`live`, `handle`, `offset`, `cursor`, `where`), enforce table allow-list; do not expose ElectricSQL secrets client-side.
+  9. Observability: add logging around proxy failures and client mutation errors; toasts in UI; incrementally add metrics.
+  10. Documentation: notes for dev setup (env vars, feature flag), fallback mode, and rollback instructions.
+
+- **Acceptance (pilot)**
+  - Admin `speakers` list reflects cross-tab changes within 1–2s without manual refresh.
+  - Create/update/delete is optimistic; rolls back on server error; toasts shown.
+  - Toggling the feature flag reverts to legacy fetch flow without errors.
 
 ### Financial
 
@@ -87,6 +115,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [x] Endpoint exists and homepage wired.
   - [x] Client refresh listener wired (BroadcastChannel + event) and cache-busting fetch.
   - [ ] QA totals vs admin; ensure charts update after mutations.
+  - [ ] Optional (post-pilot): switch public charts to live queries gated by a flag, or keep current cached model and rely on periodic refresh.
 
 ### Speakers
 
@@ -102,8 +131,10 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Next**
   - Image upload (signed URL) and store returned URL; keep URL-based path supported.
+  - Blob cleanup: ref-counted delete on PUT/DELETE via shared util; registry-based references for scalability.
   - Richer `bio/tags/slug` for deep links (`/speakers/[slug]`); homepage dialog on card click.
   - Optional: admin-side filters by `speakerType`, company.
+  - Optional (pilot target): live queries via TanStack DB + ElectricSQL; optimistic admin mutations.
 
 ### Artists
 
@@ -113,6 +144,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Next**
   - Feature parity with Speakers enrichments.
+  - Blob upload + ref-counted cleanup wired to shared utilities.
   - Storage plan: Phase A `image_url` (URL-based); Phase B Vercel Blob upload and store URL.
 
 ### Executive Documents
@@ -132,6 +164,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [ ] Migrate admin documents API from raw SQL helpers to Drizzle to unify BE/FE types.
   - [ ] Optional: persist `marketingHighlights` as JSON for richer UI summaries.
   - [ ] Storage: move file uploads to Vercel Blob; store returned URL in DB; keep `external_url` path supported.
+  - [ ] Register `documents` blob columns in shared blob registry for cleanup.
+  - Optional: evaluate read-side live updates for library views after pilots; keep public reads cached.
 
 - **Acceptance**
   - Admin can upload or link a document; Gemini summary saved (title, description, preview, pages); link opens; access control respected.
@@ -145,6 +179,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Next**
   - Deep links for selected financial items; persist search/sort/selection in URL; mirror patterns for speakers/artists later.
+  - Optional: use route-aware query keys for live queries to keep filters stable across navigation.
 
 ### UI Shell Migration (Later)
 
@@ -210,6 +245,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [ ] `/api/analytics/track` with zod-validated payload, CORS, rate limiting; batching support.
   - [ ] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
   - [ ] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
+  - [ ] Optional: explore server-sent events or ElectricSQL-backed reads for dashboard views.
 
 - **Frontend**
 
@@ -246,19 +282,26 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [ ] Prepare migration: add Drizzle `documents` table (and optional `marketing_highlights` JSON) and update APIs to use Drizzle.
   - [ ] Prepare migration: create analytics tables: `analytics_sessions`, `analytics_events`, `analytics_section_durations`, `chatbot_logs`, `chatbot_summaries`.
   - [ ] Verify on temp branch; update FE types via Drizzle `InferSelectModel` and zod schemas; then commit.
+- Branching: favor Neon branching for risky schema changes; keep prod traffic isolated; instant restore if needed.
+- Types pipeline: any schema change must update Drizzle models, regenerate Zod schemas, and propagate FE/BE imports.
 
-### React Query Migration Plan (optional, when scope grows)
+### Data Client Strategy (React Query vs TanStack DB)
 
-- Trigger: multiple domains need shared cache/invalidation (financial, speakers, artists, documents), pagination, background refetch, and cross-page coherence.
-- Steps (incremental):
-  1. Install and wrap app with QueryClientProvider in `src/app/layout.tsx`.
-  2. Convert `useFinancial` into React Query hooks:
-     - `useQuery(['financial'], fetcher)` for overview data.
-     - `useMutation` for create/update/delete with `onMutate` (optimistic), `onError` (rollback), `onSettled` (invalidate `['financial']`).
-     - `useQuery(['financial', id, type], fetcher)` for GET-by-id.
-  3. Replace manual event bus with query invalidation.
-  4. Keep Drizzle-derived types; keep toasts; preserve URL state logic.
-  5. Roll out to Speakers/Artists/Documents similarly.
+Two complementary paths; choose per domain:
+
+- React Query (no real-time requirement):
+
+  - Trigger: shared cache/invalidation across pages, pagination, background refetch, coherence without live updates.
+  - Steps:
+    1. Wrap app with `QueryClientProvider`.
+    2. Convert `useFinancial` to `useQuery` + `useMutation` with optimistic updates and invalidation.
+    3. Replace manual event bus with query invalidation.
+    4. Roll out to Speakers/Artists/Documents where live updates are not required.
+
+- TanStack DB + ElectricSQL (real-time reads):
+  - Trigger: multi-user coherence, instant UI, background tasks updating Postgres, cross-tab/device updates.
+  - Steps: follow the Real-time Sync workstream (pilot → rollout), keep mutations via API.
+  - Coexistence: It’s fine for some domains to use React Query and others to use TanStack DB collections.
 
 ---
 
@@ -267,8 +310,11 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - Dropped `financial_categories` to prevent schema drift.
 - Keep Drizzle-derived types as the single source of truth for frontend types.
 - Public endpoints remain open (no auth) for homepage fetches; access control enforced in admin routes and middleware.
+- Real-time adoption will be gated by feature flags per domain and rolled out after a successful pilot.
+- Blob storage pattern: server uploads via `@vercel/blob.put`, UI helper `useMediaUpload`, and shared cleanup util with registry-based ref counting. Extend registry for new domains (agenda, documents, site logos). Best-effort deletes; non-blocking.
 
 ## Evidence & Links
 
 - Financial master sheet (restricted; do not fetch programmatically): `https://docs.google.com/spreadsheets/d/1bZFvjBk7AkfyMAIfUy5P0EjiqDgoFxa_oipObHjExv8/edit?usp=sharing`
 - Admin can attach links/files as evidence; later Gemini will summarize/validate with provenance.
+- TanStack DB with Sync – the future of real-time UI (Neon blog): `https://neon.com/blog/tanstack-db-and-electricsql`

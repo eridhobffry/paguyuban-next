@@ -9,6 +9,7 @@ import {
 } from "@/types/validation";
 import type { User } from "@/lib/sql";
 import { eq } from "drizzle-orm";
+import { deleteBlobIfUnreferenced } from "@/lib/blob-utils";
 
 const CreateSchema = z.object({ artist: artistAdminCreateSchema });
 const UpdateSchema = artistAdminUpdateSchema;
@@ -129,6 +130,13 @@ export async function PUT(request: NextRequest) {
       return { slug: s };
     })();
 
+    // fetch old for potential cleanup
+    const oldRow = await db
+      .select()
+      .from(artists)
+      .where(eq(artists.id, parsed.data.id));
+    const oldUrl = oldRow?.[0]?.imageUrl ?? null;
+
     const [updated] = await db
       .update(artists)
       .set({
@@ -137,7 +145,11 @@ export async function PUT(request: NextRequest) {
       })
       .where(eq(artists.id, parsed.data.id))
       .returning();
-
+    // cleanup old image if changed
+    const newUrl = updated?.imageUrl ?? null;
+    if (oldUrl && oldUrl !== newUrl) {
+      await deleteBlobIfUnreferenced(oldUrl);
+    }
     return NextResponse.json({ artist: updated }, { status: 200 });
   } catch (error) {
     console.error("/api/admin/artists PUT error:", error);
@@ -173,6 +185,8 @@ export async function DELETE(request: NextRequest) {
       .delete(artists)
       .where(eq(artists.id, parsed.data.id))
       .returning();
+    const imageUrl = deletedRow?.imageUrl as string | null | undefined;
+    if (imageUrl) await deleteBlobIfUnreferenced(imageUrl);
     return NextResponse.json({ artist: deletedRow }, { status: 200 });
   } catch (error) {
     console.error("/api/admin/artists DELETE error:", error);
