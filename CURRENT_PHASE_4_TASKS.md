@@ -51,8 +51,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   1. Revenue detail UI
 
   - [x] Item panel shows `category`, `amount`, `notes`, `evidence_url` (clickable), `created_at`, `updated_at`.
-  - [ ] Sorting by `category`, `amount`, `sort_order`; search persisted via query param.
-  - [ ] Row actions: Edit, Delete; top-level Add.
+  - [x] Sorting by `category`, `amount`, `sort_order`; search persisted via query param.
+  - [x] Row actions: Edit, Delete; top-level Add.
 
 - [x] Deep links: `/admin/financial/revenue/[id]` opens selected item.
 
@@ -65,7 +65,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   3. CRUD wiring
 
   - [x] Reuse `FinancialItemDialog` for add/edit (pre-filled on edit).
-  - [ ] Toasts + optimistic update where safe; fallback to refresh.
+  - [x] Toasts added; fallback to refresh.
+  - [ ] Optimistic update where safe.
   - [x] Keep Drizzle-derived types the single source of truth.
 
 4. Backend readiness
@@ -75,7 +76,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 5. Routing & state
 
-- [ ] Persist search/sort to URL; selecting a row updates URL without full-page nav.
+- [x] Persist search/sort to URL; selecting a row updates URL without full-page nav.
 
 6. QA
 
