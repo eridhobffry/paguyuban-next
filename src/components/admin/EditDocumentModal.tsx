@@ -141,6 +141,43 @@ export function EditDocumentModal({
     }));
   };
 
+  const handleAIRefine = async () => {
+    try {
+      toast.info("Refining with AI...");
+      const res = await fetch("/api/admin/documents/refine", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editingDoc.title,
+          description: editingDoc.description,
+          preview: editingDoc.preview,
+          pages: editingDoc.pages,
+          type: editingDoc.type,
+          icon: editingDoc.icon,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Refine failed");
+      setEditingDoc((prev) => ({
+        ...prev,
+        title: data.refined.title ?? prev.title,
+        description: data.refined.description ?? prev.description,
+        preview: data.refined.preview ?? prev.preview,
+        pages: data.refined.pages || prev.pages,
+        type: data.refined.type || prev.type,
+        icon: data.refined.icon || prev.icon,
+        marketingHighlights:
+          (data.refined.marketingHighlights as string[] | undefined) ??
+          prev.marketingHighlights,
+      }));
+      toast.success("AI suggestions applied");
+    } catch (err) {
+      console.error(err);
+      toast.error("AI refine failed");
+    }
+  };
+
   return (
     <Card className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -319,6 +356,9 @@ export function EditDocumentModal({
               </div>
             </div>
             <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleAIRefine}>
+                AI Refine
+              </Button>
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
