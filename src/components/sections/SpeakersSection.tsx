@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Mic2, Twitter, Linkedin, Globe } from "lucide-react";
 import Image from "next/image";
+import { getSafeImageSrc } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { PublicArtistDto, PublicSpeakerDto } from "@/types/people";
 
@@ -34,7 +35,10 @@ const SpeakerCard = ({
       <div className="relative w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden border-4 border-white/10 group-hover:border-cyan-400/30 transition-colors">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 z-10"></div>
         <Image
-          src={speaker.image}
+          src={getSafeImageSrc(
+            speaker.image,
+            "/images/speakers/gita-wirjawan.jpg"
+          )}
           alt={speaker.name}
           fill
           className="object-cover"
@@ -122,7 +126,7 @@ const SpeakersSection = () => {
     name: s.name,
     role: s.role ?? "",
     company: s.company ?? "",
-    image: s.image_url ?? "/images/speakers/gita-wirjawan.jpg",
+    image: getSafeImageSrc(s.image_url, "/images/speakers/gita-wirjawan.jpg"),
     type: "speaker",
     social: {
       twitter: s.twitter ?? "",
