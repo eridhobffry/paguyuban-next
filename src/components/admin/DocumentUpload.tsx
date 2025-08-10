@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DocumentFormData, documentTypes, iconOptions } from "@/types/admin";
 import { useMediaUpload } from "@/hooks/useUpload";
+import { DocumentRow } from "@/types/documents";
 
 interface DocumentUploadProps {
   onRefresh: () => Promise<void>;
@@ -99,6 +100,50 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
 
       if (!response.ok) throw new Error("Create document failed");
 
+      // Auto-refine after first upload to generate metadata
+      try {
+        const created = (await response.json()) as {
+          document: DocumentRow;
+        };
+        const fileUrl = manual.file_url;
+        if (fileUrl) {
+          await fetch("/api/admin/documents/refine", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: manual.title,
+              description: manual.description,
+              preview: manual.preview,
+              pages: manual.pages,
+              type: manual.type,
+              icon: manual.icon,
+              fileUrl,
+            }),
+          })
+            .then((r) => r.json())
+            .then(async (data) => {
+              if (data?.refined) {
+                await fetch("/api/admin/documents", {
+                  method: "PUT",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    id: created?.document?.id,
+                    title: data.refined.title,
+                    description: data.refined.description,
+                    preview: data.refined.preview,
+                    pages: data.refined.pages,
+                    type: data.refined.type,
+                    icon: data.refined.icon,
+                    marketing_highlights: data.refined.marketingHighlights,
+                  }),
+                });
+              }
+            })
+            .catch(() => {});
+        }
+      } catch {}
       await onRefresh();
       commitTemp();
       alert("Document uploaded successfully!");

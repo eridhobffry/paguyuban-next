@@ -14,6 +14,7 @@ export function useDocumentsLive() {
 
   const [liveDocs, setLiveDocs] = useState<DocumentRow[] | null>(null);
   const [liveLoading, setLiveLoading] = useState(false);
+  const [etag, setEtag] = useState<string | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Simple gated polling placeholder for live updates (off by default)
@@ -22,10 +23,16 @@ export function useDocumentsLive() {
     setLiveLoading(true);
     const fetchDocs = async () => {
       try {
+        const headers: Record<string, string> = {};
+        if (etag) headers["If-None-Match"] = etag;
         const res = await fetch("/api/admin/documents", {
           credentials: "include",
+          headers,
         });
+        if (res.status === 304) return; // no changes
         if (!res.ok) return;
+        const nextEtag = res.headers.get("etag");
+        if (nextEtag) setEtag(nextEtag);
         const data = (await res.json()) as { documents: DocumentRow[] };
         setLiveDocs(data.documents);
       } finally {
@@ -39,7 +46,7 @@ export function useDocumentsLive() {
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
-  }, [enabled]);
+  }, [enabled, etag]);
 
   const mode: LiveMode = enabled ? "polling" : "legacy";
 
@@ -47,17 +54,23 @@ export function useDocumentsLive() {
     if (!enabled) return legacy.fetchDocuments;
     return async () => {
       try {
+        const headers: Record<string, string> = {};
+        if (etag) headers["If-None-Match"] = etag;
         const res = await fetch("/api/admin/documents", {
           credentials: "include",
+          headers,
         });
+        if (res.status === 304) return;
         if (!res.ok) return;
+        const nextEtag = res.headers.get("etag");
+        if (nextEtag) setEtag(nextEtag);
         const data = (await res.json()) as { documents: DocumentRow[] };
         setLiveDocs(data.documents);
       } catch {
         // ignore
       }
     };
-  }, [enabled, legacy.fetchDocuments]);
+  }, [enabled, legacy.fetchDocuments, etag]);
 
   return enabled
     ? { documents: liveDocs ?? [], loading: liveLoading, refresh, mode }

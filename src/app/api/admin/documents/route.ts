@@ -28,7 +28,18 @@ export async function GET(request: NextRequest) {
       .from(schema.documents)
       .orderBy(desc(schema.documents.createdAt));
 
-    return NextResponse.json({ documents }, { status: 200 });
+    // Weak ETag based on count+latest update timestamp to support admin polling 304s
+    const lastUpdated = documents[0]?.updatedAt?.toISOString() || "0";
+    const etag = `W/"docs-${documents.length}-${lastUpdated}"`;
+    const reqTag = request.headers.get("if-none-match");
+    if (reqTag === etag) {
+      return new NextResponse(null, { status: 304, headers: { ETag: etag } });
+    }
+
+    return NextResponse.json(
+      { documents },
+      { status: 200, headers: { ETag: etag } }
+    );
   } catch (error) {
     console.error("Get documents error:", error);
     return NextResponse.json(
@@ -89,8 +100,27 @@ export async function POST(request: NextRequest) {
       };
     } else if (externalUrl) {
       try {
-        const urlResponse = await fetch(externalUrl!);
-        const urlContent = await urlResponse.text();
+        // Prefer extracting raw text for Google Docs links to improve analysis quality
+        let urlContent = "";
+        const gdocMatch = externalUrl!.match(
+          /docs.google.com\/document\/d\/([a-zA-Z0-9_-]+)/
+        );
+        if (gdocMatch?.[1]) {
+          const exportTxt = `https://docs.google.com/document/d/${gdocMatch[1]}/export?format=txt`;
+          const exportRes = await fetch(exportTxt, {
+            headers: { "User-Agent": "Mozilla/5.0" },
+          });
+          if (exportRes.ok) {
+            urlContent = await exportRes.text();
+          }
+        }
+        // Fallback to generic fetch if we couldn't get text
+        if (!urlContent) {
+          const urlResponse = await fetch(externalUrl!, {
+            headers: { "User-Agent": "Mozilla/5.0" },
+          });
+          urlContent = await urlResponse.text();
+        }
         const analysis = await documentAnalyzer.analyzeDocument({
           content: urlContent.substring(0, 10000),
           fileName:
