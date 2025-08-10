@@ -8,6 +8,7 @@ export function useSpeakersAdmin() {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
 
   const fetchSpeakers = useCallback(async () => {
     try {
@@ -83,14 +84,35 @@ export function useSpeakersAdmin() {
     }
   }, []);
 
+  const uploadSpeakerImage = useCallback(async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      setUploading(true);
+      const res = await fetch("/api/admin/speakers/upload", {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
+      if (!res.ok) throw new Error("Failed to upload image");
+      const data = (await res.json()) as { url: string };
+      toast.success("Image uploaded");
+      return data.url;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
   return {
     speakers,
     loading,
     error,
+    uploading,
     fetchSpeakers,
     setSpeakers,
     createSpeaker,
     updateSpeaker,
     deleteSpeaker,
+    uploadSpeakerImage,
   };
 }

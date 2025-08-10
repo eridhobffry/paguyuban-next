@@ -16,6 +16,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { speakerAdminCreateSchema } from "@/types/validation";
 import { Button } from "@/components/ui/button";
+import { useSpeakersAdmin } from "@/hooks/useSpeakers";
 
 export function SpeakersDialog({
   open,
@@ -50,6 +51,7 @@ export function SpeakersDialog({
       sortOrder: undefined,
     },
   });
+  const { uploadSpeakerImage, uploading } = useSpeakersAdmin();
 
   useEffect(() => {
     if (open) {
@@ -140,6 +142,33 @@ export function SpeakersDialog({
                 <Label>Company</Label>
                 <Input {...form.register("company")} />
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Upload Image</Label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file =
+                    (e.target as HTMLInputElement).files?.[0] ?? undefined;
+                  if (!file) return;
+                  try {
+                    const url = await uploadSpeakerImage(file);
+                    form.setValue("imageUrl", url, { shouldValidate: true });
+                  } catch {}
+                }}
+              />
+              {form.watch("imageUrl") ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={form.watch("imageUrl") ?? ""}
+                  alt="Preview"
+                  className="mt-2 h-24 w-24 object-cover rounded"
+                />
+              ) : null}
+              {uploading && (
+                <p className="text-xs text-muted-foreground">Uploading...</p>
+              )}
             </div>
             <div className="grid gap-1">
               <Label>Image URL</Label>

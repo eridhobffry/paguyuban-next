@@ -200,12 +200,12 @@ export function FinancialList(props: {
           {items?.length ?? 0} items
         </div>
         <div className="max-h-80 overflow-auto rounded-md border">
-          <Table className="min-w-full">
+          <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
                 <TableHead
                   onClick={() => handleSort("category")}
-                  className="cursor-pointer select-none"
+                  className="cursor-pointer select-none sticky top-0 bg-background"
                 >
                   Category
                   {sortBy === "category"
@@ -216,14 +216,14 @@ export function FinancialList(props: {
                 </TableHead>
                 <TableHead
                   onClick={() => handleSort("amount")}
-                  className="cursor-pointer select-none text-right"
+                  className="cursor-pointer select-none text-right sticky top-0 bg-background"
                 >
                   Amount
                   {sortBy === "amount" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                 </TableHead>
                 <TableHead
                   onClick={() => handleSort("sortOrder")}
-                  className="cursor-pointer select-none text-right"
+                  className="cursor-pointer select-none text-right sticky top-0 bg-background"
                 >
                   Sort
                   {sortBy === "sortOrder"
