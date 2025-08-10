@@ -50,6 +50,11 @@ const data = {
       icon: IconCamera,
     },
     {
+      title: "Speakers",
+      url: "/admin/speakers",
+      icon: IconUsers,
+    },
+    {
       title: "Analytics",
       url: "/admin/analytics",
       icon: IconChartBar,
