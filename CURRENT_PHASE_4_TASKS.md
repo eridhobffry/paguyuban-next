@@ -168,8 +168,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [x] Switch admin documents API to Drizzle with Zod-validated payloads; align BE/FE types via `InferSelectModel`.
   - [x] Wire storage: use `useMediaUpload("documents")` + `/api/admin/upload` to store files in Vercel Blob; pass returned URL to admin create; remove in-endpoint file reading. (Create flow wired; edit flow supports Replace File.)
   - [x] Register `documents.fileUrl` in shared blob registry and perform ref-counted cleanup on PUT/DELETE.
-  - [ ] Migrate admin UI components to Drizzle-derived types (`DocumentRow`/`NewDocumentRow` from `src/types/documents.ts`); deprecate `src/types/admin.ts` `Document`.
-  - [ ] Optional: persist `marketingHighlights` JSON from AI analysis; render in admin; expose on public.
+  - [x] Migrate admin UI components to Drizzle-derived types (`DocumentRow`/`NewDocumentRow` from `src/types/documents.ts`); deprecate `src/types/admin.ts` `Document`.
+  - [x] Optional: persist `marketingHighlights` JSON from AI analysis; render in admin; expose on public.
   - [ ] Optional: evaluate read-side live updates for library views post-pilot; keep public reads cached.
 
 - **Acceptance**

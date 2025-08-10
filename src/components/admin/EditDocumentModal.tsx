@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { documentTypes } from "@/types/admin";
 import type { DocumentRow } from "@/types/documents";
 import { useMediaUpload } from "@/hooks/useUpload";
 import { Eye, Upload } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface EditDocumentModalProps {
   document: DocumentRow;
@@ -33,6 +35,29 @@ export function EditDocumentModal({
   const [processing, setProcessing] = useState(false);
   const { uploading, uploadFile, commitTemp, discardTemp } =
     useMediaUpload("documents");
+  const [newHighlight, setNewHighlight] = useState("");
+  const original = document;
+  const hasChanges = useMemo(() => {
+    const a = editingDoc;
+    const b = original;
+    const sameArray = (x?: string[] | null, y?: string[] | null) =>
+      JSON.stringify(x ?? []) === JSON.stringify(y ?? []);
+    return !(
+      a.title === b.title &&
+      a.description === b.description &&
+      a.preview === b.preview &&
+      a.pages === b.pages &&
+      a.type === b.type &&
+      a.icon === b.icon &&
+      a.restricted === b.restricted &&
+      a.fileUrl === b.fileUrl &&
+      a.externalUrl === b.externalUrl &&
+      sameArray(
+        a.marketingHighlights as string[] | null,
+        b.marketingHighlights as string[] | null
+      )
+    );
+  }, [editingDoc, original]);
 
   const handleDocumentUpdate = async () => {
     setProcessing(true);
@@ -51,21 +76,25 @@ export function EditDocumentModal({
           file_url: editingDoc.fileUrl,
           external_url: editingDoc.externalUrl,
           restricted: editingDoc.restricted,
+          marketing_highlights: editingDoc.marketingHighlights ?? null,
         }),
+        credentials: "include",
       });
 
       if (response.ok) {
+        toast.success("Document updated");
         await onRefresh();
         commitTemp();
         onClose();
       } else {
+        const data = await response.json().catch(() => ({}));
+        toast.error(data?.error || "Failed to update document");
         await discardTemp();
-        alert("Failed to update document");
       }
     } catch (error) {
       console.error("Update error:", error);
+      toast.error("Network error while updating");
       await discardTemp();
-      alert("Failed to update document");
     } finally {
       setProcessing(false);
     }
@@ -81,13 +110,35 @@ export function EditDocumentModal({
       const url = await uploadFile(file);
       setEditingDoc((prev) => ({
         ...prev,
-        file_url: url,
-        external_url: "",
+        fileUrl: url,
+        externalUrl: "",
       }));
     } catch (err) {
       console.error("Replace file upload error:", err);
       alert("Failed to upload new file");
     }
+  };
+
+  const handleAddHighlight = () => {
+    const value = newHighlight.trim();
+    if (!value) return;
+    setEditingDoc((prev) => ({
+      ...prev,
+      marketingHighlights: [
+        ...((prev.marketingHighlights as string[] | null) ?? []),
+        value,
+      ],
+    }));
+    setNewHighlight("");
+  };
+
+  const handleRemoveHighlight = (index: number) => {
+    setEditingDoc((prev) => ({
+      ...prev,
+      marketingHighlights: (
+        (prev.marketingHighlights as string[] | null) ?? []
+      ).filter((_, i) => i !== index),
+    }));
   };
 
   return (
@@ -169,6 +220,51 @@ export function EditDocumentModal({
               />
             </div>
           </div>
+          <div>
+            <Label>Highlights</Label>
+            <div className="flex gap-2 mt-2">
+              <Input
+                placeholder="Add a highlight and press Enter or Add"
+                value={newHighlight}
+                onChange={(e) => setNewHighlight(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddHighlight();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddHighlight}
+              >
+                Add
+              </Button>
+            </div>
+            {Array.isArray(editingDoc.marketingHighlights) &&
+              editingDoc.marketingHighlights.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editingDoc.marketingHighlights.map((h, i) => (
+                    <Badge
+                      key={`${h}-${i}`}
+                      variant="secondary"
+                      className="flex items-center gap-2"
+                    >
+                      <span>{h}</span>
+                      <button
+                        type="button"
+                        className="text-xs opacity-70 hover:opacity-100"
+                        onClick={() => handleRemoveHighlight(i)}
+                        aria-label={`Remove ${h}`}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+          </div>
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -228,9 +324,13 @@ export function EditDocumentModal({
               </Button>
               <Button
                 onClick={handleDocumentUpdate}
-                disabled={processing || uploading}
+                disabled={processing || uploading || !hasChanges}
               >
-                {processing ? "Saving..." : "Save Changes"}
+                {processing
+                  ? "Saving..."
+                  : hasChanges
+                  ? "Save Changes"
+                  : "No Changes"}
               </Button>
             </div>
           </div>

@@ -131,6 +131,18 @@ export function DocumentLibrary({
                         <p className="text-sm text-gray-500 italic">
                           &quot;{doc.preview}&quot;
                         </p>
+                        {Array.isArray(doc.marketingHighlights) &&
+                          doc.marketingHighlights.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {doc.marketingHighlights
+                                .slice(0, 3)
+                                .map((h, i) => (
+                                  <Badge key={i} variant="secondary">
+                                    {h}
+                                  </Badge>
+                                ))}
+                            </div>
+                          )}
                         <div className="mt-3 text-xs text-gray-400">
                           Created by {doc.createdBy} on{" "}
                           {new Date(
