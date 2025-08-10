@@ -50,7 +50,8 @@ export function ArtistsDialog({
       sortOrder: undefined,
     },
   });
-  const { uploading, uploadFile } = useMediaUpload();
+  const { uploading, uploadFile, discardTemp, commitTemp } =
+    useMediaUpload("artists");
 
   useEffect(() => {
     if (initial) {
@@ -78,7 +79,15 @@ export function ArtistsDialog({
   }, [initial, form]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) {
+          void discardTemp();
+        }
+        onOpenChange(v);
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{initial ? "Edit Artist" : "Add Artist"}</DialogTitle>
@@ -90,6 +99,7 @@ export function ArtistsDialog({
               ...values,
               tags: values.tags ?? [],
             });
+            commitTemp();
             onOpenChange(false);
           })}
         >
