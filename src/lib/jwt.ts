@@ -28,3 +28,7 @@ export function verifyTokenMiddleware(token: string) {
 export function isAdminFromToken(decoded: User): boolean {
   return decoded && (decoded.role === "admin" || decoded.user_type === "admin");
 }
+
+export function isSuperAdminFromToken(decoded: User): boolean {
+  return !!decoded && decoded.is_super_admin === true;
+}

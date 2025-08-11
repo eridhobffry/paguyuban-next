@@ -13,6 +13,8 @@ export interface User {
   password_hash: string;
   user_type: "admin" | "user";
   role?: "admin" | "user"; // for compatibility
+  is_super_admin?: boolean;
+  is_active?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -35,7 +37,7 @@ export async function createUser(
   const client = await pool.connect();
   try {
     const result = await client.query(
-      "INSERT INTO users (id, email, password_hash, user_type) VALUES (gen_random_uuid()::text, $1, $2, $3) RETURNING *",
+      "INSERT INTO users (id, email, password_hash, user_type, role) VALUES (gen_random_uuid()::text, $1, $2, $3, $3) RETURNING *",
       [email, passwordHash, userType]
     );
     const user = result.rows[0];
@@ -134,7 +136,7 @@ export async function getAllUsers(): Promise<User[]> {
   const client = await pool.connect();
   try {
     const result = await client.query(
-      "SELECT * FROM users WHERE user_type != 'admin' ORDER BY created_at DESC"
+      "SELECT * FROM users ORDER BY created_at DESC"
     );
     return result.rows.map((user) => {
       user.role = user.user_type; // for compatibility
@@ -185,6 +187,32 @@ export async function deleteUser(email: string): Promise<boolean> {
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function promoteUserToAdmin(email: string): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "UPDATE users SET user_type = 'admin', role = 'admin' WHERE email = $1 AND user_type != 'admin'",
+      [email]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
+  } finally {
+    client.release();
+  }
+}
+
+export async function demoteUserToMember(email: string): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "UPDATE users SET user_type = 'user', role = 'member' WHERE email = $1 AND user_type = 'admin' AND is_super_admin = false",
+      [email]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   } finally {
     client.release();
   }

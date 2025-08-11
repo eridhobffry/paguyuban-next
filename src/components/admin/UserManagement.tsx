@@ -22,7 +22,7 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
 
   const handleUserAccess = async (
     email: string,
-    action: "revoke" | "restore" | "delete"
+    action: "revoke" | "restore" | "delete" | "promote" | "demote"
   ) => {
     setProcessingEmail(email);
     try {
@@ -81,10 +81,40 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-green-100 text-green-800">
-                          ACTIVE
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-100 text-green-800">
+                            ACTIVE
+                          </Badge>
+                          {user.user_type === "admin" && (
+                            <Badge className="bg-blue-100 text-blue-800">
+                              ADMIN
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex gap-2">
+                          {user.user_type !== "admin" ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                handleUserAccess(user.email, "promote")
+                              }
+                              disabled={processingEmail === user.email}
+                            >
+                              Promote to Admin
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                handleUserAccess(user.email, "demote")
+                              }
+                              disabled={processingEmail === user.email}
+                            >
+                              Demote to Member
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"

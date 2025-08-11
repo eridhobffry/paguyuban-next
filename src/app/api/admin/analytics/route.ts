@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const days = allowed[range];
     const intervalLiteral = `${days} days`;
 
-    // Sessions per day (last 30d)
+    // Sessions per day (last N days)
     const sessionsDailyResult = (await db.execute(
       dsql`select (date_trunc('day', started_at))::date as date, count(*)::int as count
            from analytics_sessions
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
            order by 1`
     )) as unknown as { rows: DailyPoint[] };
 
-    // Events per day (last 30d)
+    // Events per day (last N days)
     const eventsDailyResult = (await db.execute(
       dsql`select (date_trunc('day', created_at))::date as date, count(*)::int as count
            from analytics_events
