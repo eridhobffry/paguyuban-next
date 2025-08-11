@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
-import { createDocument, User, initializeDocumentTable } from "@/lib/db";
+import { createDocument, User, initializeDocumentTable } from "@/lib/sql";
 import { documentAnalyzer } from "@/lib/document-analyzer";
 
 const sampleDocumentContents = [

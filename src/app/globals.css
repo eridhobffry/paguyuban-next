@@ -117,4 +117,8 @@
   body {
     @apply bg-background text-foreground;
   }
+  :focus-visible {
+    outline: 3px solid oklch(0.77 0.2 264.376);
+    outline-offset: 3px;
+  }
 }

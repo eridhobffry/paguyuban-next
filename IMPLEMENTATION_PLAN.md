@@ -152,27 +152,59 @@ This document outlines the step-by-step implementation plan to align the sponsor
 **Impact**: Low – streamlines updating site content without code changes
 
 #### 4.1 Admin Shell & Navigation
+
 - [ ] Extend existing `/admin` area with tabs for **Financial**, **Speakers**, and **Agenda**
 - [ ] Restrict routes to authenticated admin users via middleware
 
 #### 4.2 Data Migration
-- [ ] Extract revenue and cost arrays from `FinancialTransparencySection.tsx` into `data/financial.json`
-- [ ] Move speaker arrays from `SpeakersSection.tsx` into `data/speakers.json`
-- [ ] Create initial `data/agenda.json` reflecting current schedule
+
+- [ ] Extract revenue and cost arrays from `FinancialTransparencySection.tsx` into Neon Database
+  - [ ] we can store all information about financial in Neon Database like revenue, cost, and etc.
+  - [ ] make dashboard like legit high end profesional like fintech app, financial apps that can be recommend, automatic make new percentage, smart calculate automation, and beautiful chart that change realtime
+- [ ] Move speaker arrays from `SpeakersSection.tsx` into Neon Database
+  - [ ] we can store all information about speaker in Neon Database like name, title, description, image, and etc.
+- [ ] Move Artist from `SpeakersSection.tsx` into Neon Database
+  - [ ] we can store all information about artist in Neon Database like name, title, description, image, and etc.
+- [ ] Move agenda arrays from `AgendaSection.tsx` into Neon Database
+- [ ] Move sponsor arrays from `SponsorsSection.tsx` into Neon Database
+- [ ] Move investment opportunity arrays from `InvestmentOpportunitySection.tsx` into Neon Database - we need new tabel for investment opportunity and Executive Documentation
+  - [ ] we need to add new tabel for Executive Documentation
+    - we can upload document and input document link in admin panel, and through gemini API Key they will construct and summarize the uploaded documents all to save in Neon Database like pages, excutive summary that super hooks for C-suite, Title, Description, Document Link, and etc.
+  - [ ] we need to add new tabel for investment opportunity
+- [ ] Create something like CSM (Content Management System) to manage all data in admin panel and all data will be stored in Neon Database and all data will be mirroring to the website
+- [x] Analytic should be built to track the website traffic and user behavior (sessions, events, section dwell, web-vitals INP/LCP/CLS, clicks, heartbeats)
+- [ ] Build a dashboard to track the website traffic and user behavior
+- [ ] Build a dashboard to track the website performance and user behavior
+- [ ] Build a dashboard to track the website engagement and user behavior
+- [ ] Build a dashboard to track the website conversion and user behavior
+- [ ] track conversation in chatbot gemini ts, what user ask and what user get and we can see also in dashboard to see the conversation and user behavior so that we can make best 360 user experience
 
 #### 4.3 API Routes
-- [ ] Build `/api/admin/financial`, `/api/admin/speakers`, and `/api/admin/agenda` endpoints
-- [ ] Use `zod` schemas to validate GET/POST/PUT/DELETE payloads
-- [ ] Persist changes to JSON files using Node `fs` with atomic writes
 
-#### 4.4 Admin Forms
-- [ ] Financial editor form with dynamic rows and real-time totals
-- [ ] Speaker management UI to add, edit, or remove entries
-- [ ] Agenda editor for sessions, times, and speaker assignments
-- [ ] Implement with React Hook Form + Zod and display success/error toasts
+- [x] `/api/admin/speakers` and `/api/admin/artists` implemented with Zod validation and Drizzle; image field supports direct URL or uploaded blob URL.
+- [x] Blob utilities: ref-counted cleanup on PUT/DELETE for `imageUrl` in both `speakers` and `artists`.
+- [x] Public endpoints support optional filters: `q`, `slug`, `tag`, and `type` (speakers only).
+- [x] Uploads: client-signed uploads via `/api/admin/upload/handle` with fallback server upload route `/api/admin/upload`.
+- [ ] Build `/api/admin/financial`, `/api/admin/agenda`, `/api/admin/sponsors`, `/api/admin/investment-opportunity`, `/api/admin/executive-documentation`, `/api/admin/chatbot`, and `/api/admin/analytics` endpoints
+- [x] Use `zod` schemas to validate analytics payloads; admin CRUD payloads validated
+- [ ] Persist changes to Neon Database
+
+#### 4.4 Admin Forms - react hook form, shadcn ui, zod, and etc.
+
+- [ ] Financial editor form with dynamic rows and real-time totals - we can use shadcn ui and react hook form and zod
+- [ ] Speaker management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod
+- [ ] Agenda editor for sessions, times, and speaker assignments - we can use shadcn ui and react hook form and zod
+- [ ] Implement with React Hook Form + Zod and display success/error toasts - we can use shadcn ui and react hook form and zod
+- [ ] Sponsor management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod
+- [ ] Investment opportunity management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod
+- [ ] Artist management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod
+- [ ] Executive documentation management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod
+- [ ] Chatbot management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod - if needed
+- [ ] Analytics management UI to add, edit, or remove entries - we can use shadcn ui and react hook form and zod - if needed
 
 #### 4.5 Security & Testing
-- [ ] Apply existing auth middleware to API routes
+
+- [x] Apply existing auth middleware to admin API routes; analytics endpoint supports unauthenticated clients
 - [ ] Add basic unit tests or integration checks for CRUD operations
 - [ ] Document usage in README/Implementation Plan
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
-import { createAccessRequest, getAccessRequestByEmail } from "@/lib/db";
+import { createAccessRequest, getAccessRequestByEmail } from "@/lib/sql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // If there's an old request (approved/rejected), update it with new password
     if (existingRequest) {
       const hashedPassword = await hashPassword(password);
-      const client = await (await import("@/lib/db")).pool.connect();
+      const client = await (await import("@/lib/sql")).pool.connect();
       try {
         await client.query(
           "UPDATE access_requests SET password_hash = $1, status = 'pending', requested_at = CURRENT_TIMESTAMP WHERE email = $2",

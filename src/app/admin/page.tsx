@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData";
 import {
-  AdminHeader,
   PendingRequests,
   UserManagement,
   ProcessedRequests,
@@ -12,7 +10,8 @@ import {
   DocumentLibrary,
   EditDocumentModal,
 } from "@/components/admin";
-import { Document } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
+import { Card } from "@/components/ui/card";
 
 export default function AdminDashboard() {
   const {
@@ -24,7 +23,7 @@ export default function AdminDashboard() {
     fetchUsers,
     fetchDocuments,
   } = useAdminData();
-  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [editingDoc, setEditingDoc] = useState<DocumentRow | null>(null);
 
   if (loading) {
     return (
@@ -35,27 +34,36 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <AdminHeader />
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      <Card variant="glass" className="p-7">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Manage access requests, users, and documents. Financial analytics
+            live under Financial.
+          </p>
+        </div>
+      </Card>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="documents">Document Management</TabsTrigger>
-          </TabsList>
+      <div className="space-y-6">
+        <PendingRequests
+          requests={accessRequests}
+          onRefresh={fetchAccessRequests}
+          onUserRefresh={fetchUsers}
+        />
+        <UserManagement users={users} onRefresh={fetchUsers} />
+        <ProcessedRequests requests={accessRequests} />
 
-          <TabsContent value="users" className="space-y-6">
-            <PendingRequests
-              requests={accessRequests}
-              onRefresh={fetchAccessRequests}
-              onUserRefresh={fetchUsers}
-            />
-            <UserManagement users={users} onRefresh={fetchUsers} />
-            <ProcessedRequests requests={accessRequests} />
-          </TabsContent>
-
-          <TabsContent value="documents" className="space-y-6">
+        <Card variant="glass">
+          <div className="mb-4">
+            <h2 className="text-lg font-medium">Document Management</h2>
+            <p className="text-sm text-muted-foreground">
+              Upload and manage executive documents.
+            </p>
+          </div>
+          <div className="space-y-6">
             <DocumentUpload onRefresh={fetchDocuments} />
             <DocumentLibrary
               documents={documents}
@@ -69,8 +77,8 @@ export default function AdminDashboard() {
                 onRefresh={fetchDocuments}
               />
             )}
-          </TabsContent>
-        </Tabs>
+          </div>
+        </Card>
       </div>
     </div>
   );

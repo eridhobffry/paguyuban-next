@@ -104,7 +104,11 @@ const HeroSection = () => {
   }, [isClient]);
 
   return (
-    <section className="relative pt-20 pb-32 overflow-hidden">
+    <section
+      id="hero"
+      data-section="hero"
+      className="relative pt-20 pb-32 overflow-hidden"
+    >
       {/* Animated background gradient */}
       <div
         className="absolute inset-0 opacity-30"

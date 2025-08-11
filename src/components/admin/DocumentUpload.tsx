@@ -35,6 +35,8 @@ import {
   PieChart,
 } from "lucide-react";
 import { DocumentFormData, documentTypes, iconOptions } from "@/types/admin";
+import { useMediaUpload } from "@/hooks/useUpload";
+import { DocumentRow } from "@/types/documents";
 
 interface DocumentUploadProps {
   onRefresh: () => Promise<void>;
@@ -66,26 +68,95 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
     external_url: "",
     restricted: true,
   });
+  const { uploading, uploadFile, commitTemp, discardTemp } =
+    useMediaUpload("documents");
 
   const handleFileUpload = async (file: File) => {
     setUploadLoading(true);
     try {
+      // Upload file to Vercel Blob
+      const url = await uploadFile(file);
+
+      // Create document record referencing blob URL
+      const manual = {
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "",
+        preview: "",
+        pages: "",
+        type: "Business Strategy",
+        icon: "FileText",
+        external_url: "",
+        file_url: url,
+        restricted: true,
+      };
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("manual_data", JSON.stringify(manual));
 
       const response = await fetch("/api/admin/documents", {
         method: "POST",
         body: formData,
       });
 
-      if (response.ok) {
-        await onRefresh();
-        alert("Document uploaded and analyzed successfully!");
-      } else {
-        alert("Failed to upload document");
-      }
+      if (!response.ok) throw new Error("Create document failed");
+
+      // Auto-refine after first upload to generate metadata
+      try {
+        const created = (await response.json()) as {
+          document: DocumentRow;
+        };
+        const fileUrl = manual.file_url;
+        if (fileUrl) {
+          await fetch("/api/admin/documents/refine", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: manual.title,
+              description: manual.description,
+              preview: manual.preview,
+              pages: manual.pages,
+              type: manual.type,
+              icon: manual.icon,
+              fileUrl,
+            }),
+          })
+            .then((r) => r.json())
+            .then(async (data) => {
+              if (data?.refined) {
+                await fetch("/api/admin/documents", {
+                  method: "PUT",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    id: created?.document?.id,
+                    title: data.refined.title,
+                    description: data.refined.description,
+                    preview: data.refined.preview,
+                    pages: data.refined.pages,
+                    type: data.refined.type,
+                    icon: data.refined.icon,
+                    marketing_highlights: data.refined.marketingHighlights,
+                  }),
+                });
+              }
+            })
+            .catch(() => {});
+        }
+      } catch {}
+      // Broadcast to public pages
+      try {
+        const bc = new BroadcastChannel("documents");
+        bc.postMessage({ type: "updated" });
+        bc.close();
+        window.dispatchEvent(new Event("documents-updated"));
+      } catch {}
+      await onRefresh();
+      commitTemp();
+      alert("Document uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
+      await discardTemp();
       alert("Failed to upload document");
     } finally {
       setUploadLoading(false);
@@ -105,6 +176,12 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
 
       if (response.ok) {
         await onRefresh();
+        try {
+          const bc = new BroadcastChannel("documents");
+          bc.postMessage({ type: "updated" });
+          bc.close();
+          window.dispatchEvent(new Event("documents-updated"));
+        } catch {}
         alert("Document analyzed from URL successfully!");
       } else {
         alert("Failed to analyze document from URL");
@@ -206,7 +283,8 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
                     PDF, DOC, DOCX, or TXT files supported
                   </p>
                   <p className="text-xs text-blue-600">
-                    AI will automatically analyze and generate metadata
+                    Uploads use secure Blob storage; metadata can be edited
+                    after
                   </p>
                 </div>
               </Label>
@@ -235,7 +313,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
                   ) as HTMLInputElement;
                   if (input?.value) handleUrlUpload(input.value);
                 }}
-                disabled={uploadLoading}
+                disabled={uploadLoading || uploading}
                 className="w-full"
               >
                 {uploadLoading ? "Analyzing..." : "Analyze URL with AI"}
@@ -385,7 +463,10 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
             <Button
               onClick={handleManualCreate}
               disabled={
-                uploadLoading || !documentForm.title || !documentForm.type
+                uploadLoading ||
+                uploading ||
+                !documentForm.title ||
+                !documentForm.type
               }
               className="w-full"
             >

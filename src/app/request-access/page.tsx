@@ -58,6 +58,7 @@ export default function RequestAccessPage() {
         setError(data.error || "Request failed");
       }
     } catch (error) {
+      console.error("Request access error:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

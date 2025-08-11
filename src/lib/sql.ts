@@ -2,9 +2,7 @@ import { Pool } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
 });
 
 export { pool };
@@ -88,13 +86,11 @@ export async function getAccessRequests(
   try {
     let query = "SELECT * FROM access_requests ORDER BY requested_at DESC";
     let params: string[] = [];
-
     if (status) {
       query =
         "SELECT * FROM access_requests WHERE status = $1 ORDER BY requested_at DESC";
       params = [status];
     }
-
     const result = await client.query(query, params);
     return result.rows;
   } finally {
@@ -178,16 +174,12 @@ export async function restoreUserAccess(email: string): Promise<boolean> {
 export async function deleteUser(email: string): Promise<boolean> {
   const client = await pool.connect();
   try {
-    // Delete from both users and access_requests tables
     await client.query("BEGIN");
-
     const userResult = await client.query(
       "DELETE FROM users WHERE email = $1 AND user_type != 'admin'",
       [email]
     );
-
     await client.query("DELETE FROM access_requests WHERE email = $1", [email]);
-
     await client.query("COMMIT");
     return userResult.rowCount ? userResult.rowCount > 0 : false;
   } catch (error) {
@@ -198,7 +190,7 @@ export async function deleteUser(email: string): Promise<boolean> {
   }
 }
 
-// Document management interfaces and functions
+// Document management (raw SQL)
 export interface Document {
   id: string;
   title: string;
@@ -234,7 +226,6 @@ export interface DocumentInput {
   created_by: string;
 }
 
-// Initialize document table
 export async function initializeDocumentTable(): Promise<void> {
   const client = await pool.connect();
   try {
@@ -332,9 +323,7 @@ export async function updateDocument(
     const fields = Object.keys(updates)
       .map((key, index) => `${key} = $${index + 2}`)
       .join(", ");
-
     const values = Object.values(updates);
-
     const result = await client.query(
       `UPDATE documents SET ${fields}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $1 RETURNING *`,

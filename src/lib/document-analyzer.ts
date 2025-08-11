@@ -88,6 +88,80 @@ export class DocumentAnalyzer {
     }
   }
 
+  async refineMetadata(input: {
+    title: string;
+    description: string;
+    preview: string;
+    pages?: string;
+    type?: string;
+    icon?: string;
+  }): Promise<
+    Pick<
+      DocumentAnalysisResult,
+      "title" | "description" | "preview" | "pages" | "type" | "icon"
+    > & { marketingHighlights?: string[] }
+  > {
+    try {
+      const prompt = `You are a senior marketing editor. Refine the following document metadata to maximize clarity and executive appeal.
+
+CURRENT METADATA:
+title: ${input.title}
+description: ${input.description}
+preview: ${input.preview}
+pages: ${input.pages ?? ""}
+type: ${input.type ?? ""}
+icon: ${input.icon ?? ""}
+
+REQUIREMENTS:
+- Keep meaning, improve punchiness and clarity.
+- description <= 200 chars, preview <= 150 chars, title <= 60 chars.
+- Provide at most 3 marketingHighlights.
+- Return JSON with keys: title, description, preview, pages, type, icon, marketingHighlights (array of strings).`;
+
+      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 800 },
+        }),
+      });
+      if (!response.ok)
+        throw new Error(`Gemini refine error: ${response.status}`);
+      const data = await response.json();
+      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const jsonMatch = aiResponse?.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      return {
+        title: this.cleanText(parsed.title || input.title, 60),
+        description: this.cleanText(
+          parsed.description || input.description,
+          200
+        ),
+        preview: this.cleanText(parsed.preview || input.preview, 150),
+        pages: parsed.pages || input.pages || "",
+        type: parsed.type || input.type || "Business Strategy",
+        icon: this.validateIcon(parsed.icon) || input.icon || "FileText",
+        marketingHighlights: Array.isArray(parsed.marketingHighlights)
+          ? parsed.marketingHighlights
+              .slice(0, 3)
+              .map((h: string) => this.cleanText(h, 100))
+          : undefined,
+      };
+    } catch (err) {
+      console.error("Refine metadata error:", err);
+      return {
+        title: this.cleanText(input.title, 60),
+        description: this.cleanText(input.description, 200),
+        preview: this.cleanText(input.preview, 150),
+        pages: input.pages || "",
+        type: input.type || "Business Strategy",
+        icon: this.validateIcon(input.icon || "FileText") || "FileText",
+        // marketingHighlights intentionally omitted on fallback
+      };
+    }
+  }
+
   private buildAnalysisPrompt(input: DocumentAnalysisInput): string {
     return `You are an expert marketing consultant and document analyst for Paguyuban Messe 2026, a premium Indonesia-Germany business event. 
 
