@@ -4,7 +4,7 @@
 
 This document outlines the step-by-step implementation plan to align the sponsorship website with internal documents. The plan follows YAGNI principles and prioritizes simplest solutions first.
 
-### 🚀 CURRENT STATUS (Aug 4, 2025 - 08:31 CET)
+### 🚀 CURRENT STATUS (Aug 11, 2025)
 
 **PHASES 1-3: ✅ COMPLETED AHEAD OF SCHEDULE**
 
@@ -13,7 +13,7 @@ This document outlines the step-by-step implementation plan to align the sponsor
 - **Access Control**: 100% Complete (Authentication and admin user management)
 - **Additional Improvements**: 100% Complete (Platform rebranding, data consistency, UX enhancements)
 
-**READY FOR PRODUCTION**: Website now accurately represents €1,018,660 total revenue, correct sponsorship pricing, and professional methodology with government-backed credibility.
+**READY FOR PRODUCTION**: Website accurately represents €1,018,660 total revenue, correct sponsorship pricing, and professional methodology with government-backed credibility. Phase 4 CMS/analytics foundations have been implemented and wired to public sections.
 
 ## Current State Analysis ✅ ISSUES RESOLVED
 
@@ -150,6 +150,26 @@ This document outlines the step-by-step implementation plan to align the sponsor
 
 **Timeline**: 4-5 days  
 **Impact**: Low – streamlines updating site content without code changes
+
+#### Phase 4 Summary (Historical) — Aug 11, 2025
+
+- Financial CMS
+  - Neon + Drizzle tables for revenue and costs live; admin overview and detail pages with full CRUD, evidence links, optimistic updates, and charts.
+  - Public homepage reads from `/api/financial/public` with cache headers and event-based refresh.
+- Speakers & Artists CMS
+  - Admin CRUD APIs with Zod validation; image upload via signed tokens; ref-counted blob cleanup on PUT/DELETE.
+  - Public endpoints with filters (`q`, `slug`, `tag`, `type`), homepage sections wired; deep links `/speakers/[slug]` and `/artists/[slug]` live.
+- Executive Documents
+  - Admin upload/link with Gemini-assisted fields; Drizzle schema and shared types; public section wired with restricted handling.
+- Analytics (first cut)
+  - Client trackers (session/page/click/heartbeat/section dwell, Web Vitals), server ingestion with rate limits, initial admin analytics dashboard, and manual sessionizer endpoint.
+- Accessibility
+  - Skip link, `main` landmark, focus-visible ring, ARIA labels for icon-only actions.
+
+What remains from Phase 4
+- Schedule sessionizer (cron/edge) and surface engagement trend/averages.
+- Admin accessibility audit (contrast/labels/keyboard-only QA).
+- Optional: gated real-time reads pilot for `speakers` when infra is ready.
 
 #### 4.1 Admin Shell & Navigation
 
@@ -375,6 +395,18 @@ src/
 3. **Performance Testing**: Ensure site loads quickly
 4. **Security Review**: Assess authentication implementation
 5. **Enhancement Planning**: Plan Phase 5 features based on feedback
+
+### Next Sprint: User Management Enhancements (Roles & Super Admin)
+
+- Objectives
+  - Add role-based access control to users (`super_admin`, `admin`, `member`).
+  - UI to assign/unassign admin; protect Super Admin from deletion/demotion.
+  - Seed Super Admin for `eridhobffry@gmail.com`.
+- Approach (incremental)
+  - DB: add `role` to users; migration + backfill; guardrails for Super Admin.
+  - API: admin-protected role update endpoint with Zod validation and audit logging.
+  - UI: `/admin/user` actions to Promote/Demote, role badges, and filters; confirmation flows with toasts.
+  - Acceptance: only Super Admin can alter admin roles; invariants enforced across middleware and APIs.
 
 ## 🏆 IMPLEMENTATION ACHIEVEMENTS SUMMARY (Aug 4, 2025 - 08:31 CET)
 
