@@ -131,11 +131,13 @@ const ChatAssistantSection = () => {
     setMessages((prev) => [...prev, userMessage]);
     transcriptRef.current.push({ role: "user", content: userMessage.text });
     try {
+      const content = userMessage.text;
+      const tokens = Math.max(1, Math.round(content.length / 4));
       window.dispatchEvent(
         new CustomEvent("analytics-track" as unknown as string, {
           detail: {
             type: "chat_message",
-            data: { role: "user", length: text.length },
+            data: { role: "user", length: content.length, content, tokens },
           },
         }) as Event
       );
@@ -161,11 +163,18 @@ const ChatAssistantSection = () => {
         content: assistantMessage.text,
       });
       try {
+        const content = assistantMessage.text;
+        const tokens = Math.max(1, Math.round(content.length / 4));
         window.dispatchEvent(
           new CustomEvent("analytics-track" as unknown as string, {
             detail: {
               type: "chat_message",
-              data: { role: "assistant", length: response.length },
+              data: {
+                role: "assistant",
+                length: content.length,
+                content,
+                tokens,
+              },
             },
           }) as Event
         );
