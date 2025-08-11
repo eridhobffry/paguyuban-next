@@ -24,14 +24,20 @@ export async function GET(request: NextRequest) {
 
     // Accept optional range query but clamp to 30d for minimal dashboard
     const url = new URL(request.url);
-    const range = url.searchParams.get("range") || "30d";
-    const days = 30; // minimal: fixed 30d to keep queries fast and results small
+    const rawRange = (url.searchParams.get("range") || "30d").toLowerCase();
+    const allowed: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+    const range =
+      rawRange in allowed
+        ? (rawRange as keyof typeof allowed)
+        : ("30d" as const);
+    const days = allowed[range];
+    const intervalLiteral = `${days} days`;
 
     // Sessions per day (last 30d)
     const sessionsDailyResult = (await db.execute(
       dsql`select (date_trunc('day', started_at))::date as date, count(*)::int as count
            from analytics_sessions
-           where started_at >= now() - interval '30 days'
+           where started_at >= now() - ${intervalLiteral}::interval
            group by 1
            order by 1`
     )) as unknown as { rows: DailyPoint[] };
@@ -40,7 +46,7 @@ export async function GET(request: NextRequest) {
     const eventsDailyResult = (await db.execute(
       dsql`select (date_trunc('day', created_at))::date as date, count(*)::int as count
            from analytics_events
-           where created_at >= now() - interval '30 days'
+           where created_at >= now() - ${intervalLiteral}::interval
            group by 1
            order by 1`
     )) as unknown as { rows: DailyPoint[] };
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest) {
     const topRoutesResult = (await db.execute(
       dsql`select coalesce(route, '(unknown)') as name, count(*)::int as count
            from analytics_events
-           where created_at >= now() - interval '30 days'
+           where created_at >= now() - ${intervalLiteral}::interval
              and route is not null
            group by 1
            order by count desc
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
     const topSectionsResult = (await db.execute(
       dsql`select coalesce(section, '(unknown)') as name, count(*)::int as count
            from analytics_events
-           where created_at >= now() - interval '30 days'
+           where created_at >= now() - ${intervalLiteral}::interval
              and section is not null
            group by 1
            order by count desc
