@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChartContainer,
   ChartLegend,
@@ -36,12 +38,13 @@ export default function AdminAnalyticsPage() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch("/api/admin/analytics?range=30d", {
+        const res = await fetch(`/api/admin/analytics?range=${range}`, {
           cache: "no-store",
           credentials: "include",
         });
@@ -55,11 +58,12 @@ export default function AdminAnalyticsPage() {
         if (!cancelled) setLoading(false);
       }
     }
+    setLoading(true);
     load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [range]);
 
   const timeSeries = useMemo(() => {
     if (!data)
@@ -90,7 +94,28 @@ export default function AdminAnalyticsPage() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div>Loading…</div>
+        <div className="space-y-6">
+          <Card variant="glass" className="p-7">
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2 p-6">
+              <Skeleton className="h-[280px] w-full" />
+            </Card>
+            <Card className="lg:col-span-1 p-6">
+              <Skeleton className="h-[280px] w-full" />
+            </Card>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <Skeleton className="h-[280px] w-full" />
+            </Card>
+            <Card className="p-6">
+              <Skeleton className="h-[280px] w-full" />
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -122,6 +147,18 @@ export default function AdminAnalyticsPage() {
             <CardTitle>Sessions and Events (daily)</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <ToggleGroup
+                type="single"
+                value={range}
+                onValueChange={(v) => v && setRange(v as typeof range)}
+                variant="outline"
+              >
+                <ToggleGroupItem value="7d">7d</ToggleGroupItem>
+                <ToggleGroupItem value="30d">30d</ToggleGroupItem>
+                <ToggleGroupItem value="90d">90d</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
             <ChartContainer
               config={{
                 sessions: { label: "Sessions", color: "#10b981" },
