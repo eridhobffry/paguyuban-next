@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
+import { isSuperAdminFromToken } from "@/lib/jwt";
 import {
   getAllUsers,
   revokeUserAccess,
   restoreUserAccess,
   deleteUser,
+  promoteUserToAdmin,
+  demoteUserToMember,
   User,
 } from "@/lib/sql";
 
@@ -57,7 +60,7 @@ export async function PATCH(request: NextRequest) {
     if (
       !email ||
       !action ||
-      !["revoke", "restore", "delete"].includes(action)
+      !["revoke", "restore", "delete", "promote", "demote"].includes(action)
     ) {
       return NextResponse.json(
         { error: "Invalid request parameters" },
@@ -65,11 +68,33 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Prevent modifying Super Admin account by anyone
+    if (email && isSuperAdminFromToken(decoded)) {
+      // Super Admin may modify others, but prevent self-delete/revoke via this endpoint
+      if (decoded.email === email && action !== "restore") {
+        return NextResponse.json(
+          { error: "Cannot modify Super Admin account via this endpoint" },
+          { status: 403 }
+        );
+      }
+    }
+
     let success = false;
     if (action === "revoke") {
       success = await revokeUserAccess(email);
     } else if (action === "restore") {
       success = await restoreUserAccess(email);
+    } else if (action === "promote") {
+      success = await promoteUserToAdmin(email);
+    } else if (action === "demote") {
+      // Prevent demoting Super Admin or demoting self if Super Admin
+      if (email === decoded.email) {
+        return NextResponse.json(
+          { error: "Cannot demote yourself" },
+          { status: 403 }
+        );
+      }
+      success = await demoteUserToMember(email);
     } else {
       success = await deleteUser(email);
     }
@@ -86,6 +111,10 @@ export async function PATCH(request: NextRequest) {
       message = "User access revoked successfully";
     } else if (action === "restore") {
       message = "User access restored successfully";
+    } else if (action === "promote") {
+      message = "User promoted to admin";
+    } else if (action === "demote") {
+      message = "User demoted to member";
     } else {
       message = "User deleted successfully";
     }

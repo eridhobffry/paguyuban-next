@@ -28,3 +28,13 @@ export function verifyTokenMiddleware(token: string) {
 export function isAdminFromToken(decoded: User): boolean {
   return decoded && (decoded.role === "admin" || decoded.user_type === "admin");
 }
+
+export function isSuperAdminFromToken(decoded: User): boolean {
+  return (
+    !!decoded &&
+    typeof decoded.email === "string" &&
+    decoded.email.length > 0 &&
+    decoded.email ===
+      (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "eridhobffry@gmail.com")
+  );
+}
