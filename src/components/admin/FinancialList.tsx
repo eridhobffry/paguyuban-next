@@ -260,10 +260,16 @@ export function FinancialList(props: {
             variant="outline"
             onClick={onView}
             disabled={disabled}
+            aria-label="View selected item"
           >
             View
           </Button>
-          <Button disabled={!selectedId || disabled} size="sm" onClick={onEdit}>
+          <Button
+            disabled={!selectedId || disabled}
+            size="sm"
+            onClick={onEdit}
+            aria-label="Edit selected item"
+          >
             Edit
           </Button>
           <Button
@@ -271,6 +277,7 @@ export function FinancialList(props: {
             size="sm"
             variant="destructive"
             onClick={onDelete}
+            aria-label="Delete selected item"
           >
             Delete
           </Button>
