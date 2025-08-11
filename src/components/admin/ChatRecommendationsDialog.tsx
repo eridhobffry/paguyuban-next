@@ -7,25 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type RecommendedAction = {
-  title: string;
-  description: string;
-  priority?: string;
-};
-
-type JourneyItem = {
-  stage: string;
-  insight: string;
-  risk?: string;
-  recommendation?: string;
-};
-
-export type ChatRecommendationsData = {
-  nextBestAction: string;
-  recommendedActions: RecommendedAction[];
-  journey: JourneyItem[];
-};
+import type { ChatRecommendationsData } from "@/types/analytics";
 
 export function ChatRecommendationsDialog(props: {
   open: boolean;
@@ -37,7 +19,7 @@ export function ChatRecommendationsDialog(props: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Recommended Actions</DialogTitle>
           <DialogDescription>

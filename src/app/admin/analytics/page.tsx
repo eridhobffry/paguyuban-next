@@ -6,6 +6,8 @@ import {
   ChatSummariesSection,
   ChatRecommendationsDialog,
 } from "@/components/admin";
+import { getRecommendationsWithCache } from "@/hooks/useAdminRecommendations";
+import type { ChatRecommendationsData } from "@/types/analytics";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,20 +61,7 @@ export default function AdminAnalyticsPage() {
   const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
   const [recOpen, setRecOpen] = useState(false);
   const [recLoading, setRecLoading] = useState(false);
-  const [recData, setRecData] = useState<{
-    nextBestAction: string;
-    recommendedActions: Array<{
-      title: string;
-      description: string;
-      priority?: string;
-    }>;
-    journey: Array<{
-      stage: string;
-      insight: string;
-      risk?: string;
-      recommendation?: string;
-    }>;
-  } | null>(null);
+  const [recData, setRecData] = useState<ChatRecommendationsData | null>(null);
   // Recent summaries pagination state
   const [summaries, setSummaries] = useState<
     {
@@ -218,36 +207,12 @@ export default function AdminAnalyticsPage() {
       setRecLoading(true);
       setRecOpen(true);
       setRecData(null);
-      const res = await fetch("/api/admin/analytics/chat/recommend", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: item.sessionId,
-          summary: item.summary,
-          sentiment: item.sentiment,
-        }),
+      const data = await getRecommendationsWithCache({
+        sessionId: item.sessionId,
+        summary: item.summary,
+        sentiment: item.sentiment,
       });
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      const json = (await res.json()) as {
-        recommendedActions: Array<{
-          title: string;
-          description: string;
-          priority?: string;
-        }>;
-        journey: Array<{
-          stage: string;
-          insight: string;
-          risk?: string;
-          recommendation?: string;
-        }>;
-        nextBestAction: string;
-      };
-      setRecData({
-        nextBestAction: json.nextBestAction,
-        recommendedActions: json.recommendedActions,
-        journey: json.journey,
-      });
+      setRecData(data);
     } catch {
       setRecData({ nextBestAction: "", recommendedActions: [], journey: [] });
     } finally {
