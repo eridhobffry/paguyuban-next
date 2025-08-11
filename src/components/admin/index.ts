@@ -5,3 +5,7 @@ export { ProcessedRequests } from "./ProcessedRequests";
 export { DocumentUpload } from "./DocumentUpload";
 export { DocumentLibrary } from "./DocumentLibrary";
 export { EditDocumentModal } from "./EditDocumentModal";
+export { FinancialOverview } from "./FinancialOverview";
+export { FinancialCharts } from "./FinancialCharts";
+export { ChatSummariesSection } from "./ChatSummariesSection";
+export { ChatRecommendationsDialog } from "./ChatRecommendationsDialog";

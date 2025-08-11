@@ -5,7 +5,7 @@ import {
   updateAccessRequestStatus,
   createUser,
   User,
-} from "@/lib/db";
+} from "@/lib/sql";
 
 export async function GET(request: NextRequest) {
   try {

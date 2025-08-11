@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { AccessRequest, User, Document } from "@/types/admin";
+import { AccessRequest, User } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
 
 export function useAdminData() {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAccessRequests = async () => {

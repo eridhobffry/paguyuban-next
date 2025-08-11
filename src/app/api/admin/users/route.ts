@@ -6,7 +6,7 @@ import {
   restoreUserAccess,
   deleteUser,
   User,
-} from "@/lib/db";
+} from "@/lib/sql";
 
 export async function GET(request: NextRequest) {
   try {

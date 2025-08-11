@@ -26,12 +26,12 @@ import {
   Unlock,
   Brain,
 } from "lucide-react";
-import { Document } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
 
 interface DocumentLibraryProps {
-  documents: Document[];
+  documents: DocumentRow[];
   onRefresh: () => Promise<void>;
-  onEdit: (doc: Document) => void;
+  onEdit: (doc: DocumentRow) => void;
 }
 
 const iconComponents = {
@@ -104,69 +104,115 @@ export function DocumentLibrary({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
-                      <div className="p-3 bg-blue-500/20 rounded-lg">
-                        <IconComponent className="w-6 h-6 text-blue-500" />
+                      <div
+                        className="p-3 bg-blue-500/20 rounded-lg"
+                        aria-hidden
+                      >
+                        <IconComponent
+                          className="w-6 h-6 text-blue-500"
+                          aria-hidden
+                        />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-bold text-lg">{doc.title}</h3>
-                          {doc.ai_generated && (
+                          {doc.aiGenerated && (
                             <Badge variant="outline" className="text-xs">
                               <Brain className="w-3 h-3 mr-1" />
                               AI Generated
                             </Badge>
                           )}
                           {doc.restricted ? (
-                            <Lock className="w-4 h-4 text-amber-500" />
+                            <>
+                              <Lock
+                                className="w-4 h-4 text-amber-500"
+                                aria-hidden
+                              />
+                              <span className="sr-only">Restricted</span>
+                            </>
                           ) : (
-                            <Unlock className="w-4 h-4 text-green-500" />
+                            <>
+                              <Unlock
+                                className="w-4 h-4 text-green-500"
+                                aria-hidden
+                              />
+                              <span className="sr-only">Public</span>
+                            </>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                           {doc.pages} • {doc.type}
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 mb-2">
+                        <p className="text-foreground/90 mb-2">
                           {doc.description}
                         </p>
-                        <p className="text-sm text-gray-500 italic">
+                        <p className="text-sm text-muted-foreground italic">
                           &quot;{doc.preview}&quot;
                         </p>
-                        <div className="mt-3 text-xs text-gray-400">
-                          Created by {doc.created_by} on{" "}
-                          {new Date(doc.created_at).toLocaleDateString()}
+                        {Array.isArray(doc.marketingHighlights) &&
+                          doc.marketingHighlights.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {doc.marketingHighlights
+                                .slice(0, 3)
+                                .map((h, i) => (
+                                  <Badge key={i} variant="secondary">
+                                    {h}
+                                  </Badge>
+                                ))}
+                            </div>
+                          )}
+                        <div className="mt-3 text-xs text-muted-foreground">
+                          Created by {doc.createdBy} on{" "}
+                          {new Date(
+                            doc.createdAt as unknown as string
+                          ).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
-                      {(doc.file_url || doc.external_url) && (
+                      {(doc.fileUrl || doc.externalUrl) && (
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            if (doc.external_url) {
-                              window.open(doc.external_url, "_blank");
-                            } else if (doc.file_url) {
-                              window.open(doc.file_url, "_blank");
+                            if (doc.externalUrl) {
+                              window.open(
+                                doc.externalUrl,
+                                "_blank",
+                                "noopener,noreferrer"
+                              );
+                            } else if (doc.fileUrl) {
+                              window.open(
+                                doc.fileUrl,
+                                "_blank",
+                                "noopener,noreferrer"
+                              );
                             }
                           }}
+                          aria-label="View document"
+                          title="View document"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4" aria-hidden />
                         </Button>
                       )}
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => onEdit(doc)}
+                        aria-label="Edit document"
+                        title="Edit document"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4" aria-hidden />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDocumentDelete(doc.id)}
                         disabled={processingDocId === doc.id}
+                        aria-label="Delete document"
+                        title="Delete document"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden />
                       </Button>
                     </div>
                   </div>

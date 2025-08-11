@@ -1,11 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAllDocuments } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { db, schema } from "@/lib/db/index";
+import { desc } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Get all documents for authenticated users (site users can see all documents)
-    // but external access is still controlled by the document's restricted flag
-    const documents = await getAllDocuments();
+    // Show both public and restricted docs on the homepage. For restricted docs,
+    // mask file/external URLs; the UI shows a lock and uses a mailto request.
+    const documents = await db
+      .select()
+      .from(schema.documents)
+      .orderBy(desc(schema.documents.createdAt));
 
     // Transform the data to match the frontend interface
     const transformedDocuments = documents.map((doc) => ({
@@ -16,10 +20,11 @@ export async function GET(request: NextRequest) {
       type: doc.type,
       icon: doc.icon,
       restricted: doc.restricted,
-      file_url: doc.file_url,
-      external_url: doc.external_url,
-      ai_generated: doc.ai_generated,
+      file_url: doc.restricted ? undefined : doc.fileUrl ?? undefined,
+      external_url: doc.restricted ? undefined : doc.externalUrl ?? undefined,
+      ai_generated: doc.aiGenerated,
       id: doc.id,
+      marketing_highlights: doc.marketingHighlights ?? undefined,
     }));
 
     return NextResponse.json(
