@@ -10,7 +10,7 @@ import {
   DocumentLibrary,
   EditDocumentModal,
 } from "@/components/admin";
-import { Document } from "@/types/admin";
+import type { DocumentRow } from "@/types/documents";
 import { Card } from "@/components/ui/card";
 
 export default function AdminDashboard() {
@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     fetchUsers,
     fetchDocuments,
   } = useAdminData();
-  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [editingDoc, setEditingDoc] = useState<DocumentRow | null>(null);
 
   if (loading) {
     return (

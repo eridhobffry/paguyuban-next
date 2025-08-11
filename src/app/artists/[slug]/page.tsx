@@ -33,12 +33,11 @@ async function getArtistBySlug(slug: string): Promise<PublicArtist | null> {
   return artist;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
 }) {
-  const artist = await getArtistBySlug(params.slug);
+  const { slug } = await props.params;
+  const artist = await getArtistBySlug(slug);
   if (!artist) return { title: "Artist not found" };
   return {
     title: `${artist.name} – Artist`,
@@ -46,12 +45,11 @@ export async function generateMetadata({
   };
 }
 
-export default async function ArtistPage({
-  params,
-}: {
-  params: { slug: string };
+export default async function ArtistPage(props: {
+  params: Promise<{ slug: string }>;
 }) {
-  const artist = await getArtistBySlug(params.slug);
+  const { slug } = await props.params;
+  const artist = await getArtistBySlug(slug);
   if (!artist) notFound();
 
   const image = getSafeImageSrc(

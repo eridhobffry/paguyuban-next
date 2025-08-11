@@ -125,6 +125,16 @@ const ChatAssistantSection = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    try {
+      window.dispatchEvent(
+        new CustomEvent("analytics-track" as unknown as string, {
+          detail: {
+            type: "chat_message",
+            data: { role: "user", length: text.length },
+          },
+        }) as Event
+      );
+    } catch {}
     setInputText("");
     setIsLoading(true);
 
@@ -141,6 +151,16 @@ const ChatAssistantSection = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      try {
+        window.dispatchEvent(
+          new CustomEvent("analytics-track" as unknown as string, {
+            detail: {
+              type: "chat_message",
+              data: { role: "assistant", length: response.length },
+            },
+          }) as Event
+        );
+      } catch {}
     } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),

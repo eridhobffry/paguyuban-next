@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { stackServerApp } from "../stack";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ClientAnalyticsProvider from "@/components/ClientAnalyticsProvider";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +54,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <StackProvider app={stackServerApp}>
             <StackTheme>
+              <Suspense fallback={null}>
+                <ClientAnalyticsProvider />
+              </Suspense>
               {children}
               <Toaster richColors closeButton position="top-right" />
             </StackTheme>

@@ -31,12 +31,11 @@ async function getSpeakerBySlug(slug: string): Promise<PublicSpeaker | null> {
   return speaker;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
 }) {
-  const speaker = await getSpeakerBySlug(params.slug);
+  const { slug } = await props.params;
+  const speaker = await getSpeakerBySlug(slug);
   if (!speaker) return { title: "Speaker not found" };
   return {
     title: `${speaker.name} – Speaker`,
@@ -44,12 +43,11 @@ export async function generateMetadata({
   };
 }
 
-export default async function SpeakerPage({
-  params,
-}: {
-  params: { slug: string };
+export default async function SpeakerPage(props: {
+  params: Promise<{ slug: string }>;
 }) {
-  const speaker = await getSpeakerBySlug(params.slug);
+  const { slug } = await props.params;
+  const speaker = await getSpeakerBySlug(slug);
   if (!speaker) notFound();
 
   const image = getSafeImageSrc(

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db, schema } from "@/lib/db/index";
 import { desc } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Show both public and restricted docs on the homepage. For restricted docs,
     // mask file/external URLs; the UI shows a lock and uses a mailto request.

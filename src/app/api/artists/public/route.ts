@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { artists } from "@/lib/db/schema";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(_request: NextRequest) {
       q ? ilike(artists.name, `%${q}%`) : undefined,
       slug ? eq(artists.slug, slug) : undefined,
       tag ? sql`${artists.tags} @> ARRAY[${tag}]::text[]` : undefined,
-    ].filter(Boolean) as any[];
+    ].filter((c): c is SQL => Boolean(c));
 
     const items = await db
       .select()

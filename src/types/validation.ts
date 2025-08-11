@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { artists, speakers, documents } from "@/lib/db/schema";
+import {
+  artists,
+  speakers,
+  documents,
+  analyticsSessions,
+  analyticsEvents,
+  analyticsSectionDurations,
+  chatbotLogs,
+  chatbotSummaries,
+} from "@/lib/db/schema";
 
 // Base schemas generated from Drizzle schema (single source of truth)
 export const artistInsertBase = createInsertSchema(artists);
@@ -54,3 +63,19 @@ export const documentAdminUpdateSnakeSchema = z.object({
   restricted: z.boolean().optional(),
   marketing_highlights: z.array(z.string()).optional().nullable(),
 });
+
+// Analytics: base schemas (not exposed to FE yet)
+export const analyticsSessionInsertBase = createInsertSchema(analyticsSessions);
+export const analyticsSessionSelectBase = createSelectSchema(analyticsSessions);
+export const analyticsEventInsertBase = createInsertSchema(analyticsEvents);
+export const analyticsEventSelectBase = createSelectSchema(analyticsEvents);
+export const analyticsSectionDurationInsertBase = createInsertSchema(
+  analyticsSectionDurations
+);
+export const analyticsSectionDurationSelectBase = createSelectSchema(
+  analyticsSectionDurations
+);
+export const chatbotLogInsertBase = createInsertSchema(chatbotLogs);
+export const chatbotLogSelectBase = createSelectSchema(chatbotLogs);
+export const chatbotSummaryInsertBase = createInsertSchema(chatbotSummaries);
+export const chatbotSummarySelectBase = createSelectSchema(chatbotSummaries);
