@@ -60,6 +60,11 @@ export class AnalyticsClient {
       if (!res.ok) return null;
       const json = (await res.json()) as { sessionId?: string };
       this.sessionId = json.sessionId ?? null;
+      try {
+        if (this.sessionId && typeof window !== "undefined") {
+          window.localStorage.setItem("analytics_session_id", this.sessionId);
+        }
+      } catch {}
       return this.sessionId;
     } catch {
       return null;
@@ -126,4 +131,13 @@ export class AnalyticsClient {
 export function maybeCreateAnalytics(): AnalyticsClient | null {
   if (process.env.NEXT_PUBLIC_ENABLE_ANALYTICS !== "1") return null;
   return new AnalyticsClient();
+}
+
+export function getCurrentAnalyticsSessionId(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("analytics_session_id");
+  } catch {
+    return null;
+  }
 }
