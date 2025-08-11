@@ -11,7 +11,7 @@ type PublicSpeaker = {
   role?: string | null;
   company?: string | null;
   bio?: string | null;
-  image_url?: string | null;
+  imageUrl?: string | null;
   slug?: string | null;
   twitter?: string | null;
   linkedin?: string | null;
@@ -53,7 +53,7 @@ export default async function SpeakerPage({
   if (!speaker) notFound();
 
   const image = getSafeImageSrc(
-    speaker.image_url ?? undefined,
+    speaker.imageUrl ?? undefined,
     "/images/speakers/gita-wirjawan.jpg"
   );
 

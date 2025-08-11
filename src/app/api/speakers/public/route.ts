@@ -29,8 +29,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         role: speakers.role,
         company: speakers.company,
         bio: speakers.bio,
-        // alias to keep public API field stable
-        image_url: speakers.imageUrl,
+        imageUrl: speakers.imageUrl,
         speakerType: speakers.speakerType,
         slug: speakers.slug,
         twitter: speakers.twitter,
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       role: z.string().nullable().optional(),
       company: z.string().nullable().optional(),
       bio: z.string().nullable().optional(),
-      image_url: z.string().nullable().optional(),
+      imageUrl: z.string().nullable().optional(),
       speakerType: SpeakerTypeEnum,
       slug: z.string().nullable().optional(),
       twitter: z.string().nullable().optional(),
