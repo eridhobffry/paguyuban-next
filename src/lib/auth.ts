@@ -26,6 +26,7 @@ export function createToken(user: User): string {
       email: user.email,
       role: user.role || user.user_type,
       user_type: user.user_type,
+      is_super_admin: user.is_super_admin === true,
     },
     JWT_SECRET,
     { expiresIn: "7d" }
