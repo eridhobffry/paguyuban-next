@@ -20,7 +20,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Public financial QA: totals match admin; charts update after mutations; cache-busting refresh verified.
 - **In Progress**
 - **Next**
-  - Speakers/Artists public filters (q, slug, tag, type for speakers) wired.
+  - Speakers/Artists public filters (q, slug, tag, type for speakers) wired; deep links for speakers and artists live with optional ISR.
 - **Later (Roadmap)**
   - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
   - Admin UI shell migration to shadcn dashboard block.
@@ -154,8 +154,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [x] Image upload via signed client tokens (`/api/admin/upload/handle`) with fallback to server upload; store returned URL; URL-based path still supported.
   - [x] Blob cleanup: ref-counted delete on PUT/DELETE via shared util; registry-based references for scalability.
   - [x] Richer `bio/tags/slug` retained; public optional filters added (`q`, `slug`, `tag`, `type`).
-  - Richer `bio/tags/slug` for deep links (`/speakers/[slug]`); homepage dialog on card click.
-  - Optional: admin-side filters by `speakerType`, company.
+  - [x] Deep links: `/speakers/[slug]` with ISR; homepage cards link when `slug` present.
+  - [x] Admin-side optional filters by `speakerType` and company on `/admin/speakers`.
   - Optional (pilot target): live queries via TanStack DB + ElectricSQL; optimistic admin mutations.
   - Pilot readiness (gated):
     - Pre-reqs: ElectricSQL project + token, Neon logical replication enabled, proxy route in place.
@@ -168,10 +168,17 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
   - Table, public GET, admin CRUD API, admin list + detail dialog, seed endpoint, homepage wired, unified types via Drizzle (`InferSelectModel`) and shared zod schemas.
 
+- **Done**
+
+  - Blob upload via signed client tokens (`/api/admin/upload/handle`) with fallback to server upload; store returned URL in `imageUrl`.
+  - Ref-counted blob cleanup on PUT/DELETE using shared utilities and registry.
+  - Admin requests include credentials consistently; UI uses `useMediaUpload("artists")` with temp commit/discard.
+  - Public filters parity aligned with speakers (`q`, `slug`, `tag`).
+
 - **Next**
-  - Feature parity with Speakers enrichments.
-  - Blob upload + ref-counted cleanup wired to shared utilities.
-  - Storage plan: Phase A `image_url` (URL-based); Phase B Vercel Blob upload and store URL.
+  - [x] Deep links: `/artists/[slug]` with ISR.
+  - Feature enrichments parity (optional deeper UI filters, tagging UX improvements).
+  - Extend registry if adding new media fields later.
 
 ### Executive Documents
 

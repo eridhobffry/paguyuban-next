@@ -17,7 +17,7 @@ const SpeakerCard = ({
     role?: string | null;
     company?: string | null;
     image: string;
-    slug?: string | null;
+    href?: string;
     social: {
       twitter?: string | null;
       linkedin?: string | null;
@@ -47,14 +47,16 @@ const SpeakerCard = ({
         />
       </div>
 
-      {speaker.slug ? (
-        <Link href={`/speakers/${speaker.slug}`} className="block">
+      {speaker.href ? (
+        <Link href={speaker.href} className="block">
           <h3 className="text-xl font-bold text-white text-center mb-1 underline-offset-4 hover:underline">
             {speaker.name}
           </h3>
         </Link>
       ) : (
-        <h3 className="text-xl font-bold text-white text-center mb-1">{speaker.name}</h3>
+        <h3 className="text-xl font-bold text-white text-center mb-1">
+          {speaker.name}
+        </h3>
       )}
       <p className="text-cyan-400 text-sm text-center mb-1">{speaker.role}</p>
       <p className="text-gray-400 text-sm text-center mb-4">
@@ -122,7 +124,7 @@ const SpeakersSection = () => {
     role: a.role ?? "",
     company: a.company ?? "",
     image: a.imageUrl ?? "/images/artists/dewa19.jpg",
-    type: "artist",
+    href: a.slug ? `/artists/${a.slug}` : undefined,
     social: {
       twitter: a.twitter ?? "",
       linkedin: a.linkedin ?? "",
@@ -135,8 +137,7 @@ const SpeakersSection = () => {
     role: s.role ?? "",
     company: s.company ?? "",
     image: getSafeImageSrc(s.image_url, "/images/speakers/gita-wirjawan.jpg"),
-    slug: s.slug ?? undefined,
-    type: "speaker",
+    href: s.slug ? `/speakers/${s.slug}` : undefined,
     social: {
       twitter: s.twitter ?? "",
       linkedin: s.linkedin ?? "",

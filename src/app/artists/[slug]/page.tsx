@@ -5,30 +5,32 @@ import { getSafeImageSrc } from "@/lib/utils";
 
 export const revalidate = 300; // optional ISR for public deep links
 
-type PublicSpeaker = {
+type PublicArtist = {
   id: string;
   name: string;
   role?: string | null;
   company?: string | null;
   bio?: string | null;
-  image_url?: string | null;
+  imageUrl?: string | null;
   slug?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
   twitter?: string | null;
   linkedin?: string | null;
   website?: string | null;
 };
 
-async function getSpeakerBySlug(slug: string): Promise<PublicSpeaker | null> {
+async function getArtistBySlug(slug: string): Promise<PublicArtist | null> {
   const res = await fetch(
-    `/api/speakers/public?slug=${encodeURIComponent(slug)}`,
+    `/api/artists/public?slug=${encodeURIComponent(slug)}`,
     {
       next: { revalidate },
     }
   ).catch(() => null);
   if (!res || !res.ok) return null;
-  const data = (await res.json()) as { speakers?: PublicSpeaker[] };
-  const speaker = (data.speakers ?? []).find((s) => s.slug === slug) ?? null;
-  return speaker;
+  const data = (await res.json()) as { artists?: PublicArtist[] };
+  const artist = (data.artists ?? []).find((a) => a.slug === slug) ?? null;
+  return artist;
 }
 
 export async function generateMetadata({
@@ -36,25 +38,25 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }) {
-  const speaker = await getSpeakerBySlug(params.slug);
-  if (!speaker) return { title: "Speaker not found" };
+  const artist = await getArtistBySlug(params.slug);
+  if (!artist) return { title: "Artist not found" };
   return {
-    title: `${speaker.name} – Speaker`,
-    description: speaker.bio ?? `${speaker.name} at ${speaker.company ?? ""}`,
+    title: `${artist.name} – Artist`,
+    description: artist.bio ?? `${artist.name} at ${artist.company ?? ""}`,
   };
 }
 
-export default async function SpeakerPage({
+export default async function ArtistPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const speaker = await getSpeakerBySlug(params.slug);
-  if (!speaker) notFound();
+  const artist = await getArtistBySlug(params.slug);
+  if (!artist) notFound();
 
   const image = getSafeImageSrc(
-    speaker.image_url ?? undefined,
-    "/images/speakers/gita-wirjawan.jpg"
+    artist.imageUrl ?? undefined,
+    "/images/artists/dewa19.jpg"
   );
 
   return (
@@ -74,48 +76,64 @@ export default async function SpeakerPage({
           <div className="relative w-40 h-40 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
             <Image
               src={image}
-              alt={speaker.name}
+              alt={artist.name}
               fill
               className="object-cover"
             />
           </div>
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-white mb-2">
-              {speaker.name}
+              {artist.name}
             </h1>
-            {(speaker.role || speaker.company) && (
-              <p className="text-cyan-300 mb-4">
-                {speaker.role}
-                {speaker.role && speaker.company ? " · " : ""}
-                {speaker.company}
+            {(artist.role || artist.company) && (
+              <p className="text-purple-300 mb-4">
+                {artist.role}
+                {artist.role && artist.company ? " · " : ""}
+                {artist.company}
               </p>
             )}
-            {speaker.bio && (
+            {artist.bio && (
               <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {speaker.bio}
+                {artist.bio}
               </p>
             )}
 
             <div className="mt-6 flex flex-wrap gap-3 text-sm">
-              {speaker.twitter && (
+              {artist.instagram && (
                 <a
-                  href={speaker.twitter}
+                  href={artist.instagram}
+                  className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-gray-200 hover:bg-white/15"
+                >
+                  Instagram
+                </a>
+              )}
+              {artist.youtube && (
+                <a
+                  href={artist.youtube}
+                  className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-gray-200 hover:bg-white/15"
+                >
+                  YouTube
+                </a>
+              )}
+              {artist.twitter && (
+                <a
+                  href={artist.twitter}
                   className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-gray-200 hover:bg-white/15"
                 >
                   Twitter
                 </a>
               )}
-              {speaker.linkedin && (
+              {artist.linkedin && (
                 <a
-                  href={speaker.linkedin}
+                  href={artist.linkedin}
                   className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-gray-200 hover:bg-white/15"
                 >
                   LinkedIn
                 </a>
               )}
-              {speaker.website && (
+              {artist.website && (
                 <a
-                  href={speaker.website}
+                  href={artist.website}
                   className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-gray-200 hover:bg-white/15"
                 >
                   Website

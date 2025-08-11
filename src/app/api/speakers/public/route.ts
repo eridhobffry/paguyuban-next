@@ -3,6 +3,7 @@ import { db } from "@/lib/db/drizzle";
 import { speakers } from "@/lib/db/schema";
 import { z } from "zod";
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       slug ? eq(speakers.slug, slug) : undefined,
       // tags stored as text[]; simple contains match
       tag ? sql`${speakers.tags} @> ARRAY[${tag}]::text[]` : undefined,
-    ].filter(Boolean) as any[];
+    ].filter((c): c is SQL => Boolean(c));
 
     // Select only columns that exist in current DB and are safe
     const items = await db
