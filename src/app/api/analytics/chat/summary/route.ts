@@ -33,7 +33,7 @@ async function generateSummary(
   const apiKey = process.env.GEMINI_API_KEY || "";
   const endpoint =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
-  const prompt = `You are an analytics assistant. Summarize the following chat transcript in 3-5 sentences, list the top 3-6 topics as single words/short phrases, and classify overall sentiment as one of: positive, neutral, negative. Return strict JSON with keys summary (string), topics (string[]), sentiment (string).\n\nTranscript:\n${transcript
+  const prompt = `You are an analytics assistant. Respond ONLY with strict JSON (no markdown) in this shape: {"summary": string (3-5 sentences), "topics": string[] (3-6 concise topics), "sentiment": "positive"|"neutral"|"negative"}.\n\nTranscript:\n${transcript
     .map((m) => `${m.role}: ${m.content}`)
     .join("\n")}`;
 
@@ -48,7 +48,9 @@ async function generateSummary(
     });
     if (!res.ok) throw new Error(`Gemini error ${res.status}`);
     const data = await res.json();
-    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) text = jsonMatch[0];
     const parsed = JSON.parse(text) as {
       summary?: string;
       topics?: string[];
@@ -60,24 +62,44 @@ async function generateSummary(
       sentiment: parsed.sentiment || "neutral",
     };
   } catch {
-    // Fallback: naive topics from keywords
-    const content = transcript.map((m) => m.content).join(" \n ");
-    const topics = Array.from(
-      new Set(
-        content
-          .toLowerCase()
-          .match(/[a-zA-Z][a-zA-Z\-]{2,}/g)
-          ?.slice(0, 6) ?? []
-      )
-    ).slice(0, 6);
-    const sentiment = /thanks|great|awesome|terima kasih|bagus|baik/.test(
-      content.toLowerCase()
-    )
+    // Heuristic fallback
+    const content = transcript.map((m) => m.content).join(" ");
+    const words = (
+      content.toLowerCase().match(/[a-z][a-z\-]{2,}/g) ?? []
+    ).filter(
+      (w) =>
+        ![
+          "the",
+          "and",
+          "you",
+          "for",
+          "with",
+          "that",
+          "this",
+          "atau",
+          "dan",
+          "yang",
+          "untuk",
+          "dengan",
+        ].includes(w)
+    );
+    const freq = new Map<string, number>();
+    for (const w of words) freq.set(w, (freq.get(w) || 0) + 1);
+    const topics = Array.from(freq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([w]) => w);
+    const sentences = content
+      .replace(/\s+/g, " ")
+      .split(/(?<=[.!?])\s+/)
+      .slice(0, 5);
+    const summary = sentences.join(" ").slice(0, 600);
+    const lc = content.toLowerCase();
+    const sentiment = /terima kasih|thanks|great|awesome|bagus|baik/.test(lc)
       ? "positive"
-      : /disappoint|bad|buruk|kecewa/.test(content.toLowerCase())
+      : /disappoint|bad|buruk|kecewa|maaf/.test(lc)
       ? "negative"
       : "neutral";
-    const summary = content.slice(0, 800);
     return { summary, topics, sentiment };
   }
 }
