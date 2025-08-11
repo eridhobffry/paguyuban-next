@@ -32,6 +32,7 @@ export function useMediaUpload(
         setTemporaryUrls((prev) => [...prev, blob.url]);
         return blob.url;
       } catch (err) {
+        console.error("Client upload error:", err);
         // Fallback to server upload for environments where client uploads are not configured
         try {
           const form = new FormData();
@@ -47,6 +48,7 @@ export function useMediaUpload(
           setTemporaryUrls((prev) => [...prev, data.url]);
           return data.url;
         } catch (e) {
+          console.error("Server upload error:", e);
           toast.error("Upload failed");
           throw e;
         }

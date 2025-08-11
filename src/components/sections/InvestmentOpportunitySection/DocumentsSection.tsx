@@ -48,6 +48,7 @@ export function DocumentsSection() {
         setDocuments(data.documents || []);
       }
     } catch (error) {
+      console.error("Documents fetch error:", error);
       // Fallback to static documents if API fails
       setDocuments([
         {

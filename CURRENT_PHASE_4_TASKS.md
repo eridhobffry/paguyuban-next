@@ -18,9 +18,14 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Speakers: table + public GET + admin CRUD API.
   - Artists: table + public GET + admin CRUD API + admin list/detail dialog; seed endpoint; unified Drizzle types and shared zod schemas.
   - Public financial QA: totals match admin; charts update after mutations; cache-busting refresh verified.
+  - Public wiring: homepage sections fetch live data
+    - `FinancialTransparencySection` → `/api/financial/public` with cache headers and cache-busting, plus BroadcastChannel/Event refresh.
+    - `SpeakersSection` → `/api/speakers/public` and `/api/artists/public`; cards deep-link to `/[slug]` when present.
+    - `InvestmentOpportunitySection/DocumentsSection` → `/api/documents/public`; restricted docs show lock and open mailto; public docs open file/external link.
 - **In Progress**
 - **Next**
-  - Speakers/Artists public filters (q, slug, tag, type for speakers) wired; deep links for speakers and artists live with optional ISR.
+  - Analytics: initial dashboard views (sessions/events time series, top routes/sections); section observer + scroll-depth; sessionizer + engagement score.
+  - Accessibility pass (WCAG 2.2 AA focus states, landmarks, color contrast), performance benchmarks (Core Web Vitals incl. INP < 200ms target) and micro-copy.
 - **Later (Roadmap)**
   - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
   - Admin UI shell migration to shadcn dashboard block.
@@ -149,6 +154,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Admin UI list + read-only detail dialog.
   - Create/edit with image URL field and validation; delete with confirm + toasts.
   - Search, sort, and row-limit controls on list. Sidebar integration.
+  - Public filters: `q`, `slug`, `tag`, `type` supported on `/api/speakers/public`; homepage section wired and cards deep-link to `/speakers/[slug]` when present.
 
 - **Next**
   - [x] Image upload via signed client tokens (`/api/admin/upload/handle`) with fallback to server upload; store returned URL; URL-based path still supported.
@@ -174,9 +180,9 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Ref-counted blob cleanup on PUT/DELETE using shared utilities and registry.
   - Admin requests include credentials consistently; UI uses `useMediaUpload("artists")` with temp commit/discard.
   - Public filters parity aligned with speakers (`q`, `slug`, `tag`).
+  - Public deep links `/artists/[slug]` live with ISR; homepage section wired via `SpeakersSection` featured artists grid.
 
 - **Next**
-  - [x] Deep links: `/artists/[slug]` with ISR.
   - Feature enrichments parity (optional deeper UI filters, tagging UX improvements).
   - Extend registry if adding new media fields later.
 
@@ -195,6 +201,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [x] Public endpoint reads via Drizzle and transforms output shape; filters non-restricted only and sets cache headers.
   - [x] Links (file or external) open in a new tab from admin and public views.
   - [x] Public types derived from Drizzle (`PublicDocument` in `src/types/documents.ts`).
+  - [x] Homepage section wired (`InvestmentOpportunitySection/DocumentsSection`) with skeleton states; restricted docs show lock and Request Access CTA.
 
 - **Next (Prioritized)**
 
@@ -272,24 +279,25 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Schema (Drizzle + Neon)**
 
-  - [ ] `analytics_sessions`: id, user_id?, started_at, ended_at, route_first, referrer, utm, device, country, engagement_score.
-  - [ ] `analytics_events`: id, session_id, user_id?, route, type, section?, element?, metadata JSON, created_at.
-  - [ ] `analytics_section_durations`: id, session_id, section, dwell_ms, created_at.
-  - [ ] `chatbot_logs`: id, session_id, user_id?, role, message, tokens, created_at.
-  - [ ] `chatbot_summaries`: id, session_id, summary, topics JSON, sentiment, created_at.
+  - [x] `analytics_sessions`: id, user_id?, started_at, ended_at, route_first, referrer, utm, device, country, engagement_score.
+  - [x] `analytics_events`: id, session_id, user_id?, route, type, section?, element?, metadata JSON, created_at.
+  - [x] `analytics_section_durations`: id, session_id, section, dwell_ms, created_at.
+  - [x] `chatbot_logs`: id, session_id, user_id?, role, message, tokens, created_at.
+  - [x] `chatbot_summaries`: id, session_id, summary, topics JSON, sentiment, created_at.
 
 - **Backend**
 
-  - [ ] `/api/analytics/track` with zod-validated payload, CORS, rate limiting; batching support.
+  - [x] `/api/analytics/track` with Zod-validated payload, CORS, and batching support.
+  - [ ] Rate limiting (per-IP/session) for public endpoint.
   - [ ] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
   - [ ] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
-  - [ ] Optional: explore server-sent events or ElectricSQL-backed reads for dashboard views.
+  - [ ] Optional: server-sent events or ElectricSQL-backed reads for dashboard views.
 
 - **Frontend**
 
-  - [ ] Tiny `analyticsClient` for `page_view`, global `click`, section observer, heartbeat; batching with backoff.
-  - [ ] Route-change hook to log page views and referrer/UTM once per session.
-  - [ ] Configurable sample rate; disabled in dev.
+  - [x] Tiny `analyticsClient` with `session_start`, `page_view` on route changes, global `click`, and `heartbeat` (15s), batching enabled.
+  - [ ] Section observer (`section_visible`, dwell_ms, scroll_depth, exit_position).
+  - [ ] Configurable sample rate; disabled in dev (currently gated by `NEXT_PUBLIC_ENABLE_ANALYTICS`).
   - [ ] Optional GA4 or `@vercel/analytics` alongside custom events.
 
 - **Admin UI (initial)**
@@ -318,7 +326,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - Use Neon MCP to prepare and verify DB changes on a temp branch, then commit upon approval.
   - [ ] Prepare migration: add Drizzle `documents` table (and optional `marketing_highlights` JSON) and update APIs to use Drizzle.
-  - [ ] Prepare migration: create analytics tables: `analytics_sessions`, `analytics_events`, `analytics_section_durations`, `chatbot_logs`, `chatbot_summaries`.
+  - [x] Prepare migration: create analytics tables: `analytics_sessions`, `analytics_events`, `analytics_section_durations`, `chatbot_logs`, `chatbot_summaries`.
   - [ ] Verify on temp branch; update FE types via Drizzle `InferSelectModel` and zod schemas; then commit.
 - Branching: favor Neon branching for risky schema changes; keep prod traffic isolated; instant restore if needed.
 - Types pipeline: any schema change must update Drizzle models, regenerate Zod schemas, and propagate FE/BE imports.
@@ -350,6 +358,19 @@ Two complementary paths; choose per domain:
 - Public endpoints remain open (no auth) for homepage fetches; access control enforced in admin routes and middleware.
 - Real-time adoption will be gated by feature flags per domain and rolled out after a successful pilot.
 - Blob storage pattern: server uploads via `@vercel/blob.put`, UI helper `useMediaUpload`, and shared cleanup util with registry-based ref counting. Extend registry for new domains (agenda, documents, site logos). Best-effort deletes; non-blocking.
+
+## UX 2025 Alignment (current status)
+
+- Performance and feedback
+  - **Optimistic CRUD with toasts** across admin (financial, speakers, artists) and non-blocking UI.
+  - **Skeleton/loading states** in `DocumentsSection`; homepage sections avoid layout shifts.
+  - **Core Web Vitals focus**: target INP < 200ms, good LCP/CLS budgets; next step: add field metrics and regression alerts.
+- Accessibility
+  - Semantics and keyboard nav largely follow component library; next step: audit WCAG 2.2 AA (landmarks, focus rings, contrast) and fix deltas.
+- Personalization and clarity
+  - Clear information hierarchy, progressive disclosure in admin dialogs; dark theme supported.
+- Collaboration and real-time
+  - Cross-tab refresh via BroadcastChannel for financial/documents; real-time pilot queued (feature-flagged) for speakers list.
 
 ## Evidence & Links
 

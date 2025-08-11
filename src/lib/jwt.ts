@@ -20,6 +20,7 @@ export function verifyTokenMiddleware(token: string) {
 
     return payload;
   } catch (error) {
+    console.error("JWT verification error:", error);
     return null;
   }
 }
