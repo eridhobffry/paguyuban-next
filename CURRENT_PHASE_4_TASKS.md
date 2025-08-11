@@ -311,12 +311,14 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [ ] Configurable sample rate; disabled in dev (currently gated by `NEXT_PUBLIC_ENABLE_ANALYTICS`).
   - [ ] Optional GA4 or `@vercel/analytics` alongside custom events.
 
-- **Admin UI (initial)**
+**Admin UI (initial)**
 
-  - [x] Time series: sessions, events.
-  - [x] Top routes/sections.
-  - [ ] Avg engagement, bounce.
-  - [ ] Scroll depth distribution, funnels.
+- [x] Time series: sessions, events.
+- [x] Top routes/sections.
+- [x] Avg engagement, bounce.
+- [x] Scroll depth distribution.
+- [ ] Funnels.
+
   - [ ] Chat: volume, topics cloud, sentiment, per-session summaries.
 
 - **Privacy & retention**

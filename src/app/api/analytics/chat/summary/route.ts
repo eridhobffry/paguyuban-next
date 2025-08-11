@@ -111,7 +111,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { id: inserted.id },
       { status: 201, headers: corsHeaders() }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Invalid request" },
       { status: 400, headers: corsHeaders() }

@@ -33,6 +33,9 @@ type ApiResponse = {
   eventsDaily: DailyPoint[];
   topRoutes: TopItem[];
   topSections: TopItem[];
+  avgEngagement: number;
+  bounceRate: number; // 0..1
+  scrollDepthBuckets: { bucket: string; count: number }[];
 };
 
 export default function AdminAnalyticsPage() {
@@ -143,6 +146,32 @@ export default function AdminAnalyticsPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Avg Engagement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {Math.round(data?.avgEngagement ?? 0)}
+            </div>
+            <div className="text-muted-foreground text-sm">
+              Last {data?.range}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Bounce Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {`${Math.round((data?.bounceRate ?? 0) * 100)}%`}
+            </div>
+            <div className="text-muted-foreground text-sm">
+              Last {data?.range}
+            </div>
+          </CardContent>
+        </Card>
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Sessions and Events (daily)</CardTitle>
@@ -334,6 +363,27 @@ export default function AdminAnalyticsPage() {
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="sessions" fill="#10b981" name="Sessions" />
                   <Bar dataKey="events" fill="#3b82f6" name="Events" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Scroll Depth Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Sessions", color: "#22c55e" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={data?.scrollDepthBuckets || []}>
+                  <XAxis dataKey="bucket" />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#22c55e" name="Sessions" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
