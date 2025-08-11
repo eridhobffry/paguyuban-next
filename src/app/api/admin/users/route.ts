@@ -68,9 +68,19 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Prevent modifying Super Admin account by anyone
+    // Only Super Admin may change roles
+    if (
+      (action === "promote" || action === "demote") &&
+      !isSuperAdminFromToken(decoded)
+    ) {
+      return NextResponse.json(
+        { error: "Only Super Admin may change roles" },
+        { status: 403 }
+      );
+    }
+
+    // Prevent modifying Super Admin account by anyone (except restore)
     if (email && isSuperAdminFromToken(decoded)) {
-      // Super Admin may modify others, but prevent self-delete/revoke via this endpoint
       if (decoded.email === email && action !== "restore") {
         return NextResponse.json(
           { error: "Cannot modify Super Admin account via this endpoint" },
