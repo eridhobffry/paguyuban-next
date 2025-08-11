@@ -104,8 +104,14 @@ export function DocumentLibrary({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
-                      <div className="p-3 bg-blue-500/20 rounded-lg">
-                        <IconComponent className="w-6 h-6 text-blue-500" />
+                      <div
+                        className="p-3 bg-blue-500/20 rounded-lg"
+                        aria-hidden
+                      >
+                        <IconComponent
+                          className="w-6 h-6 text-blue-500"
+                          aria-hidden
+                        />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -117,18 +123,30 @@ export function DocumentLibrary({
                             </Badge>
                           )}
                           {doc.restricted ? (
-                            <Lock className="w-4 h-4 text-amber-500" />
+                            <>
+                              <Lock
+                                className="w-4 h-4 text-amber-500"
+                                aria-hidden
+                              />
+                              <span className="sr-only">Restricted</span>
+                            </>
                           ) : (
-                            <Unlock className="w-4 h-4 text-green-500" />
+                            <>
+                              <Unlock
+                                className="w-4 h-4 text-green-500"
+                                aria-hidden
+                              />
+                              <span className="sr-only">Public</span>
+                            </>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                           {doc.pages} • {doc.type}
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 mb-2">
+                        <p className="text-foreground/90 mb-2">
                           {doc.description}
                         </p>
-                        <p className="text-sm text-gray-500 italic">
+                        <p className="text-sm text-muted-foreground italic">
                           &quot;{doc.preview}&quot;
                         </p>
                         {Array.isArray(doc.marketingHighlights) &&
@@ -143,7 +161,7 @@ export function DocumentLibrary({
                                 ))}
                             </div>
                           )}
-                        <div className="mt-3 text-xs text-gray-400">
+                        <div className="mt-3 text-xs text-muted-foreground">
                           Created by {doc.createdBy} on{" "}
                           {new Date(
                             doc.createdAt as unknown as string
@@ -171,24 +189,30 @@ export function DocumentLibrary({
                               );
                             }
                           }}
+                          aria-label="View document"
+                          title="View document"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4" aria-hidden />
                         </Button>
                       )}
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => onEdit(doc)}
+                        aria-label="Edit document"
+                        title="Edit document"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4" aria-hidden />
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDocumentDelete(doc.id)}
                         disabled={processingDocId === doc.id}
+                        aria-label="Delete document"
+                        title="Delete document"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden />
                       </Button>
                     </div>
                   </div>
