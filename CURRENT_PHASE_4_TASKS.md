@@ -22,10 +22,19 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
     - `FinancialTransparencySection` → `/api/financial/public` with cache headers and cache-busting, plus BroadcastChannel/Event refresh.
     - `SpeakersSection` → `/api/speakers/public` and `/api/artists/public`; cards deep-link to `/[slug]` when present.
     - `InvestmentOpportunitySection/DocumentsSection` → `/api/documents/public`; restricted docs show lock and open mailto; public docs open file/external link.
+  - Analytics foundation (client + server):
+    - Client events: `session_start`, `page_view`, `click`, `heartbeat`.
+    - Section tracking: `section_visible` with dwell, `scroll_depth`, `exit_position` (IntersectionObserver + passive scroll).
+    - Web Vitals: field reporting for INP/LCP/CLS with INP budget alert (>200ms).
+    - Server: attaches `userId` to sessions/events when logged-in; per-user/per-IP rate limiting for session starts and event batches.
+  - Admin Analytics (initial): `/admin/analytics` page with sessions/events time series and top routes/sections using existing charts; API `/api/admin/analytics` (admin-protected). PII-free; fast on 30d data.
+  - Accessibility quick pass (WCAG 2.2 alignment):
+    - Added skip link, `main` landmark with focus target; global `:focus-visible` ring.
+    - Aria labels for icon-only buttons/links in homepage sections.
 - **In Progress**
 - **Next**
-  - Analytics: initial dashboard views (sessions/events time series, top routes/sections); section observer + scroll-depth; sessionizer + engagement score.
-  - Accessibility pass (WCAG 2.2 AA focus states, landmarks, color contrast), performance benchmarks (Core Web Vitals incl. INP < 200ms target) and micro-copy.
+  - Analytics: sessionizer to close stale sessions and compute engagement score; add 7/30/90d range switch and loading skeletons.
+  - Accessibility: contrast audit across admin lists/dialogs; label/icon sweep; keyboard-only QA in admin pages.
 - **Later (Roadmap)**
   - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
   - Admin UI shell migration to shadcn dashboard block.
