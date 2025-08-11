@@ -107,14 +107,14 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 6. QA
 
-- [ ] Numbers consistent across overview, detail pages, and charts.
+- [x] Numbers consistent across overview, detail pages, and charts.
 - [x] Access control enforced in middleware and APIs.
-- [ ] Mobile layout usable (horizontal scroll, readable panel).
+- [x] Mobile layout usable (horizontal scroll, readable panel).
 
 - **Public Alignment**
   - [x] Endpoint exists and homepage wired.
   - [x] Client refresh listener wired (BroadcastChannel + event) and cache-busting fetch.
-  - [ ] QA totals vs admin; ensure charts update after mutations.
+  - [x] QA totals vs admin; ensure charts update after mutations.
   - [ ] Optional (post-pilot): switch public charts to live queries gated by a flag, or keep current cached model and rely on periodic refresh.
 
 ### Speakers
