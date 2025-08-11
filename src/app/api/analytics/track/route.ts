@@ -5,6 +5,7 @@ import {
   analyticsSessions,
   analyticsEvents,
   analyticsSectionDurations,
+  chatbotLogs,
 } from "@/lib/db/schema";
 import { stackServerApp } from "@/stack";
 
@@ -158,6 +159,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (rows.length > 0) {
       await db.insert(analyticsEvents).values(rows);
+    }
+
+    // Persist chat logs for chat_message events
+    const chatRows: {
+      sessionId: string;
+      userId?: string;
+      role: string;
+      message: string;
+      tokens?: number;
+    }[] = [];
+    for (const e of batch.events) {
+      if (e.type !== "chat_message") continue;
+      const md = (e.metadata || {}) as Record<string, unknown>;
+      const role = String(md.role || "user");
+      const tokensRaw = Number(md.tokens || 0);
+      const message = typeof md.content === "string" ? md.content : undefined;
+      if (!message || message.length === 0) continue;
+      chatRows.push({
+        sessionId: batch.sessionId,
+        userId: authUserId ?? undefined,
+        role,
+        message,
+        tokens: Number.isFinite(tokensRaw) ? Math.round(tokensRaw) : undefined,
+      });
+    }
+
+    if (chatRows.length > 0) {
+      await db.insert(chatbotLogs).values(chatRows);
     }
 
     // Persist section dwell durations extracted from section_visible events

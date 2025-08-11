@@ -302,6 +302,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - [x] Rate limiting (per-IP/session) for public endpoint.
   - [x] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
   - [x] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
+  - [x] Persist `chatbot_logs` for per-message audit.
   - [ ] Optional: server-sent events or ElectricSQL-backed reads for dashboard views.
 
 - **Frontend**
