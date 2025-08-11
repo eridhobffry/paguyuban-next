@@ -6,6 +6,7 @@ import {
   FinancialResponseDto,
   FinancialRevenueItem,
 } from "@/types/financial";
+import { computeTotals } from "@/lib/financial";
 
 export function useFinancial() {
   const [data, setData] = useState<FinancialResponseDto | null>(null);
@@ -225,14 +226,7 @@ export function useFinancial() {
     }
   }
 
-  const totals = useMemo(() => {
-    const totalRevenue =
-      data?.revenues?.reduce((s, r) => s + (r.amount || 0), 0) ?? 0;
-    const totalCosts =
-      data?.costs?.reduce((s, c) => s + (c.amount || 0), 0) ?? 0;
-    const net = totalRevenue - totalCosts;
-    return { totalRevenue, totalCosts, net };
-  }, [data]);
+  const totals = useMemo(() => computeTotals(data), [data]);
 
   return {
     data,
