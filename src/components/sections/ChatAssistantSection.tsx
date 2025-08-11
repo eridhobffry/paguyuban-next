@@ -146,8 +146,19 @@ const ChatAssistantSection = () => {
     setIsLoading(true);
 
     try {
-      // Call actual Gemini API with knowledge base integration
-      const response = await getGeminiResponse(text, selectedAssistant);
+      // Server-side Gemini call via API route (avoids 403 and keeps key server-side)
+      const res = await fetch("/api/chat/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          message: text,
+          assistantType: selectedAssistant === 0 ? "ucup" : "rima",
+        }),
+      });
+      if (!res.ok) throw new Error(`chat_failed ${res.status}`);
+      const { reply } = (await res.json()) as { reply: string };
+      const response = reply;
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -193,31 +204,7 @@ const ChatAssistantSection = () => {
     }
   };
 
-  // Actual Gemini API integration
-  const getGeminiResponse = async (
-    question: string,
-    assistantIndex: number
-  ): Promise<string> => {
-    try {
-      // Import Gemini service dynamically to avoid SSR issues
-      const { paguyubanChat } = await import("@/lib/gemini");
-
-      // Map assistant index to assistant type
-      const assistantType = assistantIndex === 0 ? "ucup" : "rima";
-
-      // Get response from Gemini with knowledge base and safety filtering
-      const response = await paguyubanChat.chat(question, assistantType);
-
-      return response;
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-
-      // Fallback to simple responses if API fails
-      return assistantIndex === 0
-        ? "Maaf, saya sedang mengalami gangguan koneksi. Tim support Paguyuban Messe 2026 siap membantu Anda di nusantaraexpoofficial@gmail.com."
-        : "I apologize for the connection issue. Our Paguyuban Messe 2026 support team is available at nusantaraexpoofficial@gmail.com for immediate assistance.";
-    }
-  };
+  // Removed direct client Gemini call; handled by /api/chat/generate
 
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion);
@@ -240,6 +227,21 @@ const ChatAssistantSection = () => {
       ]);
     }, 0);
   };
+
+  async function sendSummaryNow(): Promise<void> {
+    try {
+      const sid = getCurrentAnalyticsSessionId();
+      const transcript = transcriptRef.current;
+      if (!sid || !transcript || transcript.length === 0) return;
+      await fetch("/api/analytics/chat/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        keepalive: true,
+        body: JSON.stringify({ sessionId: sid, transcript }),
+      });
+    } catch {}
+  }
 
   // Summarize on close/pagehide when we have a sessionId and some transcript
   useEffect(() => {
@@ -323,7 +325,10 @@ const ChatAssistantSection = () => {
                   <Info className="w-4 h-4 text-white" />
                 </button>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    void sendSummaryNow();
+                    setIsOpen(false);
+                  }}
                   className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4 text-white" />

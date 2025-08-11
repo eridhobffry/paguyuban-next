@@ -37,7 +37,7 @@ export default function SpeakersAdminPage() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState<number>(25);
-  const [filterType, setFilterType] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("all");
   const [filterCompany, setFilterCompany] = useState<string>("");
   type SortBy = "name" | "role" | "company" | "speakerType";
   type SortDir = "asc" | "desc";
@@ -57,7 +57,9 @@ export default function SpeakersAdminPage() {
           .includes(q)
       )
       .filter((s) =>
-        filterType ? (s.speakerType ?? "").toLowerCase() === filterType : true
+        filterType && filterType !== "all"
+          ? (s.speakerType ?? "").toLowerCase() === filterType
+          : true
       )
       .filter((s) =>
         filterCompany
@@ -109,7 +111,7 @@ export default function SpeakersAdminPage() {
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="summit">Summit</SelectItem>
               <SelectItem value="main_stage">Main Stage</SelectItem>
             </SelectContent>

@@ -482,14 +482,78 @@ export default function AdminAnalyticsPage() {
                     <div className="text-sm text-muted-foreground">
                       {new Date(r.createdAt).toLocaleString()}
                     </div>
-                    <a
-                      className="text-sm underline"
-                      href={`/admin/analytics?sessionId=${encodeURIComponent(
-                        r.sessionId
-                      )}`}
-                    >
-                      View session
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <a
+                        className="text-sm underline"
+                        href={`/admin/analytics?sessionId=${encodeURIComponent(
+                          r.sessionId
+                        )}`}
+                      >
+                        View session
+                      </a>
+                      <button
+                        className="text-sm underline"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(
+                              "/api/admin/analytics/chat/recommend",
+                              {
+                                method: "POST",
+                                credentials: "include",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  sessionId: r.sessionId,
+                                  summary: r.summary,
+                                  sentiment: r.sentiment,
+                                }),
+                              }
+                            );
+                            if (!res.ok)
+                              throw new Error(`Failed: ${res.status}`);
+                            const json = (await res.json()) as {
+                              recommendedActions: Array<{
+                                title: string;
+                                description: string;
+                                priority?: string;
+                              }>;
+                              journey: Array<{
+                                stage: string;
+                                insight: string;
+                                risk?: string;
+                                recommendation?: string;
+                              }>;
+                              nextBestAction: string;
+                            };
+                            const content = `Next Best Action: ${
+                              json.nextBestAction
+                            }\n\nRecommended Actions:\n- ${json.recommendedActions
+                              .map(
+                                (a) =>
+                                  `${a.title} (${a.priority || ""}) — ${
+                                    a.description
+                                  }`
+                              )
+                              .join("\n- ")}\n\nJourney:\n- ${json.journey
+                              .map(
+                                (j) =>
+                                  `${j.stage}: ${j.insight}${
+                                    j.risk ? ` | Risk: ${j.risk}` : ""
+                                  }${
+                                    j.recommendation
+                                      ? ` | Rec: ${j.recommendation}`
+                                      : ""
+                                  }`
+                              )
+                              .join("\n- ")}`;
+                            alert(content);
+                          } catch {
+                            alert("Failed to load recommendations");
+                          }
+                        }}
+                      >
+                        Recommend actions
+                      </button>
+                    </div>
                   </div>
                   <div className="text-sm">{r.summary}</div>
                   {r.sentiment && (
