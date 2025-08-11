@@ -29,6 +29,7 @@ export type PublicSpeakerDto = {
   role?: Speaker["role"];
   company?: Speaker["company"];
   image_url?: string | null; // kept to match current public API field
+  slug?: Speaker["slug"] | null;
   twitter?: Speaker["twitter"];
   linkedin?: Speaker["linkedin"];
   website?: Speaker["website"];

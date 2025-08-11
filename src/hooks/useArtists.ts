@@ -27,6 +27,7 @@ export function useArtistsAdmin() {
     const res = await fetch("/api/admin/artists", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ artist }),
     });
     if (!res.ok) throw new Error("Failed to create artist");
@@ -39,6 +40,7 @@ export function useArtistsAdmin() {
       const res = await fetch("/api/admin/artists", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id, artist }),
       });
       if (!res.ok) throw new Error("Failed to update artist");
@@ -51,6 +53,7 @@ export function useArtistsAdmin() {
   const deleteArtist = useCallback(async (id: string) => {
     const res = await fetch(`/api/admin/artists?id=${id}`, {
       method: "DELETE",
+      credentials: "include",
     });
     if (!res.ok) throw new Error("Failed to delete artist");
     const data = await res.json();
