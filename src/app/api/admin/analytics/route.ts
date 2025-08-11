@@ -8,6 +8,13 @@ type DailyPoint = { date: string; count: number };
 type TopItem = { name: string; count: number };
 type SingleNumber = { value: number };
 type DepthBucket = { bucket: string; count: number };
+type SentimentItem = { name: string; count: number };
+type ChatSummaryItem = {
+  session_id: string;
+  summary: string;
+  sentiment: string | null;
+  created_at: string;
+};
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -125,6 +132,44 @@ export async function GET(request: NextRequest) {
            order by 1`
     )) as unknown as { rows: DepthBucket[] };
 
+    // Chat daily volume (from chatbot_logs)
+    const chatDailyResult = (await db.execute(
+      dsql`select (date_trunc('day', created_at))::date as date, count(*)::int as count
+           from chatbot_logs
+           where created_at >= now() - ${intervalLiteral}::interval
+           group by 1
+           order by 1`
+    )) as unknown as { rows: DailyPoint[] };
+
+    // Sentiment breakdown (from chatbot_summaries)
+    const sentimentResult = (await db.execute(
+      dsql`select coalesce(sentiment, '(unknown)') as name, count(*)::int as count
+           from chatbot_summaries
+           where created_at >= now() - ${intervalLiteral}::interval
+           group by 1
+           order by count desc`
+    )) as unknown as { rows: SentimentItem[] };
+
+    // Top topics (unnest topics JSON array)
+    const topTopicsResult = (await db.execute(
+      dsql`select lower(x)::text as name, count(*)::int as count
+           from chatbot_summaries cs,
+                lateral jsonb_array_elements_text(coalesce(cs.topics, '[]'::jsonb)) as t(x)
+           where cs.created_at >= now() - ${intervalLiteral}::interval
+           group by 1
+           order by count desc
+           limit 10`
+    )) as unknown as { rows: TopItem[] };
+
+    // Recent chat summaries (latest 10)
+    const recentSummariesResult = (await db.execute(
+      dsql`select session_id, summary, sentiment, created_at
+           from chatbot_summaries
+           where created_at >= now() - ${intervalLiteral}::interval
+           order by created_at desc
+           limit 10`
+    )) as unknown as { rows: ChatSummaryItem[] };
+
     return json({
       range,
       rangeDays: days,
@@ -135,6 +180,15 @@ export async function GET(request: NextRequest) {
       avgEngagement: (avgEngagementResult.rows[0]?.value ?? 0) as number,
       bounceRate: Number(bounceRateResult.rows[0]?.value ?? 0),
       scrollDepthBuckets: scrollDepthResult.rows,
+      chatDaily: chatDailyResult.rows,
+      chatSentiment: sentimentResult.rows,
+      chatTopTopics: topTopicsResult.rows,
+      chatRecentSummaries: recentSummariesResult.rows.map((r) => ({
+        sessionId: r.session_id,
+        summary: r.summary,
+        sentiment: r.sentiment,
+        createdAt: r.created_at,
+      })),
     });
   } catch (error) {
     console.error("/api/admin/analytics GET error:", error);

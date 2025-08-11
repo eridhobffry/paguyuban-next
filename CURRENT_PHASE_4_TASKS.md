@@ -318,6 +318,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - [x] Top routes/sections.
 - [x] Avg engagement, bounce.
 - [x] Scroll depth distribution.
+- [x] Chat KPIs: daily volume, sentiment, top topics, recent summaries.
 - [ ] Funnels.
 
   - [ ] Chat: volume, topics cloud, sentiment, per-session summaries.

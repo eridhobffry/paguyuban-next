@@ -36,6 +36,15 @@ type ApiResponse = {
   avgEngagement: number;
   bounceRate: number; // 0..1
   scrollDepthBuckets: { bucket: string; count: number }[];
+  chatDaily: DailyPoint[];
+  chatSentiment: TopItem[];
+  chatTopTopics: TopItem[];
+  chatRecentSummaries: {
+    sessionId: string;
+    summary: string;
+    sentiment: string | null;
+    createdAt: string;
+  }[];
 };
 
 export default function AdminAnalyticsPage() {
@@ -387,6 +396,109 @@ export default function AdminAnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Chat Volume (daily)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Messages", color: "#ef4444" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <AreaChart data={data?.chatDaily || []}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="date" />
+                  <YAxis allowDecimals={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    dataKey="count"
+                    type="natural"
+                    stroke="#ef4444"
+                    fill="#fecaca"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Chat Sentiment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Sessions", color: "#a855f7" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={(data?.chatSentiment || []).slice().reverse()}>
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#a855f7" name="Sessions" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Chat Topics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Mentions", color: "#06b6d4" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={(data?.chatTopTopics || []).slice().reverse()}>
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#06b6d4" name="Mentions" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Chat Summaries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(data?.chatRecentSummaries || []).map((r) => (
+                <div
+                  key={`${r.sessionId}-${r.createdAt}`}
+                  className="p-3 rounded-md border"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(r.createdAt).toLocaleString()}
+                    </div>
+                    <a
+                      className="text-sm underline"
+                      href={`/admin/analytics?sessionId=${encodeURIComponent(
+                        r.sessionId
+                      )}`}
+                    >
+                      View session
+                    </a>
+                  </div>
+                  <div className="text-sm">{r.summary}</div>
+                  {r.sentiment && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Sentiment: {r.sentiment}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
