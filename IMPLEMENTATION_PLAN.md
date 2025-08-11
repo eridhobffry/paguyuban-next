@@ -172,7 +172,7 @@ This document outlines the step-by-step implementation plan to align the sponsor
     - we can upload document and input document link in admin panel, and through gemini API Key they will construct and summarize the uploaded documents all to save in Neon Database like pages, excutive summary that super hooks for C-suite, Title, Description, Document Link, and etc.
   - [ ] we need to add new tabel for investment opportunity
 - [ ] Create something like CSM (Content Management System) to manage all data in admin panel and all data will be stored in Neon Database and all data will be mirroring to the website
-- [ ] Analytic should be built to track the website traffic and user behavior
+- [x] Analytic should be built to track the website traffic and user behavior (sessions, events, section dwell, web-vitals INP/LCP/CLS, clicks, heartbeats)
 - [ ] Build a dashboard to track the website traffic and user behavior
 - [ ] Build a dashboard to track the website performance and user behavior
 - [ ] Build a dashboard to track the website engagement and user behavior
@@ -186,7 +186,7 @@ This document outlines the step-by-step implementation plan to align the sponsor
 - [x] Public endpoints support optional filters: `q`, `slug`, `tag`, and `type` (speakers only).
 - [x] Uploads: client-signed uploads via `/api/admin/upload/handle` with fallback server upload route `/api/admin/upload`.
 - [ ] Build `/api/admin/financial`, `/api/admin/agenda`, `/api/admin/sponsors`, `/api/admin/investment-opportunity`, `/api/admin/executive-documentation`, `/api/admin/chatbot`, and `/api/admin/analytics` endpoints
-- [ ] Use `zod` schemas to validate GET/POST/PUT/DELETE payloads
+- [x] Use `zod` schemas to validate analytics payloads; admin CRUD payloads validated
 - [ ] Persist changes to Neon Database
 
 #### 4.4 Admin Forms - react hook form, shadcn ui, zod, and etc.
@@ -204,7 +204,7 @@ This document outlines the step-by-step implementation plan to align the sponsor
 
 #### 4.5 Security & Testing
 
-- [ ] Apply existing auth middleware to API routes
+- [x] Apply existing auth middleware to admin API routes; analytics endpoint supports unauthenticated clients
 - [ ] Add basic unit tests or integration checks for CRUD operations
 - [ ] Document usage in README/Implementation Plan
 

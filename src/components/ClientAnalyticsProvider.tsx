@@ -6,6 +6,7 @@ import { maybeCreateAnalytics } from "@/lib/analytics/client";
 
 export default function ClientAnalyticsProvider() {
   const analyticsRef = useRef(maybeCreateAnalytics());
+  const webVitalsStartedRef = useRef(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -66,6 +67,56 @@ export default function ClientAnalyticsProvider() {
     document.addEventListener("click", onClick, options);
     return () => {
       document.removeEventListener("click", onClick, true);
+    };
+  }, []);
+
+  // Web Vitals: INP, LCP, CLS (field monitoring)
+  useEffect(() => {
+    if (!analyticsRef.current) return;
+    if (webVitalsStartedRef.current) return;
+    webVitalsStartedRef.current = true;
+
+    let canceled = false;
+    (async () => {
+      try {
+        const mod = await import("web-vitals");
+        const { onINP, onLCP, onCLS } = mod;
+        type WebVitalMetric = {
+          name: string;
+          value: number;
+          id: string;
+          rating?: "good" | "needs-improvement" | "poor";
+        };
+        const report = (metric: WebVitalMetric) => {
+          if (canceled) return;
+          const metadata: Record<string, unknown> = {
+            name: metric.name,
+            value: Math.round(metric.value),
+            id: metric.id,
+            rating: metric.rating,
+          };
+          void analyticsRef.current?.track("web_vital", { metadata });
+          // Simple budget alert for INP
+          if (metric.name === "INP" && metric.value > 200) {
+            void analyticsRef.current?.track("web_vital_budget", {
+              metadata: {
+                name: metric.name,
+                value: Math.round(metric.value),
+                budget_ms: 200,
+              },
+            });
+          }
+        };
+        onINP(report);
+        onLCP(report);
+        onCLS(report);
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      canceled = true;
     };
   }, []);
 

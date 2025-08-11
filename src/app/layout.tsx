@@ -51,13 +51,22 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        {/* Skip link for keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-slate-800 focus:text-white"
+        >
+          Skip to main content
+        </a>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <StackProvider app={stackServerApp}>
             <StackTheme>
               <Suspense fallback={null}>
                 <ClientAnalyticsProvider />
               </Suspense>
-              {children}
+              <main id="main-content" role="main" tabIndex={-1}>
+                {children}
+              </main>
               <Toaster richColors closeButton position="top-right" />
             </StackTheme>
           </StackProvider>

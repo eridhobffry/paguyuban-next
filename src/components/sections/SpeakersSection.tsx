@@ -68,6 +68,7 @@ const SpeakerCard = ({
           <a
             href={speaker.social.twitter}
             className="text-gray-400 hover:text-cyan-400 transition-colors"
+            aria-label={`${speaker.name} on Twitter`}
           >
             <Twitter className="w-4 h-4" />
           </a>
@@ -76,6 +77,7 @@ const SpeakerCard = ({
           <a
             href={speaker.social.linkedin}
             className="text-gray-400 hover:text-cyan-400 transition-colors"
+            aria-label={`${speaker.name} on LinkedIn`}
           >
             <Linkedin className="w-4 h-4" />
           </a>
@@ -84,6 +86,7 @@ const SpeakerCard = ({
           <a
             href={speaker.social.website}
             className="text-gray-400 hover:text-cyan-400 transition-colors"
+            aria-label={`${speaker.name} website`}
           >
             <Globe className="w-4 h-4" />
           </a>
