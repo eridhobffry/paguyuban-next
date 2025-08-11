@@ -17,6 +17,7 @@ export type PublicArtistDto = Pick<
   | "role"
   | "company"
   | "imageUrl"
+  | "slug"
   | "instagram"
   | "youtube"
   | "twitter"

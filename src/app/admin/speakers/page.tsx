@@ -37,6 +37,8 @@ export default function SpeakersAdminPage() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState<number>(25);
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterCompany, setFilterCompany] = useState<string>("");
   type SortBy = "name" | "role" | "company" | "speakerType";
   type SortDir = "asc" | "desc";
   const [sortBy, setSortBy] = useState<SortBy>("name");
@@ -48,12 +50,23 @@ export default function SpeakersAdminPage() {
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    return speakers.filter((s) =>
-      (s.name + (s.role ?? "") + (s.company ?? "") + (s.speakerType ?? ""))
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [speakers, query]);
+    return speakers
+      .filter((s) =>
+        (s.name + (s.role ?? "") + (s.company ?? "") + (s.speakerType ?? ""))
+          .toLowerCase()
+          .includes(q)
+      )
+      .filter((s) =>
+        filterType ? (s.speakerType ?? "").toLowerCase() === filterType : true
+      )
+      .filter((s) =>
+        filterCompany
+          ? (s.company ?? "")
+              .toLowerCase()
+              .includes(filterCompany.toLowerCase())
+          : true
+      );
+  }, [speakers, query, filterType, filterCompany]);
 
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -90,6 +103,22 @@ export default function SpeakersAdminPage() {
             className="w-64 hidden md:block"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+          />
+          <Select value={filterType} onValueChange={(v) => setFilterType(v)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="summit">Summit</SelectItem>
+              <SelectItem value="main_stage">Main Stage</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Filter by company"
+            className="w-56 hidden md:block"
+            value={filterCompany}
+            onChange={(e) => setFilterCompany(e.target.value)}
           />
           <Select
             value={String(limit)}
