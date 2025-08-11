@@ -28,8 +28,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         role: speakers.role,
         company: speakers.company,
         bio: speakers.bio,
-        imageUrl: speakers.imageUrl,
+        // alias to keep public API field stable
+        image_url: speakers.imageUrl,
         speakerType: speakers.speakerType,
+        slug: speakers.slug,
+        twitter: speakers.twitter,
+        linkedin: speakers.linkedin,
+        website: speakers.website,
       })
       .from(speakers)
       .where(filters.length ? and(...filters) : undefined)
@@ -45,8 +50,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       role: z.string().nullable().optional(),
       company: z.string().nullable().optional(),
       bio: z.string().nullable().optional(),
-      imageUrl: z.string().nullable().optional(),
+      image_url: z.string().nullable().optional(),
       speakerType: SpeakerTypeEnum,
+      slug: z.string().nullable().optional(),
+      twitter: z.string().nullable().optional(),
+      linkedin: z.string().nullable().optional(),
+      website: z.string().nullable().optional(),
     });
     const Parsed = z.array(SpeakerSchema);
     const parsed = Parsed.parse(items);

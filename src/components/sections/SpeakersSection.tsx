@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Mic2, Twitter, Linkedin, Globe } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { getSafeImageSrc } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { PublicArtistDto, PublicSpeakerDto } from "@/types/people";
@@ -16,6 +17,7 @@ const SpeakerCard = ({
     role?: string | null;
     company?: string | null;
     image: string;
+    slug?: string | null;
     social: {
       twitter?: string | null;
       linkedin?: string | null;
@@ -45,9 +47,15 @@ const SpeakerCard = ({
         />
       </div>
 
-      <h3 className="text-xl font-bold text-white text-center mb-1">
-        {speaker.name}
-      </h3>
+      {speaker.slug ? (
+        <Link href={`/speakers/${speaker.slug}`} className="block">
+          <h3 className="text-xl font-bold text-white text-center mb-1 underline-offset-4 hover:underline">
+            {speaker.name}
+          </h3>
+        </Link>
+      ) : (
+        <h3 className="text-xl font-bold text-white text-center mb-1">{speaker.name}</h3>
+      )}
       <p className="text-cyan-400 text-sm text-center mb-1">{speaker.role}</p>
       <p className="text-gray-400 text-sm text-center mb-4">
         {speaker.company}
@@ -127,6 +135,7 @@ const SpeakersSection = () => {
     role: s.role ?? "",
     company: s.company ?? "",
     image: getSafeImageSrc(s.image_url, "/images/speakers/gita-wirjawan.jpg"),
+    slug: s.slug ?? undefined,
     type: "speaker",
     social: {
       twitter: s.twitter ?? "",

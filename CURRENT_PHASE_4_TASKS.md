@@ -17,8 +17,8 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Financial detail UI: sorting/search persistence, URL state for selection/sort/search, CRUD in-detail with dialogs, toasts, and optimistic updates.
   - Speakers: table + public GET + admin CRUD API.
   - Artists: table + public GET + admin CRUD API + admin list/detail dialog; seed endpoint; unified Drizzle types and shared zod schemas.
+  - Public financial QA: totals match admin; charts update after mutations; cache-busting refresh verified.
 - **In Progress**
-  - Public financial QA: verify homepage totals match admin and charts update after mutations; optional ISR/client refresh.
 - **Next**
   - Speakers/Artists public filters (q, slug, tag, type for speakers) wired.
 - **Later (Roadmap)**
