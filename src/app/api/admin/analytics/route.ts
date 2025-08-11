@@ -6,6 +6,8 @@ import { sql as dsql } from "drizzle-orm";
 
 type DailyPoint = { date: string; count: number };
 type TopItem = { name: string; count: number };
+type SingleNumber = { value: number };
+type DepthBucket = { bucket: string; count: number };
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -73,6 +75,56 @@ export async function GET(request: NextRequest) {
            limit 10`
     )) as unknown as { rows: TopItem[] };
 
+    // Average engagement score (where present)
+    const avgEngagementResult = (await db.execute(
+      dsql`select coalesce(round(avg(engagement_score))::int, 0) as value
+           from analytics_sessions
+           where started_at >= now() - ${intervalLiteral}::interval
+             and engagement_score is not null`
+    )) as unknown as { rows: SingleNumber[] };
+
+    // Bounce rate: sessions with exactly 1 page_view divided by total sessions
+    const bounceRateResult = (await db.execute(
+      dsql`with s as (
+             select id
+             from analytics_sessions
+             where started_at >= now() - ${intervalLiteral}::interval
+           ),
+           pv as (
+             select e.session_id, count(*)::int as pv_count
+             from analytics_events e
+             join s on s.id = e.session_id
+             where e.type = 'page_view'
+             group by e.session_id
+           ),
+           totals as (
+             select (select count(*) from s)::int as total_sessions,
+                    (select count(*) from pv where pv_count = 1)::int as bounces
+           )
+           select case when total_sessions > 0 then (bounces::decimal / total_sessions) else 0 end as value
+           from totals`
+    )) as unknown as { rows: SingleNumber[] };
+
+    // Scroll depth distribution from exit_position events
+    const scrollDepthResult = (await db.execute(
+      dsql`with depths as (
+             select coalesce((metadata->>'scroll_depth_pct_max')::int, 0) as d
+             from analytics_events
+             where created_at >= now() - ${intervalLiteral}::interval
+               and type = 'exit_position'
+           )
+           select case
+                    when d < 25 then '0-25%'
+                    when d < 50 then '25-50%'
+                    when d < 75 then '50-75%'
+                    else '75-100%'
+                  end as bucket,
+                  count(*)::int as count
+           from depths
+           group by 1
+           order by 1`
+    )) as unknown as { rows: DepthBucket[] };
+
     return json({
       range,
       rangeDays: days,
@@ -80,6 +132,9 @@ export async function GET(request: NextRequest) {
       eventsDaily: eventsDailyResult.rows,
       topRoutes: topRoutesResult.rows,
       topSections: topSectionsResult.rows,
+      avgEngagement: (avgEngagementResult.rows[0]?.value ?? 0) as number,
+      bounceRate: Number(bounceRateResult.rows[0]?.value ?? 0),
+      scrollDepthBuckets: scrollDepthResult.rows,
     });
   } catch (error) {
     console.error("/api/admin/analytics GET error:", error);
