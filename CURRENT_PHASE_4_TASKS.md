@@ -42,6 +42,10 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Admin UI shell migration to shadcn dashboard block.
   - Analytics: schema, admin GET, and basic charts.
 
+### Documentation
+
+- [x] Document Gemini usage and billing notes in `docs/GEMINI_USAGE.md`.
+
 ### Architecture
 
 - **Database (Neon)**: normalized tables; start simple; add metadata later.
