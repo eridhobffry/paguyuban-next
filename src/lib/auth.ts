@@ -1,10 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getUserByEmail, createUser, type User } from "./sql";
+import { SUPER_ADMIN_EMAIL } from "./constants";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "your-secret-key-change-in-production";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "eridhobffry@gmail.com";
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || SUPER_ADMIN_EMAIL;
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
@@ -72,4 +74,8 @@ export async function initializeAdmin(): Promise<void> {
 
 export function isAdmin(user: User): boolean {
   return user && (user.role === "admin" || user.user_type === "admin");
+}
+
+export function isSuperAdmin(user: User): boolean {
+  return !!user && user.email === SUPER_ADMIN_EMAIL;
 }

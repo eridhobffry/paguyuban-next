@@ -13,11 +13,16 @@ function json(res: unknown, status = 200) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("auth-token")?.value;
-    if (!token) return json({ error: "Unauthorized" }, 401);
-    const decoded = verifyToken(token) as User;
-    if (!decoded || !isAdmin(decoded))
-      return json({ error: "Admin access required" }, 403);
+    // Allow machine-triggered runs via secret header, otherwise require admin
+    const secretHeader = request.headers.get("x-sessionizer-secret");
+    const allowedSecret = process.env.ANALYTICS_SESSIONIZER_SECRET;
+    if (!(secretHeader && allowedSecret && secretHeader === allowedSecret)) {
+      const token = request.cookies.get("auth-token")?.value;
+      if (!token) return json({ error: "Unauthorized" }, 401);
+      const decoded = verifyToken(token) as User;
+      if (!decoded || !isAdmin(decoded))
+        return json({ error: "Admin access required" }, 403);
+    }
 
     let thresholdMinutes = 30;
     try {
