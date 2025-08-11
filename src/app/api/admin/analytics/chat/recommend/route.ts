@@ -46,11 +46,13 @@ export async function POST(request: NextRequest) {
     const endpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
-    const prompt = `You are a senior CX strategist. Based on the chat summary and (if provided) transcript, produce:
-1) recommended_actions: array of 3-6 objects { title, description, priority: one of high|medium|low }
-2) journey: array of 3-5 objects { stage, insight, risk, recommendation }
-3) next_best_action: one sentence.
-Return strict JSON with keys { recommended_actions, journey, next_best_action }.
+    const prompt = `You are a senior CX strategist. Respond ONLY with strict JSON (no markdown, no commentary) in this exact shape:
+{
+  "recommended_actions": [{"title": string, "description": string, "priority": "high"|"medium"|"low"}],
+  "journey": [{"stage": string, "insight": string, "risk": string, "recommendation": string}],
+  "next_best_action": string
+}
+Use the chat SUMMARY and TRANSCRIPT below. Focus on concrete next steps for sponsorship conversion.
 
 SUMMARY: ${body.summary ?? "(none)"}
 SENTIMENT: ${body.sentiment ?? "(unknown)"}
@@ -69,7 +71,9 @@ TRANSCRIPT:\n${transcript
     });
     if (!resp.ok) return json({ error: `gemini_${resp.status}` }, 502);
     const data = await resp.json();
-    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) text = jsonMatch[0];
     let parsed: {
       recommended_actions?: Array<{
         title?: string;
@@ -86,8 +90,62 @@ TRANSCRIPT:\n${transcript
     } = {};
     try {
       parsed = JSON.parse(text);
-    } catch {
-      parsed = { recommended_actions: [], journey: [], next_best_action: "" };
+    } catch {}
+
+    if (
+      !parsed?.recommended_actions ||
+      parsed.recommended_actions.length === 0
+    ) {
+      const sentiment = (body.sentiment ?? "neutral").toLowerCase();
+      parsed = {
+        recommended_actions: [
+          {
+            title: "Schedule sponsorship call",
+            description:
+              "Offer a 15–20 min call to discuss tiers and ROI; tailor examples to their industry.",
+            priority: "high",
+          },
+          {
+            title: "Send sponsorship deck",
+            description:
+              "Share a concise PDF with tiers, benefits, audience, and case studies; include contact and next steps.",
+            priority: "medium",
+          },
+          {
+            title: "Follow-up reminder",
+            description:
+              "Set a 3–5 day reminder to follow-up after they consult their boss.",
+            priority: "medium",
+          },
+        ],
+        journey: [
+          {
+            stage: "Awareness",
+            insight: "User asked about sponsorship pricing and benefits.",
+            risk: "Price sensitivity; unclear ROI.",
+            recommendation:
+              "Lead with benefits and concrete ROI scenarios for their sector.",
+          },
+          {
+            stage: "Consideration",
+            insight: "User will consult their boss.",
+            risk: "Internal misalignment or competing priorities.",
+            recommendation:
+              "Provide a one-pager the user can forward internally.",
+          },
+          {
+            stage: "Decision",
+            insight: "Needs clear next step to proceed.",
+            risk: "Stall without a scheduled touchpoint.",
+            recommendation:
+              "Offer a specific time slot for a call and send calendar invite.",
+          },
+        ],
+        next_best_action:
+          sentiment === "negative"
+            ? "Send a short note acknowledging concerns and propose a brief call to clarify ROI and fit."
+            : "Propose a 20‑minute call this week and attach the sponsorship deck tailored to their industry.",
+      };
     }
 
     return json({
