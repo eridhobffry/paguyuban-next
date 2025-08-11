@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChatSummariesSection,
+  ChatRecommendationsDialog,
+} from "@/components/admin";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,6 +57,36 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [recOpen, setRecOpen] = useState(false);
+  const [recLoading, setRecLoading] = useState(false);
+  const [recData, setRecData] = useState<{
+    nextBestAction: string;
+    recommendedActions: Array<{
+      title: string;
+      description: string;
+      priority?: string;
+    }>;
+    journey: Array<{
+      stage: string;
+      insight: string;
+      risk?: string;
+      recommendation?: string;
+    }>;
+  } | null>(null);
+  // Recent summaries pagination state
+  const [summaries, setSummaries] = useState<
+    {
+      id?: string;
+      sessionId: string;
+      summary: string;
+      sentiment: string | null;
+      createdAt: string;
+    }[]
+  >([]);
+  const [summariesNextCursor, setSummariesNextCursor] = useState<string | null>(
+    null
+  );
+  const [summariesLoading, setSummariesLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +112,148 @@ export default function AdminAnalyticsPage() {
       cancelled = true;
     };
   }, [range]);
+
+  // Load first page of recent summaries whenever range changes
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPage(cursor?: string | null) {
+      try {
+        setSummariesLoading(true);
+        const url = new URL(
+          `/api/admin/analytics/summaries`,
+          window.location.origin
+        );
+        url.searchParams.set("range", range);
+        url.searchParams.set("limit", "10");
+        if (cursor) url.searchParams.set("cursor", cursor);
+        const res = await fetch(url.toString(), {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
+        const json = (await res.json()) as {
+          items: {
+            id: string;
+            sessionId: string;
+            summary: string;
+            sentiment: string | null;
+            createdAt: string;
+          }[];
+          nextCursor: string | null;
+        };
+        if (cancelled) return;
+        if (!cursor) {
+          setSummaries(json.items);
+        } else {
+          setSummaries((prev) => [...prev, ...json.items]);
+        }
+        setSummariesNextCursor(json.nextCursor);
+      } catch (e) {
+        // Do not fail entire page; keep console noise minimal
+        console.warn("Failed to load summaries", e);
+      } finally {
+        if (!cancelled) setSummariesLoading(false);
+      }
+    }
+    loadPage(null);
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  async function loadMoreSummaries() {
+    if (!summariesNextCursor || summariesLoading) return;
+    await (async () => {
+      const url = new URL(
+        `/api/admin/analytics/summaries`,
+        window.location.origin
+      );
+      url.searchParams.set("range", range);
+      url.searchParams.set("limit", "10");
+      url.searchParams.set("cursor", summariesNextCursor);
+      const res = await fetch(url.toString(), {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as {
+        items: {
+          id: string;
+          sessionId: string;
+          summary: string;
+          sentiment: string | null;
+          createdAt: string;
+        }[];
+        nextCursor: string | null;
+      };
+      setSummaries((prev) => [...prev, ...json.items]);
+      setSummariesNextCursor(json.nextCursor);
+    })();
+  }
+
+  async function deleteSummary(id?: string) {
+    if (!id) return;
+    const confirmed = window.confirm("Delete this summary?");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/admin/analytics/summaries`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setSummaries((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      alert("Failed to delete summary");
+    }
+  }
+
+  async function handleRecommend(item: {
+    sessionId: string;
+    summary: string;
+    sentiment: string | null;
+  }) {
+    try {
+      setRecLoading(true);
+      setRecOpen(true);
+      setRecData(null);
+      const res = await fetch("/api/admin/analytics/chat/recommend", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: item.sessionId,
+          summary: item.summary,
+          sentiment: item.sentiment,
+        }),
+      });
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const json = (await res.json()) as {
+        recommendedActions: Array<{
+          title: string;
+          description: string;
+          priority?: string;
+        }>;
+        journey: Array<{
+          stage: string;
+          insight: string;
+          risk?: string;
+          recommendation?: string;
+        }>;
+        nextBestAction: string;
+      };
+      setRecData({
+        nextBestAction: json.nextBestAction,
+        recommendedActions: json.recommendedActions,
+        journey: json.journey,
+      });
+    } catch {
+      setRecData({ nextBestAction: "", recommendedActions: [], journey: [] });
+    } finally {
+      setRecLoading(false);
+    }
+  }
 
   const timeSeries = useMemo(() => {
     if (!data)
@@ -467,105 +643,24 @@ export default function AdminAnalyticsPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Chat Summaries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {(data?.chatRecentSummaries || []).map((r) => (
-                <div
-                  key={`${r.sessionId}-${r.createdAt}`}
-                  className="p-3 rounded-md border"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(r.createdAt).toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <a
-                        className="text-sm underline"
-                        href={`/admin/analytics?sessionId=${encodeURIComponent(
-                          r.sessionId
-                        )}`}
-                      >
-                        View session
-                      </a>
-                      <button
-                        className="text-sm underline"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch(
-                              "/api/admin/analytics/chat/recommend",
-                              {
-                                method: "POST",
-                                credentials: "include",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  sessionId: r.sessionId,
-                                  summary: r.summary,
-                                  sentiment: r.sentiment,
-                                }),
-                              }
-                            );
-                            if (!res.ok)
-                              throw new Error(`Failed: ${res.status}`);
-                            const json = (await res.json()) as {
-                              recommendedActions: Array<{
-                                title: string;
-                                description: string;
-                                priority?: string;
-                              }>;
-                              journey: Array<{
-                                stage: string;
-                                insight: string;
-                                risk?: string;
-                                recommendation?: string;
-                              }>;
-                              nextBestAction: string;
-                            };
-                            const content = `Next Best Action: ${
-                              json.nextBestAction
-                            }\n\nRecommended Actions:\n- ${json.recommendedActions
-                              .map(
-                                (a) =>
-                                  `${a.title} (${a.priority || ""}) — ${
-                                    a.description
-                                  }`
-                              )
-                              .join("\n- ")}\n\nJourney:\n- ${json.journey
-                              .map(
-                                (j) =>
-                                  `${j.stage}: ${j.insight}${
-                                    j.risk ? ` | Risk: ${j.risk}` : ""
-                                  }${
-                                    j.recommendation
-                                      ? ` | Rec: ${j.recommendation}`
-                                      : ""
-                                  }`
-                              )
-                              .join("\n- ")}`;
-                            alert(content);
-                          } catch {
-                            alert("Failed to load recommendations");
-                          }
-                        }}
-                      >
-                        Recommend actions
-                      </button>
-                    </div>
-                  </div>
-                  <div className="text-sm">{r.summary}</div>
-                  {r.sentiment && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Sentiment: {r.sentiment}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <ChatSummariesSection
+          summaries={
+            (summaries.length
+              ? summaries
+              : data?.chatRecentSummaries || []) as Array<{
+              id?: string;
+              sessionId: string;
+              summary: string;
+              sentiment: string | null;
+              createdAt: string;
+            }>
+          }
+          onDelete={deleteSummary}
+          onRecommend={handleRecommend}
+          loading={summariesLoading}
+          hasMore={Boolean(summariesNextCursor)}
+          onLoadMore={loadMoreSummaries}
+        />
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>
@@ -590,6 +685,12 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+      <ChatRecommendationsDialog
+        open={recOpen}
+        onOpenChange={setRecOpen}
+        loading={recLoading}
+        data={recData}
+      />
     </div>
   );
 }
