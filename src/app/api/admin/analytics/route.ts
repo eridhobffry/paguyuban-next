@@ -15,6 +15,7 @@ type ChatSummaryItem = {
   sentiment: string | null;
   created_at: string;
 };
+type FunnelStep = { name: string; count: number };
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -170,6 +171,38 @@ export async function GET(request: NextRequest) {
            limit 10`
     )) as unknown as { rows: ChatSummaryItem[] };
 
+    // Funnel A: page_view -> section_visible(hero) -> click(Request Access)
+    const funnelAResult = (await db.execute(
+      dsql`with s as (
+             select id
+             from analytics_sessions
+             where started_at >= now() - ${intervalLiteral}::interval
+           ),
+           pv as (
+             select distinct session_id
+             from analytics_events e
+             join s on s.id = e.session_id
+             where e.type = 'page_view'
+           ),
+           hero as (
+             select distinct session_id
+             from analytics_events e
+             join s on s.id = e.session_id
+             where e.type = 'section_visible' and e.section = 'hero'
+           ),
+           req as (
+             select distinct session_id
+             from analytics_events e
+             join s on s.id = e.session_id
+             where e.type = 'click' and (e.metadata->>'text') ilike '%request access%'
+           )
+           select 'page_view' as name, (select count(*) from pv)::int as count
+           union all
+           select 'hero_visible' as name, (select count(*) from hero)::int as count
+           union all
+           select 'request_access_click' as name, (select count(*) from req)::int as count`
+    )) as unknown as { rows: FunnelStep[] };
+
     return json({
       range,
       rangeDays: days,
@@ -189,6 +222,7 @@ export async function GET(request: NextRequest) {
         sentiment: r.sentiment,
         createdAt: r.created_at,
       })),
+      funnelA: funnelAResult.rows,
     });
   } catch (error) {
     console.error("/api/admin/analytics GET error:", error);

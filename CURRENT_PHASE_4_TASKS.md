@@ -319,7 +319,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - [x] Avg engagement, bounce.
 - [x] Scroll depth distribution.
 - [x] Chat KPIs: daily volume, sentiment, top topics, recent summaries.
-- [ ] Funnels.
+- [x] Funnel A (page_view → hero_visible → request_access_click).
 
   - [ ] Chat: volume, topics cloud, sentiment, per-session summaries.
 

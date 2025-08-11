@@ -45,6 +45,7 @@ type ApiResponse = {
     sentiment: string | null;
     createdAt: string;
   }[];
+  funnelA: { name: string; count: number }[];
 };
 
 export default function AdminAnalyticsPage() {
@@ -499,6 +500,29 @@ export default function AdminAnalyticsPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>
+              Funnel A: page_view → hero_visible → request_access_click
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Sessions", color: "#f97316" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={data?.funnelA || []}>
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#f97316" name="Sessions" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
