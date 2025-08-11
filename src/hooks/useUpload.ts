@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
 
 export function useMediaUpload(
@@ -11,20 +12,44 @@ export function useMediaUpload(
 
   const uploadFile = useCallback(
     async (file: File) => {
-      const form = new FormData();
-      form.append("file", file);
       try {
         setUploading(true);
-        const res = await fetch(`/api/admin/upload?folder=${folder}`, {
-          method: "POST",
-          credentials: "include",
-          body: form,
+        // Prefer signed client upload. Pathname must include folder.
+        const safeName = (file.name || "upload").replace(
+          /[^a-zA-Z0-9._-]/g,
+          "_"
+        );
+        const pathname = `${folder}/${safeName}`;
+        const blob = await upload(pathname, file, {
+          access: "public",
+          // Route that generates client token + receives completion events
+          handleUploadUrl: "/api/admin/upload/handle",
+          // Pass folder so route can validate
+          clientPayload: folder,
+          multipart: file.size > 5 * 1024 * 1024,
         });
-        if (!res.ok) throw new Error("Upload failed");
-        const data = (await res.json()) as { url: string };
         toast.success("Uploaded");
-        setTemporaryUrls((prev) => [...prev, data.url]);
-        return data.url;
+        setTemporaryUrls((prev) => [...prev, blob.url]);
+        return blob.url;
+      } catch (err) {
+        // Fallback to server upload for environments where client uploads are not configured
+        try {
+          const form = new FormData();
+          form.append("file", file);
+          const res = await fetch(`/api/admin/upload?folder=${folder}`, {
+            method: "POST",
+            credentials: "include",
+            body: form,
+          });
+          if (!res.ok) throw new Error("Upload failed");
+          const data = (await res.json()) as { url: string };
+          toast.success("Uploaded");
+          setTemporaryUrls((prev) => [...prev, data.url]);
+          return data.url;
+        } catch (e) {
+          toast.error("Upload failed");
+          throw e;
+        }
       } finally {
         setUploading(false);
       }
