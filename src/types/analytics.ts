@@ -25,3 +25,23 @@ export type NewChatbotLog = InferInsertModel<typeof chatbotLogs>;
 
 export type ChatbotSummary = InferSelectModel<typeof chatbotSummaries>;
 export type NewChatbotSummary = InferInsertModel<typeof chatbotSummaries>;
+
+// Admin analytics: AI recommendations data shape
+export type RecommendedAction = {
+  title: string;
+  description: string;
+  priority?: string;
+};
+
+export type JourneyItem = {
+  stage: string;
+  insight: string;
+  risk?: string;
+  recommendation?: string;
+};
+
+export type ChatRecommendationsData = {
+  nextBestAction: string;
+  recommendedActions: RecommendedAction[];
+  journey: JourneyItem[];
+};
