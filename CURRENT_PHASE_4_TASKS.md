@@ -42,6 +42,40 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Admin UI shell migration to shadcn dashboard block.
   - Analytics: schema, admin GET, and basic charts.
 
+### Phase 4 Summary (Historical) — Aug 11, 2025
+
+- Highlights shipped
+  - Financial CMS: Neon + Drizzle tables live; admin overview with charts; detail pages and full CRUD, evidence links, optimistic updates, and cache-busting public endpoint wiring to homepage.
+  - Content CMS: Speakers and Artists admin CRUD with image upload via signed tokens, ref-counted blob cleanup, public APIs with filters and deep-link pages (`/speakers/[slug]`, `/artists/[slug]`).
+  - Executive Documents: Admin upload/link with Gemini-assisted summary fields; public section wired with restricted/public handling; Drizzle-derived shared types.
+  - Analytics foundation: Client trackers (session/page/click/heartbeat/section dwell, Web Vitals), server ingestion with rate limits, admin analytics dashboard (timeseries, top routes/sections, scroll depth, chat KPIs), and manual sessionizer endpoint.
+  - Accessibility quick pass: skip link, main landmark, focus-visible ring, aria labels for icon-only actions.
+- Public alignment
+  - Homepage sections now read from APIs (`/api/financial/public`, `/api/speakers/public`, `/api/artists/public`, `/api/documents/public`) with cache headers and explicit refresh.
+- What’s left (Phase 4 scope)
+  - Schedule the sessionizer and surface engagement trend/averages on dashboard.
+  - Accessibility audit (contrast, labels, keyboard-only QA) across admin pages.
+  - Optional: pilot real-time reads for `speakers` behind `NEXT_PUBLIC_EXPERIMENT_SPEAKERS_SYNC` when infra is ready.
+
+### Next Sprint: User Management Enhancements (Roles & Super Admin)
+
+- Goals
+  - Role-based administration: promote/demote admins from UI; assign/unassign admin role safely.
+  - Introduce a Super Admin role with elevated privileges not demotable by others.
+  - Set `eridhobffry@gmail.com` as Super Admin.
+- Suggested plan (small, verifiable steps)
+  - Backend
+    - Add `role` to users (enum: `super_admin`, `admin`, `member`); migrate existing admins to `admin` and seed Super Admin.
+    - Extend middleware/guards to enforce role checks; protect Super Admin from deletion/demotion.
+    - Add admin-protected endpoint to update roles with Zod validation and audit log.
+  - Frontend (Admin)
+    - In `/admin/user`, add actions to Promote/Demote (toggle admin), with confirmation modals and toasts.
+    - Badge indicators for roles; filter/sort by role.
+  - Acceptance
+    - Only Super Admin can promote/demote admins or assign Super Admin.
+    - Safety: cannot demote or delete Super Admin account.
+    - All changes reflected immediately in list; access rules enforced across admin routes and APIs.
+
 ### Documentation
 
 - [x] Document Gemini usage and billing notes in `docs/GEMINI_USAGE.md`.
