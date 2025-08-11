@@ -78,5 +78,5 @@ export function isAdmin(user: User): boolean {
 }
 
 export function isSuperAdmin(user: User): boolean {
-  return !!user && user.email === SUPER_ADMIN_EMAIL;
+  return !!user && user.is_super_admin === true;
 }
