@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
-import { analyticsSessions, analyticsEvents } from "@/lib/db/schema";
+import {
+  analyticsSessions,
+  analyticsEvents,
+  analyticsSectionDurations,
+} from "@/lib/db/schema";
 import { stackServerApp } from "@/stack";
 
 // CORS headers for public tracking endpoint
@@ -154,6 +158,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (rows.length > 0) {
       await db.insert(analyticsEvents).values(rows);
+    }
+
+    // Persist section dwell durations extracted from section_visible events
+    const durationRows = batch.events
+      .map((e) => {
+        if (e.type !== "section_visible") return null;
+        const section = e.section || undefined;
+        const dwellMs = Number(
+          (e.metadata as Record<string, unknown> | undefined)?.[
+            "dwell_ms_chunk"
+          ] ?? 0
+        );
+        if (!section) return null;
+        if (!Number.isFinite(dwellMs) || dwellMs <= 0) return null;
+        return {
+          sessionId: batch.sessionId,
+          section,
+          dwellMs: Math.round(dwellMs),
+        };
+      })
+      .filter(
+        (v): v is { sessionId: string; section: string; dwellMs: number } =>
+          Boolean(v)
+      );
+
+    if (durationRows.length > 0) {
+      await db.insert(analyticsSectionDurations).values(durationRows);
     }
 
     return NextResponse.json(

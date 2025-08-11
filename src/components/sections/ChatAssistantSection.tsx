@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { getCurrentAnalyticsSessionId } from "@/lib/analytics/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -84,6 +85,9 @@ const ChatAssistantSection = () => {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const transcriptRef = useRef<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +129,7 @@ const ChatAssistantSection = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    transcriptRef.current.push({ role: "user", content: userMessage.text });
     try {
       window.dispatchEvent(
         new CustomEvent("analytics-track" as unknown as string, {
@@ -151,6 +156,10 @@ const ChatAssistantSection = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      transcriptRef.current.push({
+        role: "assistant",
+        content: assistantMessage.text,
+      });
       try {
         window.dispatchEvent(
           new CustomEvent("analytics-track" as unknown as string, {
@@ -207,6 +216,7 @@ const ChatAssistantSection = () => {
 
   const resetChat = () => {
     setMessages([]);
+    transcriptRef.current = [];
     // Use setTimeout to ensure this runs after state update
     setTimeout(() => {
       const assistant = assistants[selectedAssistant];
@@ -221,6 +231,32 @@ const ChatAssistantSection = () => {
       ]);
     }, 0);
   };
+
+  // Summarize on close/pagehide when we have a sessionId and some transcript
+  useEffect(() => {
+    function summarize() {
+      try {
+        const sid = getCurrentAnalyticsSessionId();
+        const transcript = transcriptRef.current;
+        if (!sid || !transcript || transcript.length === 0) return;
+        // fire and forget
+        fetch("/api/analytics/chat/summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          keepalive: true,
+          body: JSON.stringify({ sessionId: sid, transcript }),
+        }).catch(() => {});
+      } catch {}
+    }
+    function onPageHide() {
+      summarize();
+    }
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, []);
 
   const toggleVoice = () => {
     setIsListening(!isListening);

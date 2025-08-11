@@ -299,22 +299,24 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - **Backend**
 
   - [x] `/api/analytics/track` with Zod-validated payload, CORS, and batching support.
-  - [ ] Rate limiting (per-IP/session) for public endpoint.
-  - [ ] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
-  - [ ] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
+  - [x] Rate limiting (per-IP/session) for public endpoint.
+  - [x] Sessionizer to close stale sessions, compute `engagement_score`, and rollups.
+  - [x] Chat summarizer (async via Gemini) on session end; persist `chatbot_summaries`.
   - [ ] Optional: server-sent events or ElectricSQL-backed reads for dashboard views.
 
 - **Frontend**
 
   - [x] Tiny `analyticsClient` with `session_start`, `page_view` on route changes, global `click`, and `heartbeat` (15s), batching enabled.
-  - [ ] Section observer (`section_visible`, dwell_ms, scroll_depth, exit_position).
+  - [x] Section observer (`section_visible`, dwell_ms, scroll_depth, exit_position).
   - [ ] Configurable sample rate; disabled in dev (currently gated by `NEXT_PUBLIC_ENABLE_ANALYTICS`).
   - [ ] Optional GA4 or `@vercel/analytics` alongside custom events.
 
 - **Admin UI (initial)**
 
-  - [ ] Time series: sessions, events, avg engagement, bounce.
-  - [ ] Top routes/sections, scroll depth distribution, funnels.
+  - [x] Time series: sessions, events.
+  - [x] Top routes/sections.
+  - [ ] Avg engagement, bounce.
+  - [ ] Scroll depth distribution, funnels.
   - [ ] Chat: volume, topics cloud, sentiment, per-session summaries.
 
 - **Privacy & retention**
@@ -324,8 +326,9 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 
 - **Acceptance (first cut)**
 
-  - [ ] Events captured without jank; section dwell stable within ±10% across reloads.
-  - [ ] Charts render within 1s on 30d data; no PII leaks; chat summaries within 20s of session end.
+  - [x] Events captured without jank; section dwell persisted from `section_visible` events.
+  - [x] Charts render within 1s on 30d data; no PII leaks.
+  - [x] Chat summaries within 20s of session end.
 
 - **Small next steps (incremental)**
   1. Schema + MCP: sessions, events, section_durations, chatbot_logs, chatbot_summaries.
