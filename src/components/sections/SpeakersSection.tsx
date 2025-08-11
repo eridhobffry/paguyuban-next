@@ -136,7 +136,7 @@ const SpeakersSection = () => {
     name: s.name,
     role: s.role ?? "",
     company: s.company ?? "",
-    image: getSafeImageSrc(s.image_url, "/images/speakers/gita-wirjawan.jpg"),
+    image: getSafeImageSrc(s.imageUrl, "/images/speakers/gita-wirjawan.jpg"),
     href: s.slug ? `/speakers/${s.slug}` : undefined,
     social: {
       twitter: s.twitter ?? "",
