@@ -1,11 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
 import { speakers } from "@/lib/db/schema";
 import { z } from "zod";
-import { asc } from "drizzle-orm";
+import { and, asc, eq, ilike, sql } from "drizzle-orm";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const { searchParams } = new URL(request.url);
+    const q = (searchParams.get("q") || "").trim();
+    const type = (searchParams.get("type") || "").trim();
+    const tag = (searchParams.get("tag") || "").trim();
+    const slug = (searchParams.get("slug") || "").trim();
+
+    const filters = [
+      q ? ilike(speakers.name, `%${q}%`) : undefined,
+      type ? eq(speakers.speakerType, type) : undefined,
+      slug ? eq(speakers.slug, slug) : undefined,
+      // tags stored as text[]; simple contains match
+      tag ? sql`${speakers.tags} @> ARRAY[${tag}]::text[]` : undefined,
+    ].filter(Boolean) as any[];
+
     // Select only columns that exist in current DB and are safe
     const items = await db
       .select({
@@ -18,6 +32,7 @@ export async function GET(): Promise<NextResponse> {
         speakerType: speakers.speakerType,
       })
       .from(speakers)
+      .where(filters.length ? and(...filters) : undefined)
       .orderBy(asc(speakers.name));
 
     const SpeakerTypeEnum = z

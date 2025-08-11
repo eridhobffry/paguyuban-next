@@ -20,7 +20,7 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
 - **In Progress**
   - Public financial QA: verify homepage totals match admin and charts update after mutations; optional ISR/client refresh.
 - **Next**
-  - Speakers admin UI: list + detail dialog (read-only first), then create/edit with image.
+  - Speakers/Artists public filters (q, slug, tag, type for speakers) wired.
 - **Later (Roadmap)**
   - Reports (CSV/XLSX) and Excel ingestion (template, upload, staging, promote) with Gemini-assisted insights.
   - Admin UI shell migration to shadcn dashboard block.
@@ -59,9 +59,30 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   10. Documentation: notes for dev setup (env vars, feature flag), fallback mode, and rollback instructions.
 
 - **Acceptance (pilot)**
+
   - Admin `speakers` list reflects cross-tab changes within 1–2s without manual refresh.
   - Create/update/delete is optimistic; rolls back on server error; toasts shown.
   - Toggling the feature flag reverts to legacy fetch flow without errors.
+
+- **Pilot Decision (today - 2025-08-11)**
+  - Status: plan, do not implement yet.
+  - Rationale: missing infrastructure and credentials:
+    - No shape proxy route exists (`src/app/api/realtime/shape/route.ts`).
+    - ElectricSQL service not provisioned; no `ELECTRIC_URL`/token configured.
+    - Neon projects found, but logical replication is currently disabled; required for Electric sync.
+  - Minimal checklist to proceed (gated by `NEXT_PUBLIC_EXPERIMENT_SPEAKERS_SYNC=1`):
+    1. Provision ElectricSQL project and create shape API token.
+    2. Enable logical replication on Neon and ensure appropriate permissions.
+    3. Add env: `ELECTRIC_URL`, `ELECTRIC_TOKEN`, `ALLOWED_TABLES=speakers`.
+    4. Implement proxy endpoint `src/app/api/realtime/shape/route.ts`:
+       - Validate Stack Auth session, whitelist params (`live`, `handle`, `offset`, `cursor`, `where`).
+       - Enforce table allow-list; strip `content-encoding`/`content-length` on relay.
+    5. FE: add deps `@tanstack/react-db` and `@tanstack/electric-db-collection`.
+    6. FE: create `src/lib/realtime/speakersCollection.ts` with `createCollection(electricCollectionOptions(...))`, `getKey: (r) => r.id`.
+       - Mutations: in `onInsert/onUpdate/onDelete`, call existing `/api/admin/speakers` routes; return timestamp as txid.
+    7. Hook: in `useSpeakersAdmin`, if flag enabled use `useLiveQuery(speakersCollection)`; otherwise keep current fetch.
+    8. QA: cross-tab update within 1–2s; optimistic rollback on error; feature flag toggle restores legacy flow.
+  - Rollback: flip env flag off; no code paths retained in production.
 
 ### Financial
 
@@ -130,11 +151,16 @@ Small, verifiable iterations: plan → implement the smallest step → test → 
   - Search, sort, and row-limit controls on list. Sidebar integration.
 
 - **Next**
-  - Image upload (signed URL) and store returned URL; keep URL-based path supported.
-  - Blob cleanup: ref-counted delete on PUT/DELETE via shared util; registry-based references for scalability.
+  - [x] Image upload via signed client tokens (`/api/admin/upload/handle`) with fallback to server upload; store returned URL; URL-based path still supported.
+  - [x] Blob cleanup: ref-counted delete on PUT/DELETE via shared util; registry-based references for scalability.
+  - [x] Richer `bio/tags/slug` retained; public optional filters added (`q`, `slug`, `tag`, `type`).
   - Richer `bio/tags/slug` for deep links (`/speakers/[slug]`); homepage dialog on card click.
   - Optional: admin-side filters by `speakerType`, company.
   - Optional (pilot target): live queries via TanStack DB + ElectricSQL; optimistic admin mutations.
+  - Pilot readiness (gated):
+    - Pre-reqs: ElectricSQL project + token, Neon logical replication enabled, proxy route in place.
+    - Scope: list reads only for now; mutations remain on existing admin API.
+    - Flag: `NEXT_PUBLIC_EXPERIMENT_SPEAKERS_SYNC=1`.
 
 ### Artists
 

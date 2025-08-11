@@ -181,7 +181,11 @@ This document outlines the step-by-step implementation plan to align the sponsor
 
 #### 4.3 API Routes
 
-- [ ] Build `/api/admin/financial`, `/api/admin/speakers`, `/api/admin/agenda`, `/api/admin/sponsors`, `/api/admin/investment-opportunity`, `/api/admin/artist`, `/api/admin/executive-documentation`, `/api/admin/chatbot`, and `/api/admin/analytics` endpoints
+- [x] `/api/admin/speakers` and `/api/admin/artists` implemented with Zod validation and Drizzle; image field supports direct URL or uploaded blob URL.
+- [x] Blob utilities: ref-counted cleanup on PUT/DELETE for `imageUrl` in both `speakers` and `artists`.
+- [x] Public endpoints support optional filters: `q`, `slug`, `tag`, and `type` (speakers only).
+- [x] Uploads: client-signed uploads via `/api/admin/upload/handle` with fallback server upload route `/api/admin/upload`.
+- [ ] Build `/api/admin/financial`, `/api/admin/agenda`, `/api/admin/sponsors`, `/api/admin/investment-opportunity`, `/api/admin/executive-documentation`, `/api/admin/chatbot`, and `/api/admin/analytics` endpoints
 - [ ] Use `zod` schemas to validate GET/POST/PUT/DELETE payloads
 - [ ] Persist changes to Neon Database
 
