@@ -246,6 +246,7 @@ export function DocumentsSection() {
                           handleDocumentAction(doc);
                         }}
                         className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-200 rounded-lg hover:from-amber-500/30 hover:to-orange-500/30 transition-all duration-300"
+                        aria-label={`Request access to ${doc.title}`}
                       >
                         <Lock className="w-4 h-4 mr-2" />
                         Request Access
@@ -257,6 +258,9 @@ export function DocumentsSection() {
                           handleDocumentAction(doc);
                         }}
                         className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/40 text-blue-200 rounded-lg hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-300"
+                        aria-label={`${
+                          doc.external_url ? "View" : "Download"
+                        } ${doc.title}`}
                       >
                         <Download className="w-4 h-4 mr-2" />
                         {doc.external_url ? "View" : "Download"}
@@ -268,6 +272,11 @@ export function DocumentsSection() {
                         handleDocumentAction(doc);
                       }}
                       className="px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-all duration-300"
+                      aria-label={
+                        doc.external_url
+                          ? `Open ${doc.title}`
+                          : `Open ${doc.title}`
+                      }
                     >
                       <ExternalLink className="w-4 h-4" />
                     </button>
