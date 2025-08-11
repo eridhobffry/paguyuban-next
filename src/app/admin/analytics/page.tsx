@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -147,7 +148,7 @@ export default function AdminAnalyticsPage() {
             <CardTitle>Sessions and Events (daily)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
+            <div className="mb-4 flex items-center gap-3">
               <ToggleGroup
                 type="single"
                 value={range}
@@ -158,6 +159,39 @@ export default function AdminAnalyticsPage() {
                 <ToggleGroupItem value="30d">30d</ToggleGroupItem>
                 <ToggleGroupItem value="90d">90d</ToggleGroupItem>
               </ToggleGroup>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await fetch("/api/admin/analytics/sessionize", {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ thresholdMinutes: 30 }),
+                    });
+                    // refresh chart data after sessionizing
+                    setLoading(true);
+                    const res = await fetch(
+                      `/api/admin/analytics?range=${range}`,
+                      {
+                        cache: "no-store",
+                        credentials: "include",
+                      }
+                    );
+                    if (res.ok) {
+                      const json = (await res.json()) as ApiResponse;
+                      setData(json);
+                    }
+                  } catch {
+                    // ignore
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                Run Sessionizer
+              </Button>
             </div>
             <ChartContainer
               config={{
