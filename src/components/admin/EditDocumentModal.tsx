@@ -49,6 +49,7 @@ export function EditDocumentModal({
       a.pages === b.pages &&
       a.type === b.type &&
       a.icon === b.icon &&
+      a.slug === b.slug &&
       a.restricted === b.restricted &&
       a.fileUrl === b.fileUrl &&
       a.externalUrl === b.externalUrl &&
@@ -73,6 +74,7 @@ export function EditDocumentModal({
           pages: editingDoc.pages,
           type: editingDoc.type,
           icon: editingDoc.icon,
+          slug: editingDoc.slug,
           file_url: editingDoc.fileUrl,
           external_url: editingDoc.externalUrl,
           restricted: editingDoc.restricted,
@@ -249,6 +251,16 @@ export function EditDocumentModal({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Slug (stable key)</Label>
+              <Input
+                value={editingDoc.slug ?? ""}
+                onChange={(e) =>
+                  setEditingDoc({ ...editingDoc, slug: e.target.value })
+                }
+                placeholder="e.g. sponsorship-kit"
+              />
             </div>
             <div>
               <Label>Pages</Label>

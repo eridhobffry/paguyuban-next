@@ -12,6 +12,7 @@ export type PublicDocument = {
   pages: DocumentRow["pages"];
   type: DocumentRow["type"];
   icon: DocumentRow["icon"];
+  slug?: DocumentRow["slug"];
   restricted: DocumentRow["restricted"];
   // snake_case fields exposed by public API, typed from DB columns
   file_url?: DocumentRow["fileUrl"];

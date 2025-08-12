@@ -65,6 +65,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
     pages: "",
     type: "",
     icon: "",
+    slug: "",
     external_url: "",
     restricted: true,
   });
@@ -85,6 +86,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
         pages: "",
         type: "Business Strategy",
         icon: "FileText",
+        slug: "",
         external_url: "",
         file_url: url,
         restricted: true,
@@ -214,6 +216,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
           pages: "",
           type: "",
           icon: "",
+          slug: "",
           external_url: "",
           restricted: true,
         });
@@ -335,6 +338,20 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
                     })
                   }
                   placeholder="Executive Business Plan"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manual-slug">Slug (stable key)</Label>
+                <Input
+                  id="manual-slug"
+                  value={documentForm.slug}
+                  onChange={(e) =>
+                    setDocumentForm({
+                      ...documentForm,
+                      slug: e.target.value,
+                    })
+                  }
+                  placeholder="sponsorship-kit"
                 />
               </div>
               <div>

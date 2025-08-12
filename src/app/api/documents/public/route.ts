@@ -19,6 +19,7 @@ export async function GET() {
       pages: doc.pages,
       type: doc.type,
       icon: doc.icon,
+      slug: doc.slug ?? undefined,
       restricted: doc.restricted,
       file_url: doc.restricted ? undefined : doc.fileUrl ?? undefined,
       external_url: doc.restricted ? undefined : doc.externalUrl ?? undefined,
