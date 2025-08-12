@@ -207,7 +207,7 @@ const HeroSection = () => {
           {/* Enhanced CTA Buttons with Investor Focus */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Link
-              href="#business-proposal"
+              href="#investment-opportunity"
               className="relative bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl shadow-green-500/25 group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
@@ -219,17 +219,20 @@ const HeroSection = () => {
             </Link>
 
             <Link
-              href="#executive-summary"
+              href="#financial-transparency"
               className="backdrop-blur-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-blue-500/50 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 flex items-center group"
             >
               <Play className="mr-3 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
               Executive Summary
             </Link>
 
-            <button className="backdrop-blur-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 hover:border-amber-400/60 text-amber-200 px-8 py-5 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 flex items-center group">
+            <Link
+              href="/request-access"
+              className="backdrop-blur-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 hover:border-amber-400/60 text-amber-200 px-8 py-5 rounded-2xl font-bold text-lg transition-all duration-300 transform hover:scale-105 flex items-center group"
+            >
               <Target className="mr-3 w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
               Request Full Access
-            </button>
+            </Link>
           </div>
 
           {/* Enhanced Key Statistics with Better Visual Hierarchy */}

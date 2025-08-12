@@ -20,6 +20,10 @@ import { useEffect, useMemo, useState } from "react";
 import { FinancialResponseDto } from "@/types/financial";
 import { computeTotals } from "@/lib/financial";
 import { fetchPublicFinancial } from "@/lib/utils";
+import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number) => {
@@ -567,11 +571,12 @@ const FinancialTransparencySection = () => {
                   ))}
                 </div>
 
-                <button
-                  className={`w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${sponsor.color} hover:opacity-90 text-white`}
+                <a
+                  href="/request-access?type=sponsor"
+                  className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${sponsor.color} hover:opacity-90 text-white`}
                 >
                   Secure Sponsorship
-                </button>
+                </a>
               </motion.div>
             ))}
           </motion.div>
@@ -596,14 +601,25 @@ const FinancialTransparencySection = () => {
               market data and conservative estimates.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center">
+              <a
+                href={getPublicDownloadUrl(
+                  PUBLIC_DOWNLOAD_KEY.FINANCIAL_REPORT
+                )}
+                download
+                className="inline-flex px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 items-center"
+              >
                 <Download className="w-5 h-5 mr-3" />
                 Download Financial Report
-              </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300 flex items-center">
+              </a>
+              <a
+                href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SPONSOR_DECK)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300 items-center"
+              >
                 <ExternalLink className="w-5 h-5 mr-3" />
                 View Sponsor Deck
-              </button>
+              </a>
             </div>
           </div>
         </motion.div>

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Globe, CheckCircle } from "lucide-react";
 import { sponsorshipTiers } from "./data";
+import Link from "next/link";
 
 export function SponsorshipTiers() {
   return (
@@ -65,15 +66,16 @@ export function SponsorshipTiers() {
               ))}
             </ul>
 
-            <button
-              className={`w-full py-3 rounded-xl font-bold transition-all duration-300 ${
+            <Link
+              href="/request-access?type=sponsor"
+              className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 ${
                 tier.highlight
                   ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white"
                   : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
               }`}
             >
               Become a Sponsor
-            </button>
+            </Link>
           </div>
         ))}
       </div>

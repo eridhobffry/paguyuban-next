@@ -20,6 +20,10 @@ import {
   Globe,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
 
 const platforms = [
   {
@@ -508,12 +512,20 @@ const TechnologyPlatformSection = () => {
               networking.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105">
+              <a
+                href="/request-access?type=demo"
+                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
+              >
                 Request Platform Demo
-              </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300">
+              </a>
+              <a
+                href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.TECHNICAL_SPECS)}
+                download
+                aria-label="Download Technical Specs PDF"
+                className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300"
+              >
                 Download Technical Specs
-              </button>
+              </a>
             </div>
           </div>
         </motion.div>

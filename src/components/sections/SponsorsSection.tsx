@@ -3,6 +3,11 @@
 import { motion } from "framer-motion";
 import { Star, Zap, Award, Heart, Shield, Globe } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
 
 const sponsorTiers = [
   {
@@ -157,6 +162,8 @@ const sponsorshipTiers = [
   },
 ];
 
+const SHOW_LOGOS = false;
+
 const SponsorsSection = () => {
   return (
     <section id="sponsors" className="relative py-20 overflow-hidden">
@@ -255,72 +262,79 @@ const SponsorsSection = () => {
                 ))}
               </div>
 
-              <button
-                className={`w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
+              <Link
+                href="/request-access?type=sponsor"
+                className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
               >
                 Secure Sponsorship
-              </button>
+              </Link>
             </motion.div>
           ))}
         </div>
 
-        {/* Current Partners Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <motion.h3
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-3xl font-bold mb-6 bg-gradient-to-r from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent"
-          >
-            Current <span className="text-amber-400">Partners</span>
-          </motion.h3>
-        </div>
+        {SHOW_LOGOS && (
+          <>
+            {/* Current Partners Section */}
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <motion.h3
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="text-3xl font-bold mb-6 bg-gradient-to-r from-white via-cyan-100 to-blue-200 bg-clip-text text-transparent"
+              >
+                Current <span className="text-amber-400">Partners</span>
+              </motion.h3>
+            </div>
 
-        <div className="space-y-16">
-          {sponsorTiers.map((tier, tierIndex) => (
-            <motion.div
-              key={tierIndex}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: tierIndex * 0.1 }}
-              className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/5"
-            >
-              <div className="flex items-center mb-6">
-                <div className="mr-3 p-2 bg-white/5 rounded-lg">
-                  {tier.icon}
-                </div>
-                <h3 className="text-xl font-bold text-white">{tier.name}</h3>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-4">
-                {tier.sponsors.map((sponsor, sponsorIndex) => (
-                  <motion.a
-                    key={sponsorIndex}
-                    href={sponsor.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative group"
-                    whileHover={{ y: -5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="relative w-32 h-20 md:w-40 md:h-24 flex items-center justify-center p-4 bg-white/5 rounded-xl border border-white/5 group-hover:border-cyan-500/30 transition-colors">
-                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <Image
-                        src={sponsor.logo}
-                        alt={sponsor.name}
-                        width={160}
-                        height={80}
-                        className="object-contain max-h-full w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
-                      />
+            <div className="space-y-16">
+              {sponsorTiers.map((tier, tierIndex) => (
+                <motion.div
+                  key={tierIndex}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: tierIndex * 0.1 }}
+                  className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/5"
+                >
+                  <div className="flex items-center mb-6">
+                    <div className="mr-3 p-2 bg-white/5 rounded-lg">
+                      {tier.icon}
                     </div>
-                  </motion.a>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                    <h3 className="text-xl font-bold text-white">
+                      {tier.name}
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-4">
+                    {tier.sponsors.map((sponsor, sponsorIndex) => (
+                      <motion.a
+                        key={sponsorIndex}
+                        href={sponsor.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative group"
+                        whileHover={{ y: -5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="relative w-32 h-20 md:w-40 md:h-24 flex items-center justify-center p-4 bg-white/5 rounded-xl border border-white/5 group-hover:border-cyan-500/30 transition-colors">
+                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <Image
+                            src={sponsor.logo}
+                            alt={sponsor.name}
+                            width={160}
+                            height={80}
+                            className="object-contain max-h-full w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
+                          />
+                        </div>
+                      </motion.a>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
 
         <motion.div
           className="mt-16 text-center"
@@ -341,9 +355,13 @@ const SponsorsSection = () => {
               </p>
             </div>
             <div className="flex-shrink-0 flex items-center">
-              <button className="px-8 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 whitespace-nowrap">
+              <a
+                href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SPONSORSHIP_KIT)}
+                download
+                className="px-8 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 whitespace-nowrap"
+              >
                 Download Sponsorship Kit
-              </button>
+              </a>
             </div>
           </div>
 

@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -378,10 +382,13 @@ const ScheduleSection = () => {
                     >
                       <div className="px-6 pb-6 pt-0 text-gray-300 border-t border-white/5">
                         <p className="mb-4">{item.description}</p>
-                        <button className="inline-flex items-center text-cyan-400 hover:text-cyan-300 text-sm font-medium">
+                        <a
+                          href="/calendar/event.ics"
+                          className="inline-flex items-center text-cyan-400 hover:text-cyan-300 text-sm font-medium"
+                        >
                           Add to calendar
                           <ArrowRight className="w-4 h-4 ml-1" />
-                        </button>
+                        </a>
                       </div>
                     </motion.div>
                   )}
@@ -393,9 +400,12 @@ const ScheduleSection = () => {
               <p className="text-gray-400">
                 Schedule for this day will be announced soon
               </p>
-              <button className="mt-4 px-6 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-all">
+              <a
+                href="/request-access?type=notify"
+                className="mt-4 inline-block px-6 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-lg transition-all"
+              >
                 Get Notified
-              </button>
+              </a>
             </div>
           )}
         </motion.div>
@@ -407,9 +417,13 @@ const ScheduleSection = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-16 text-center"
         >
-          <button className="px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/20">
+          <a
+            href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SCHEDULE)}
+            download
+            className="inline-block px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/20"
+          >
             Download Full Schedule
-          </button>
+          </a>
           <p className="mt-4 text-sm text-gray-500">
             PDF, iCal, and Google Calendar options available
           </p>

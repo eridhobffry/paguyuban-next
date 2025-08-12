@@ -85,6 +85,7 @@ const ChatAssistantSection = () => {
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const isVoiceToggleEnabled = false; // Temporarily hide voice toggle until implemented
   const transcriptRef = useRef<
     { role: "user" | "assistant"; content: string }[]
   >([]);
@@ -482,23 +483,27 @@ const ChatAssistantSection = () => {
                       e.key === "Enter" && handleSendMessage(inputText)
                     }
                     placeholder="Ketik pertanyaan Anda..."
-                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 pr-12"
+                    className={`w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50${
+                      isVoiceToggleEnabled ? " pr-12" : ""
+                    }`}
                     disabled={isLoading}
                   />
-                  <button
-                    onClick={toggleVoice}
-                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-colors ${
-                      isListening
-                        ? "bg-red-500/20 text-red-400"
-                        : "hover:bg-white/20 text-gray-400"
-                    }`}
-                  >
-                    {isListening ? (
-                      <MicOff className="w-4 h-4" />
-                    ) : (
-                      <Mic className="w-4 h-4" />
-                    )}
-                  </button>
+                  {isVoiceToggleEnabled && (
+                    <button
+                      onClick={toggleVoice}
+                      className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-colors ${
+                        isListening
+                          ? "bg-red-500/20 text-red-400"
+                          : "hover:bg-white/20 text-gray-400"
+                      }`}
+                    >
+                      {isListening ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 <button

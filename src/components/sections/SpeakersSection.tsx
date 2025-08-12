@@ -250,9 +250,12 @@ const SpeakersSection = () => {
             <p className="text-gray-400 mb-6 max-w-xs">
               Additional speakers and artists will be announced soon
             </p>
-            <button className="px-6 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-lg transition-all">
+            <Link
+              href="/request-access?type=updates"
+              className="px-6 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-lg transition-all"
+            >
               Stay Updated
-            </button>
+            </Link>
           </motion.div>
         </div>
 
@@ -263,9 +266,12 @@ const SpeakersSection = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-16 text-center"
         >
-          <button className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/20">
+          <Link
+            href="/request-access?type=speaker"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/20"
+          >
             Become a Speaker
-          </button>
+          </Link>
           <p className="mt-4 text-sm text-gray-500">
             Apply to speak at Nusantara Messe 2026
           </p>

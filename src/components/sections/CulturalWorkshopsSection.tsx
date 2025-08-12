@@ -13,6 +13,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
 
 const workshops = [
   {
@@ -303,12 +307,13 @@ const CulturalWorkshopsSection = () => {
                 </div>
               </div>
 
-              <button
-                className={`w-full mt-6 py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${workshops[activeWorkshop].color} hover:opacity-90 text-white flex items-center justify-center`}
+              <a
+                href="/request-access?type=workshop"
+                className={`block text-center w-full mt-6 py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${workshops[activeWorkshop].color} hover:opacity-90 text-white`}
               >
                 Reserve Your Spot
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </button>
+                <ChevronRight className="w-5 h-5 ml-2 inline" />
+              </a>
             </div>
           </div>
         </motion.div>
@@ -332,12 +337,18 @@ const CulturalWorkshopsSection = () => {
               networking activities.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105">
+              <a
+                href="#schedule"
+                className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
+              >
                 View Full Schedule
-              </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300">
+              </a>
+              <a
+                href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.WORKSHOP_GUIDE)}
+                className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300"
+              >
                 Download Workshop Guide
-              </button>
+              </a>
             </div>
           </div>
         </motion.div>

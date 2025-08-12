@@ -358,14 +358,22 @@ const TradeContextSection = () => {
               understanding, and AI-powered business matching.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-green-600 hover:from-blue-400 hover:to-green-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center">
+              <a
+                href="/request-access?type=sponsor"
+                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-green-600 hover:from-blue-400 hover:to-green-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center"
+              >
                 <Handshake className="w-5 h-5 mr-3" />
                 Explore Sponsorship
-              </button>
-              <button className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300 flex items-center">
+              </a>
+              <a
+                href="https://www.destatis.de/EN/Home/_node.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300 flex items-center"
+              >
                 <ExternalLink className="w-5 h-5 mr-3" />
                 View Trade Statistics
-              </button>
+              </a>
             </div>
           </div>
         </motion.div>

@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
+  getPublicDownloadUrl,
+  PUBLIC_DOWNLOAD_KEY,
+} from "@/lib/documents/constants";
+import {
   Calendar,
   MapPin,
   Users,
@@ -207,9 +211,12 @@ const AboutSection = () => {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <button className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium rounded-xl transition-all transform hover:scale-105">
+              <a
+                href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.BROCHURE)}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium rounded-xl transition-all transform hover:scale-105"
+              >
                 Download Brochure
-              </button>
+              </a>
               <button
                 onClick={() => setIsVideoPlaying(!isVideoPlaying)}
                 className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-xl transition-all transform hover:scale-105 flex items-center"
