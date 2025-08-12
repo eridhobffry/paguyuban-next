@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,13 @@ import {
 import Link from "next/link";
 
 export default function RequestAccessPage() {
+  const [requestedType, setRequestedType] = useState<string>("general");
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      setRequestedType(params.get("type") || "general");
+    } catch {}
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -91,14 +98,39 @@ export default function RequestAccessPage() {
     );
   }
 
+  const headingByType: Record<string, string> = {
+    general: "Request Access",
+    notify: "Get Notified",
+    updates: "Stay Updated",
+    speaker: "Apply to Speak",
+    sponsor: "Secure Sponsorship",
+    docs: "Request Documentation",
+    demo: "Request Platform Demo",
+    register: "Register Interest",
+    workshop: "Reserve Workshop Spot",
+  };
+
+  const descriptionByType: Record<string, string> = {
+    general: "Submit a request to access the Paguyuban Messe 2026 portal",
+    notify: "Leave your email and we'll notify you about schedule updates.",
+    updates: "Get announcements about new speakers, sponsors, and tickets.",
+    speaker: "Tell us you're interested in speaking. Our team will reach out.",
+    sponsor: "Express interest in sponsorship. We'll follow up with details.",
+    docs: "Request the complete documentation package for review.",
+    demo: "Request a demo of our AI-powered platform.",
+    register: "Register your interest to attend the event.",
+    workshop: "Reserve your spot in a cultural workshop.",
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Request Access</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {headingByType[requestedType] ?? headingByType.general}
+          </CardTitle>
           <CardDescription className="text-center">
-            Submit a request to access the Paguyuban Messe 2026 sponsorship
-            portal
+            {descriptionByType[requestedType] ?? descriptionByType.general}
           </CardDescription>
         </CardHeader>
         <CardContent>

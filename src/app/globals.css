@@ -117,6 +117,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
   :focus-visible {
     outline: 3px solid oklch(0.77 0.2 264.376);
     outline-offset: 3px;

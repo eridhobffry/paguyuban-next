@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     siteName: "Nusantara Messe 2026",
     images: [
       {
-        url: "/images/og-image.jpg",
+        url: "/images/speakers/gita-wirjawan.jpg",
         width: 1200,
         height: 630,
         alt: "Nusantara Messe 2026",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     title: "Nusantara Messe 2026 | Cultural & Business Expo",
     description:
       "Experience the future of cultural diplomacy at Nusantara Messe 2026 in Berlin",
-    images: ["/images/twitter-image.jpg"],
+    images: ["/images/speakers/iyas-lawrence.jpg"],
   },
 };
 
