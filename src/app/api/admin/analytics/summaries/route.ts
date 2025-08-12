@@ -89,6 +89,7 @@ export async function DELETE(request: NextRequest) {
     if (!deleted) return json({ error: "Not found" }, 404);
     return json({ id: deleted.id });
   } catch (e) {
+    console.error(e);
     return json({ error: "Invalid request" }, 400);
   }
 }
