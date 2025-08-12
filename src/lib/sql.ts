@@ -227,6 +227,7 @@ export interface Document {
   pages: string;
   type: string;
   icon: string;
+  slug?: string;
   file_url?: string;
   external_url?: string;
   restricted: boolean;
@@ -245,6 +246,7 @@ export interface DocumentInput {
   pages: string;
   type: string;
   icon: string;
+  slug?: string;
   file_url?: string;
   external_url?: string;
   restricted: boolean;
@@ -266,6 +268,7 @@ export async function initializeDocumentTable(): Promise<void> {
         pages VARCHAR(50) NOT NULL,
         type VARCHAR(100) NOT NULL,
         icon VARCHAR(50) NOT NULL,
+        slug VARCHAR(255),
         file_url TEXT,
         external_url TEXT,
         restricted BOOLEAN NOT NULL DEFAULT true,
@@ -277,7 +280,18 @@ export async function initializeDocumentTable(): Promise<void> {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'documents' AND column_name = 'slug'
+        ) THEN
+          ALTER TABLE documents ADD COLUMN slug VARCHAR(255);
+        END IF;
+      END $$;
+
       CREATE INDEX IF NOT EXISTS idx_documents_type ON documents(type);
+      CREATE INDEX IF NOT EXISTS idx_documents_slug ON documents(slug);
       CREATE INDEX IF NOT EXISTS idx_documents_restricted ON documents(restricted);
       CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by);
     `);

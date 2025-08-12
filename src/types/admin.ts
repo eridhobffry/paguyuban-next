@@ -23,6 +23,7 @@ export interface Document {
   pages: string;
   type: string;
   icon: string;
+  slug?: string;
   file_url?: string;
   external_url?: string;
   restricted: boolean;
@@ -41,6 +42,7 @@ export interface DocumentFormData {
   pages: string;
   type: string;
   icon: string;
+  slug: string;
   external_url: string;
   restricted: boolean;
 }

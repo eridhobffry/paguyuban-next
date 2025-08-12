@@ -58,6 +58,7 @@ export const documentAdminUpdateSnakeSchema = z.object({
   pages: z.string().optional(),
   type: z.string().optional(),
   icon: z.string().optional(),
+  slug: z.string().optional().nullable(),
   file_url: z.string().url().optional().nullable(),
   external_url: z.string().url().optional().nullable(),
   restricted: z.boolean().optional(),

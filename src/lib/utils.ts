@@ -114,3 +114,10 @@ export async function fetchPublicFinancial(options?: { bust?: boolean }) {
   if (!res.ok) throw new Error("Failed to load financial data");
   return (await res.json()) as FinancialResponseDto;
 }
+
+/**
+ * Stable keys for the public document download resolver.
+ * Use with `getPublicDownloadUrl` to avoid repeating string literals.
+ */
+// moved to src/lib/documents/constants.ts to ensure single source of truth
+// export { PUBLIC_DOWNLOAD_KEY, type DownloadKey, getPublicDownloadUrl } from "@/lib/documents/constants";
