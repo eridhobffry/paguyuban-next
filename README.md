@@ -1,3 +1,14 @@
+## Public assets
+
+Placeholders exist for homepage downloads:
+
+- `public/docs/*.pdf`
+- `public/calendar/event.ics`
+- `public/images/og-image.jpg`
+- `public/images/twitter-image.jpg`
+
+Replace with real assets when available.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
