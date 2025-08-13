@@ -33,13 +33,13 @@ export default function AdminUserPage() {
         <AdminHeader />
         <div className="space-y-6">
           <PendingRequests
-            requests={accessRequests}
+            requests={accessRequests.filter((u) => u.status === "pending")}
             onRefresh={fetchAccessRequests}
             onUserRefresh={fetchUsers}
           />
           <UserManagement users={users} onRefresh={fetchUsers} />
           <ProcessedRequests
-            requests={accessRequests}
+            requests={accessRequests.filter((u) => u.status !== "pending")}
             onRefresh={fetchAccessRequests}
             setAccessRequests={setAccessRequests}
             onUserRefresh={fetchUsers}

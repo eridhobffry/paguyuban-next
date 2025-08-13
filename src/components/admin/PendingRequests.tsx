@@ -9,10 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AccessRequest } from "@/types/admin";
+import { User } from "@/types/admin";
 
 interface PendingRequestsProps {
-  requests: AccessRequest[];
+  requests: User[];
   onRefresh: () => Promise<void>;
   onUserRefresh: () => Promise<void>;
 }
@@ -22,17 +22,17 @@ export function PendingRequests({
   onRefresh,
   onUserRefresh,
 }: PendingRequestsProps) {
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const handleRequest = async (id: number, action: "approve" | "reject") => {
-    setProcessingId(id);
+  const handleRequest = async (email: string, action: "approve" | "reject") => {
+    setProcessingId(email);
     try {
-      const response = await fetch("/api/admin/access-requests", {
+      const response = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id, action }),
+        body: JSON.stringify({ email, action }),
       });
 
       if (response.ok) {
@@ -77,25 +77,31 @@ export function PendingRequests({
                   <p className="font-medium">{request.email}</p>
                   <p className="text-sm text-gray-500">
                     Requested:{" "}
-                    {new Date(request.requested_at).toLocaleDateString()}
+                    {request.requested_at
+                      ? new Date(request.requested_at).toLocaleDateString()
+                      : "-"}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    onClick={() => handleRequest(request.id, "approve")}
-                    disabled={processingId === request.id}
+                    onClick={() => handleRequest(request.email, "approve")}
+                    disabled={processingId === request.email}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {processingId === request.id ? "Processing..." : "Approve"}
+                    {processingId === request.email
+                      ? "Processing..."
+                      : "Approve"}
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() => handleRequest(request.id, "reject")}
-                    disabled={processingId === request.id}
+                    onClick={() => handleRequest(request.email, "reject")}
+                    disabled={processingId === request.email}
                   >
-                    {processingId === request.id ? "Processing..." : "Reject"}
+                    {processingId === request.email
+                      ? "Processing..."
+                      : "Reject"}
                   </Button>
                 </div>
               </div>

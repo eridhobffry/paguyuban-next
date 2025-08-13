@@ -24,7 +24,8 @@ export function createToken(user: User): string {
     {
       id: user.id,
       email: user.email,
-      role: user.role || user.user_type,
+      role: user.role,
+      status: user.status,
       user_type: user.user_type,
       is_super_admin: user.is_super_admin === true,
     },
@@ -74,7 +75,7 @@ export async function initializeAdmin(): Promise<void> {
 }
 
 export function isAdmin(user: User): boolean {
-  return user && (user.role === "admin" || user.user_type === "admin");
+  return !!user && (user.role === "admin" || user.role === "super_admin");
 }
 
 export function isSuperAdmin(user: User): boolean {

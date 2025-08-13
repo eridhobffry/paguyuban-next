@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
-import { createAccessRequest, getAccessRequestByEmail } from "@/lib/sql";
-import {
-  notifyAdminNewAccessRequest,
-  notifyAdminUpdatedAccessRequest,
-} from "@/lib/email";
+import { upsertPendingUser } from "@/lib/sql";
+import { notifyAdminNewAccessRequest } from "@/lib/email";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -18,43 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if email already has a pending request
-    const existingRequest = await getAccessRequestByEmail(email);
-    if (existingRequest && existingRequest.status === "pending") {
-      return NextResponse.json(
-        {
-          error:
-            "A pending access request already exists for this email. Please wait for admin approval.",
-        },
-        { status: 409 }
-      );
-    }
-
-    // If there's an old request (approved/rejected), update it with new password
-    if (existingRequest) {
-      const hashedPassword = await hashPassword(password);
-      const client = await (await import("@/lib/sql")).pool.connect();
-      try {
-        await client.query(
-          "UPDATE access_requests SET password_hash = $1, status = 'pending', requested_at = CURRENT_TIMESTAMP WHERE email = $2",
-          [hashedPassword, email]
-        );
-        // Notify admin about updated access request (best-effort)
-        await notifyAdminUpdatedAccessRequest(email);
-        return NextResponse.json(
-          { message: "Access request updated and submitted for approval" },
-          { status: 201 }
-        );
-      } finally {
-        client.release();
-      }
-    }
-
     const hashedPassword = await hashPassword(password);
-    await createAccessRequest(email, hashedPassword);
-
-    // Notify admin about new access request (best-effort)
-    await notifyAdminNewAccessRequest(email);
+    await upsertPendingUser(email, hashedPassword);
+    // Best-effort notify admin about a new pending request
+    try {
+      await notifyAdminNewAccessRequest(email);
+    } catch {}
 
     return NextResponse.json(
       { message: "Access request submitted successfully" },

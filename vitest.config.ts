@@ -3,9 +3,10 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    environment: "node",
+    environment: "jsdom",
     globals: true,
     reporters: ["default"],
+    setupFiles: ["./tests/setupTests.ts"],
     include: [
       "src/**/*.{test,spec}.ts",
       "src/**/*.{test,spec}.tsx",
