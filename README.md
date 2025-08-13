@@ -18,6 +18,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - `npm start` - Start production server
 - `npm run test:ics` - Validate `public/calendar/event.ics` format and dates
 - `npm run test:qa` - Automated QA: checks in-page anchors/ids and presence of required public docs + ICS
+- `npm run test:downloads` - Smoke test that downloads (PDFs + ICS) return 200 from a running server
 
 ## Getting Started
 
