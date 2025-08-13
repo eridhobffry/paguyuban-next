@@ -260,7 +260,7 @@ Acceptance criteria
 ### Workstream 5: Calendar and schedule
 
 - [x] Provide static `public/calendar/event.ics` with correct DTSTART/DTEND and a single summary/description placeholder.
-- [ ] Validate import in Apple/Google Calendar.
+- [x] Validate import in Apple/Google Calendar.
 
 Acceptance criteria
 

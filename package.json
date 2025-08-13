@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:ics": "node scripts/validate-ics.mjs",
+    "test:smoke": "node scripts/smoke-public-apis.mjs http://localhost:3000",
+    "test:qa": "node scripts/qa-checks.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
