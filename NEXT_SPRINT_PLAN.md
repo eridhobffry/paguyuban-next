@@ -248,14 +248,14 @@ Acceptance criteria
 - [x] Ensure submission flows into existing admin access-requests
   - API path: `src/app/api/auth/request-access/route.ts` and admin endpoints under `src/app/api/admin/access-requests/route.ts`
 - Optional analytics (lightweight)
-  - [ ] Fire click events via `src/lib/analytics/client.ts` to `/api/analytics/track/route.ts`
+  - [x] Fire click events via `src/lib/analytics/client.ts` to `/api/analytics/track/route.ts`
   - Event names: `cta_click`, `download_click`
   - Properties: `section`, `cta`, `href`, `type` (for request-access)
 
 Acceptance criteria
 
 - [x] Forms submit and appear in current admin flow; no backend changes needed.
-- [ ] Events visible in logs/backend if enabled.
+- [x] Events visible in logs/backend if enabled.
 
 ### Workstream 5: Calendar and schedule
 
@@ -280,8 +280,8 @@ Acceptance criteria
 
 ### Workstream 7: Data sanity pass
 
-- [ ] Verify financial data renders; `BroadcastChannel` triggers re-render.
-- [ ] Confirm speakers/artists lists load from `/api/*/public`
+- [x] Verify financial data renders; `BroadcastChannel` triggers re-render.
+- [x] Confirm speakers/artists lists load from `/api/*/public`
   - `src/app/api/speakers/public/route.ts`
   - `src/app/api/artists/public/route.ts`
   - `src/app/api/documents/public/route.ts`
@@ -289,8 +289,8 @@ Acceptance criteria
 
 Acceptance criteria
 
-- [ ] No fallback placeholders when API returns data.
-- [ ] No client/hydration warnings.
+- [x] No fallback placeholders when API returns data.
+- [x] No client/hydration warnings.
 
 ### QA Checklist
 

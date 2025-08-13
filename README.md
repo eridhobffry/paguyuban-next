@@ -11,6 +11,14 @@ Replace with real assets when available.
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Scripts
+
+- `npm run dev` - Start dev server
+- `npm run build` - Production build
+- `npm start` - Start production server
+- `npm run test:ics` - Validate `public/calendar/event.ics` format and dates
+- `npm run test:qa` - Automated QA: checks in-page anchors/ids and presence of required public docs + ICS
+
 ## Getting Started
 
 First, run the development server:
