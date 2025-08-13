@@ -48,6 +48,34 @@ export async function createUser(
   }
 }
 
+export async function createOrEnsureUser(
+  email: string,
+  passwordHash: string,
+  userType: "admin" | "user" = "user"
+): Promise<User> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO users (id, email, password_hash, user_type, role, is_active)
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $3, true)
+       ON CONFLICT (email)
+       DO UPDATE SET 
+         password_hash = EXCLUDED.password_hash,
+         user_type = CASE WHEN users.user_type = 'admin' THEN users.user_type ELSE EXCLUDED.user_type END,
+         role = CASE WHEN users.user_type = 'admin' THEN users.role ELSE EXCLUDED.role END,
+         is_active = true,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [email, passwordHash, userType]
+    );
+    const user = result.rows[0];
+    user.role = user.user_type;
+    return user;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getUserByEmail(email: string): Promise<User | null> {
   const client = await pool.connect();
   try {
@@ -112,6 +140,19 @@ export async function updateAccessRequestStatus(
       [status, approvedBy, id]
     );
     return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteAccessRequestById(id: number): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "DELETE FROM access_requests WHERE id = $1",
+      [id]
+    );
+    return result.rowCount ? result.rowCount > 0 : false;
   } finally {
     client.release();
   }

@@ -10,7 +10,10 @@ export function useAdminData() {
 
   const fetchAccessRequests = async () => {
     try {
-      const response = await fetch("/api/admin/access-requests");
+      const response = await fetch("/api/admin/access-requests", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       if (response.ok) {
         const data = await response.json();
         setAccessRequests(data.requests);
@@ -24,7 +27,10 @@ export function useAdminData() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users");
+      const response = await fetch("/api/admin/users", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       if (response.ok) {
         const data = await response.json();
         setUsers(data.users);
@@ -36,7 +42,10 @@ export function useAdminData() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch("/api/admin/documents");
+      const response = await fetch("/api/admin/documents", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       if (response.ok) {
         const data = await response.json();
         setDocuments(data.documents);

@@ -13,6 +13,7 @@ export interface User {
   user_type: string;
   created_at: string;
   is_active: boolean;
+  is_super_admin?: boolean;
 }
 
 export interface Document {

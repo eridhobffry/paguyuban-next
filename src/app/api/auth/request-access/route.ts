@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
 import { createAccessRequest, getAccessRequestByEmail } from "@/lib/sql";
-import { sendEmailBrevo } from "@/lib/email";
-import { SUPER_ADMIN_EMAIL } from "@/lib/constants";
+import {
+  notifyAdminNewAccessRequest,
+  notifyAdminUpdatedAccessRequest,
+} from "@/lib/email";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,12 +40,7 @@ export async function POST(request: NextRequest) {
           [hashedPassword, email]
         );
         // Notify admin about updated access request (best-effort)
-        await sendEmailBrevo({
-          to: SUPER_ADMIN_EMAIL,
-          subject: "Access request updated and re-submitted",
-          html: `<p>An existing access request was updated and re-submitted.</p><p><strong>Email:</strong> ${email}</p>`,
-          text: `Access request updated and re-submitted for ${email}`,
-        });
+        await notifyAdminUpdatedAccessRequest(email);
         return NextResponse.json(
           { message: "Access request updated and submitted for approval" },
           { status: 201 }
@@ -56,12 +54,7 @@ export async function POST(request: NextRequest) {
     await createAccessRequest(email, hashedPassword);
 
     // Notify admin about new access request (best-effort)
-    await sendEmailBrevo({
-      to: SUPER_ADMIN_EMAIL,
-      subject: "New access request submitted",
-      html: `<p>A new access request was submitted.</p><p><strong>Email:</strong> ${email}</p>`,
-      text: `New access request submitted for ${email}`,
-    });
+    await notifyAdminNewAccessRequest(email);
 
     return NextResponse.json(
       { message: "Access request submitted successfully" },

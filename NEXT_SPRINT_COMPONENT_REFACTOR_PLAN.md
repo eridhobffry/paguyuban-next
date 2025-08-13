@@ -1,6 +1,6 @@
 ## Next Sprint: Component Chunking & Refactor Plan
 
-Scope: Break down oversized Admin and Homepage components (>200 LOC) into smaller, composable parts for maintainability, sustainability, and readability.
+Scope: Break down oversized Admin and Homepage components (>200 LOC) into smaller, composable parts for maintainability, sustainability, and readability. This plan feeds into the next sprint tracked in `NEXT_SPRINT_PLAN.md`.
 
 Principles
 

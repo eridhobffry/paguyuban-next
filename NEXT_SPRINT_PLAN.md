@@ -1,4 +1,74 @@
-### Current Sprint Plan — Homepage MVP Finalization
+### Next Sprint Plan — QA Hardening, CMS Extensions, and Refactors
+
+Scope: Harden QA (e2e + smoke), introduce CMS for Sponsors and Agenda, add admin test coverage, and begin component refactors per `NEXT_SPRINT_COMPONENT_REFACTOR_PLAN.md`. Keep changes incremental and reversible.
+
+### 1) QA Hardening
+
+- Expand Playwright e2e to cover:
+  - Public downloads return 200 (PDFs, ICS)
+  - Anchors smooth-scroll to sections
+  - `/request-access?type=…` renders expected labels
+- Add GitHub Action for unit + e2e (matrix: chromium only to start)
+
+Acceptance criteria
+
+- e2e suite stable locally and in CI
+- Fast smoke job for downloads and anchors
+
+### 2) Sponsors CMS (feature flag off by default)
+
+- DB: `sponsors` table with name, tier, logoUrl, link
+- Admin CRUD page under `src/app/admin/sponsors/page.tsx`
+- Public read `/api/sponsors/public`
+- Wire `SponsorsSection.tsx` to optional read, still hidden until assets ready
+
+Acceptance criteria
+
+- Admin can manage sponsors; no broken image requests when enabled
+
+### 3) Agenda CMS (MVP)
+
+- DB: `agenda_sessions` (time, title, speakerIds, track)
+- Admin CRUD under `/admin`
+- Public `/api/agenda/public` and wire to schedule section when ready
+
+Acceptance criteria
+
+- Agenda visible when feature flag enabled
+
+### 4) Admin Test Coverage
+
+- Add unit tests for admin CRUD validation (Zod schemas)
+- Basic route tests for admin APIs (happy path + validation errors)
+
+Acceptance criteria
+
+- New tests passing in CI
+
+### 5) Refactors (start top 2 from plan)
+
+- `src/app/admin/analytics/page.tsx` split into subcomponents
+- `src/components/admin/DocumentUpload.tsx` split as per plan
+
+Acceptance criteria
+
+- No runtime changes; lint and typecheck pass
+
+### Timeline (5 focused days)
+
+- Day 1: QA hardening and CI job
+- Day 2: Sponsors CMS DB + admin
+- Day 3: Agenda CMS DB + admin
+- Day 4: Admin tests
+- Day 5: Refactors (begin top 2)
+
+### Definition of Done
+
+- CI green: unit + e2e
+- Sponsors and Agenda CMS behind flags
+- Refactor PRs merged with no regressions
+
+### Next Sprint Plan — Homepage MVP Finalization
 
 Scope: Wire all homepage CTAs, replace broken anchors, add/download assets, and close hardcoded placeholders with minimal working paths. Keep changes incremental and reversible.
 
@@ -136,7 +206,7 @@ Acceptance criteria
 
 ### Comprehensive Sprint Execution Plan
 
-This plan is maintained in `CURRENT_SPRINT_PLAN.md`, organized into clear workstreams, tasks, and acceptance criteria, aligning to your preference for small, sequenced wins.
+I’ll draft a comprehensive, incremental sprint plan based on `NEXT_SPRINT_PLAN.md`, organized into clear workstreams, tasks, and acceptance criteria, aligning to your preference for small, sequenced wins.
 
 ### Sprint Goal
 
@@ -209,8 +279,8 @@ Acceptance criteria
 ### Workstream 2: Public assets and docs
 
 - Create directory and placeholders
-  - [x] `public/images/og-image.jpg`
-  - [x] `public/images/twitter-image.jpg`
+  - [ ] `public/images/og-image.jpg`
+  - [ ] `public/images/twitter-image.jpg`
   - [x] `public/docs/` with:
     - [x] `brochure.pdf`
     - [x] `proposal.pdf`
@@ -222,7 +292,7 @@ Acceptance criteria
     - [x] `technical-specs.pdf`
   - [x] `public/calendar/event.ics` (global placeholder)
 - Meta verification
-  - [x] Ensure OG/Twitter meta in `src/app/page.tsx` points to these images.
+  - [ ] Ensure OG/Twitter meta in `src/app/page.tsx` points to these images.
 
 Acceptance criteria
 
@@ -371,7 +441,3 @@ Outstanding items to close the sprint:
 - Social meta images: Add `public/images/og-image.jpg` and `public/images/twitter-image.jpg` and verify preview. Update meta in `src/app/page.tsx` if necessary.
 - Analytics (optional): Fire `cta_click` / `download_click` events via `src/lib/analytics/client.ts` to `/api/analytics/track`.
 - QA pass: Full click-through, ensure all download links return 302→200, anchors smooth-scroll, Network tab shows 0 errors, Lighthouse quick pass, cross-browser sanity.
-
-### What's Next
-
-- Prepare the next sprint plan in `NEXT_SPRINT_PLAN.md` (QA hardening, sponsors logos CMS, agenda CMS, admin test coverage, and refactor milestones). Link major carry-overs and backlog items, and sequence into small, incremental PRs.

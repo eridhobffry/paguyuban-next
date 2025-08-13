@@ -58,3 +58,56 @@ export async function sendEmailBrevo(
     return false;
   }
 }
+
+// Domain-specific helpers and templates
+type AccessDecision = "approved" | "rejected";
+
+function templateNewAccessRequestAdmin(requesterEmail: string) {
+  const subject = "New access request submitted";
+  const html = `<p>A new access request was submitted.</p><p><strong>Email:</strong> ${requesterEmail}</p>`;
+  const text = `New access request submitted for ${requesterEmail}`;
+  return { subject, html, text };
+}
+
+function templateUpdatedAccessRequestAdmin(requesterEmail: string) {
+  const subject = "Access request updated and re-submitted";
+  const html = `<p>An existing access request was updated and re-submitted.</p><p><strong>Email:</strong> ${requesterEmail}</p>`;
+  const text = `Access request updated and re-submitted for ${requesterEmail}`;
+  return { subject, html, text };
+}
+
+function templateDecisionToRequester(decision: AccessDecision) {
+  if (decision === "approved") {
+    return {
+      subject: "Your access request has been approved",
+      html: `<p>Your access request has been approved. You can now log in using your email and the password you provided during the request.</p>`,
+      text: "Your access request has been approved. You can now log in.",
+    };
+  }
+  return {
+    subject: "Your access request has been rejected",
+    html: `<p>Your access request has been rejected. If you believe this is an error, please reply to this email.</p>`,
+    text: "Your access request has been rejected.",
+  };
+}
+
+import { SUPER_ADMIN_EMAIL } from "@/lib/constants";
+
+export async function notifyAdminNewAccessRequest(requesterEmail: string) {
+  const { subject, html, text } = templateNewAccessRequestAdmin(requesterEmail);
+  return sendEmailBrevo({ to: SUPER_ADMIN_EMAIL, subject, html, text });
+}
+
+export async function notifyAdminUpdatedAccessRequest(requesterEmail: string) {
+  const { subject, html, text } =
+    templateUpdatedAccessRequestAdmin(requesterEmail);
+  return sendEmailBrevo({ to: SUPER_ADMIN_EMAIL, subject, html, text });
+}
+
+export async function notifyRequesterDecision(
+  requesterEmail: string,
+  decision: AccessDecision
+) {
+  const { subject, html, text } = templateDecisionToRequester(decision);
+  return sendEmailBrevo({ to: requesterEmail, subject, html, text });
+}

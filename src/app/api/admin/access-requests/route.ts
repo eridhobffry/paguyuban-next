@@ -3,10 +3,12 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import {
   getAccessRequests,
   updateAccessRequestStatus,
-  createUser,
+  createOrEnsureUser,
+  deleteAccessRequestById,
   User,
 } from "@/lib/sql";
-import { sendEmailBrevo } from "@/lib/email";
+import { notifyRequesterDecision } from "@/lib/email";
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,10 +56,24 @@ export async function PATCH(request: NextRequest) {
 
     const { id, action } = await request.json();
 
-    if (!id || !action || !["approve", "reject"].includes(action)) {
+    if (!id || !action || !["approve", "reject", "delete"].includes(action)) {
       return NextResponse.json(
         { error: "Invalid request parameters" },
         { status: 400 }
+      );
+    }
+
+    if (action === "delete") {
+      const ok = await deleteAccessRequestById(id);
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Request not found or delete failed" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { message: "Request deleted successfully" },
+        { status: 200 }
       );
     }
 
@@ -73,7 +89,7 @@ export async function PATCH(request: NextRequest) {
     // If approved, create the user account
     if (status === "approved") {
       try {
-        await createUser(
+        await createOrEnsureUser(
           updatedRequest.email,
           updatedRequest.password_hash,
           "user"
@@ -90,21 +106,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Notify requester about decision (best-effort)
-    await sendEmailBrevo({
-      to: updatedRequest.email,
-      subject:
-        status === "approved"
-          ? "Your access request has been approved"
-          : "Your access request has been rejected",
-      html:
-        status === "approved"
-          ? `<p>Your access request has been approved. You can now log in using your email and the password you provided during the request.</p>`
-          : `<p>Your access request has been rejected. If you believe this is an error, please reply to this email.</p>`,
-      text:
-        status === "approved"
-          ? "Your access request has been approved. You can now log in."
-          : "Your access request has been rejected.",
-    });
+    await notifyRequesterDecision(updatedRequest.email, status);
 
     return NextResponse.json(
       {

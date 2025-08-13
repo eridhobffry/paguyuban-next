@@ -8,10 +8,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AccessRequest } from "@/types/admin";
+import { AccessRequest, User as AdminUser } from "@/types/admin";
+import { Button } from "@/components/ui/button";
 
 interface ProcessedRequestsProps {
   requests: AccessRequest[];
+  onRefresh: () => Promise<void>;
+  setAccessRequests: React.Dispatch<React.SetStateAction<AccessRequest[]>>;
+  onUserRefresh: () => Promise<void>;
+  setUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>;
 }
 
 const getStatusColor = (status: string) => {
@@ -27,7 +32,88 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export function ProcessedRequests({ requests }: ProcessedRequestsProps) {
+export function ProcessedRequests({
+  requests,
+  onRefresh,
+  setAccessRequests,
+  onUserRefresh,
+  setUsers,
+}: ProcessedRequestsProps) {
+  const handleDelete = async (id: number) => {
+    try {
+      // optimistic update
+      let previous: AccessRequest[] | null = null;
+      setAccessRequests((curr) => {
+        previous = curr;
+        return curr.filter((r) => r.id !== id);
+      });
+      const response = await fetch("/api/admin/access-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action: "delete" }),
+      });
+      if (!response.ok) {
+        // revert
+        if (previous) setAccessRequests(previous);
+        alert("Failed to delete request");
+        return;
+      }
+      // ensure fresh state from server in background
+      onRefresh().catch(() => {});
+    } catch (e) {
+      console.error("Delete request failed", e);
+      alert("Delete request failed");
+    }
+  };
+  const handleApprove = async (id: number, email: string) => {
+    let previous: AccessRequest[] | null = null;
+    setAccessRequests((curr) => {
+      previous = curr;
+      return curr.map((r) => (r.id === id ? { ...r, status: "approved" } : r));
+    });
+
+    // Optimistically add/update Users list immediately
+    let previousUsers: AdminUser[] | null = null;
+    setUsers((curr) => {
+      previousUsers = curr;
+      const existing = curr.find((u) => u.email === email);
+      if (existing) {
+        return curr.map((u) =>
+          u.email === email
+            ? { ...u, is_active: true, user_type: u.user_type || "user" }
+            : u
+        );
+      }
+      const optimisticUser: AdminUser = {
+        id: `optimistic-${id}`,
+        email,
+        user_type: "user",
+        created_at: new Date().toISOString(),
+        is_active: true,
+      } as AdminUser;
+      return [optimisticUser, ...curr];
+    });
+    try {
+      const response = await fetch("/api/admin/access-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action: "approve" }),
+      });
+      if (!response.ok) {
+        if (previous) setAccessRequests(previous);
+        if (previousUsers) setUsers(previousUsers);
+        alert("Failed to approve request");
+        return;
+      }
+      onUserRefresh().catch(() => {});
+      onRefresh().catch(() => {});
+    } catch (e) {
+      if (previous) setAccessRequests(previous);
+      if (previousUsers) setUsers(previousUsers);
+      console.error("Approve request failed", e);
+      alert("Approve request failed");
+    }
+  };
   const processedRequests = requests.filter((req) => req.status !== "pending");
 
   return (
@@ -48,7 +134,7 @@ export function ProcessedRequests({ requests }: ProcessedRequestsProps) {
             {processedRequests.map((request) => (
               <div
                 key={request.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/20"
               >
                 <div>
                   <p className="font-medium">{request.email}</p>
@@ -64,9 +150,40 @@ export function ProcessedRequests({ requests }: ProcessedRequestsProps) {
                     )}
                   </p>
                 </div>
-                <Badge className={getStatusColor(request.status)}>
-                  {request.status.toUpperCase()}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge className={getStatusColor(request.status)}>
+                    {request.status.toUpperCase()}
+                  </Badge>
+                  {request.status === "rejected" && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleApprove(request.id, request.email)}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {request.status === "approved" && (
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleApprove(request.id, request.email)}
+                    >
+                      Sync to Users
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (confirm("Delete this processed request?")) {
+                        handleDelete(request.id);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

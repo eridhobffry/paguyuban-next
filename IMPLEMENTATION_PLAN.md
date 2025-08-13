@@ -13,7 +13,7 @@ This document outlines the step-by-step implementation plan to align the sponsor
 - **Access Control**: 100% Complete (Authentication and admin user management)
 - **Additional Improvements**: 100% Complete (Platform rebranding, data consistency, UX enhancements)
 
-**READY FOR PRODUCTION**: Website accurately represents €1,018,660 total revenue, correct sponsorship pricing, and professional methodology with government-backed credibility. Phase 4 CMS/analytics foundations have been implemented and wired to public sections.
+**READY FOR PRODUCTION**: Website accurately represents €1,018,660 total revenue, correct sponsorship pricing, and professional methodology with government-backed credibility. Phase 4 CMS/analytics foundations have been implemented and wired to public sections. See `CURRENT_SPRINT_PLAN.md` for the live sprint scope and `NEXT_SPRINT_PLAN.md` for the upcoming scope.
 
 ## Current State Analysis ✅ ISSUES RESOLVED
 

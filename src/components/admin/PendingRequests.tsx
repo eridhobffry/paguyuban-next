@@ -71,7 +71,7 @@ export function PendingRequests({
             {pendingRequests.map((request) => (
               <div
                 key={request.id}
-                className="flex items-center justify-between p-4 border rounded-lg bg-white dark:bg-gray-800"
+                className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/20"
               >
                 <div>
                   <p className="font-medium">{request.email}</p>

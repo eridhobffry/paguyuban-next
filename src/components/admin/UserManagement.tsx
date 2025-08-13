@@ -103,7 +103,9 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                             >
                               Promote to Admin
                             </Button>
-                          ) : (
+                          ) : null}
+                          {user.user_type === "admin" &&
+                          user.is_super_admin !== true ? (
                             <Button
                               size="sm"
                               variant="secondary"
@@ -114,38 +116,42 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                             >
                               Demote to Member
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleUserAccess(user.email, "revoke")
-                            }
-                            disabled={processingEmail === user.email}
-                            className="border-orange-600 text-orange-600 hover:bg-orange-50"
-                          >
-                            {processingEmail === user.email
-                              ? "Revoking..."
-                              : "Revoke"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you want to permanently delete ${user.email}? This cannot be undone.`
-                                )
-                              ) {
-                                handleUserAccess(user.email, "delete");
+                          ) : null}
+                          {user.is_super_admin === true ? null : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleUserAccess(user.email, "revoke")
                               }
-                            }}
-                            disabled={processingEmail === user.email}
-                          >
-                            {processingEmail === user.email
-                              ? "Deleting..."
-                              : "Delete"}
-                          </Button>
+                              disabled={processingEmail === user.email}
+                              className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                            >
+                              {processingEmail === user.email
+                                ? "Revoking..."
+                                : "Revoke"}
+                            </Button>
+                          )}
+                          {user.is_super_admin === true ? null : (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `Are you sure you want to permanently delete ${user.email}? This cannot be undone.`
+                                  )
+                                ) {
+                                  handleUserAccess(user.email, "delete");
+                                }
+                              }}
+                              disabled={processingEmail === user.email}
+                            >
+                              {processingEmail === user.email
+                                ? "Deleting..."
+                                : "Delete"}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

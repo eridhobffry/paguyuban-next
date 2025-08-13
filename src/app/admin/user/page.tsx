@@ -9,8 +9,15 @@ import {
 import { useAdminData } from "@/hooks/useAdminData";
 
 export default function AdminUserPage() {
-  const { accessRequests, users, loading, fetchAccessRequests, fetchUsers } =
-    useAdminData();
+  const {
+    accessRequests,
+    users,
+    loading,
+    fetchAccessRequests,
+    fetchUsers,
+    setAccessRequests,
+    setUsers,
+  } = useAdminData();
 
   if (loading) {
     return (
@@ -21,7 +28,7 @@ export default function AdminUserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <AdminHeader />
         <div className="space-y-6">
@@ -31,7 +38,13 @@ export default function AdminUserPage() {
             onUserRefresh={fetchUsers}
           />
           <UserManagement users={users} onRefresh={fetchUsers} />
-          <ProcessedRequests requests={accessRequests} />
+          <ProcessedRequests
+            requests={accessRequests}
+            onRefresh={fetchAccessRequests}
+            setAccessRequests={setAccessRequests}
+            onUserRefresh={fetchUsers}
+            setUsers={setUsers}
+          />
         </div>
       </div>
     </div>
