@@ -7,13 +7,33 @@ export interface AccessRequest {
   approved_by?: string;
 }
 
+export type UserRole = "member" | "admin" | "super_admin";
+export type UserStatus =
+  | "pending"
+  | "active"
+  | "rejected"
+  | "disabled"
+  | "archived";
+
 export interface User {
   id: string;
   email: string;
-  user_type: string;
+  role: UserRole;
+  status: UserStatus;
   created_at: string;
-  is_active: boolean;
+  updated_at?: string;
+  // Legacy/compat fields
+  user_type?: string;
+  is_active?: boolean;
   is_super_admin?: boolean;
+  // Timestamps for audit-like fields
+  requested_at?: string;
+  approved_at?: string;
+  approved_by?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  disabled_at?: string;
+  disabled_by?: string;
 }
 
 export interface Document {

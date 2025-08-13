@@ -54,8 +54,13 @@ export default function AdminDashboard() {
           onUserRefresh={fetchUsers}
         />
         <UserManagement users={users} onRefresh={fetchUsers} />
-        <ProcessedRequests requests={accessRequests} />
-
+        <ProcessedRequests
+          requests={accessRequests}
+          onRefresh={fetchAccessRequests}
+          setAccessRequests={() => {}}
+          onUserRefresh={fetchUsers}
+          setUsers={() => {}}
+        />
         <Card variant="glass">
           <div className="mb-4">
             <h2 className="text-lg font-medium">Document Management</h2>

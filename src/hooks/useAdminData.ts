@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
-import { AccessRequest, User } from "@/types/admin";
+import { User } from "@/types/admin";
 import type { DocumentRow } from "@/types/documents";
 
 export function useAdminData() {
-  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [accessRequests, setAccessRequests] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAccessRequests = async () => {
     try {
-      const response = await fetch("/api/admin/access-requests", {
+      const response = await fetch("/api/admin/users", {
         cache: "no-store",
         headers: { "Cache-Control": "no-cache" },
       });
       if (response.ok) {
         const data = await response.json();
-        setAccessRequests(data.requests);
+        setAccessRequests(data.users);
       }
     } catch (error) {
       console.error("Failed to fetch access requests:", error);

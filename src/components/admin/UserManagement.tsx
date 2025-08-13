@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,7 +22,7 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
 
   const handleUserAccess = async (
     email: string,
-    action: "revoke" | "restore" | "delete" | "promote" | "demote"
+    action: "disable" | "enable" | "delete" | "promote" | "demote"
   ) => {
     setProcessingEmail(email);
     try {
@@ -47,8 +47,8 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
     }
   };
 
-  const activeUsers = users.filter((user) => user.is_active);
-  const inactiveUsers = users.filter((user) => !user.is_active);
+  const activeUsers = users.filter((user) => user.status === "active");
+  const inactiveUsers = users.filter((user) => user.status === "disabled");
 
   return (
     <Card>
@@ -85,14 +85,16 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                           <Badge className="bg-green-100 text-green-800">
                             ACTIVE
                           </Badge>
-                          {user.user_type === "admin" && (
+                          {(user.role === "admin" ||
+                            user.role === "super_admin") && (
                             <Badge className="bg-blue-100 text-blue-800">
                               ADMIN
                             </Badge>
                           )}
                         </div>
                         <div className="flex gap-2">
-                          {user.user_type !== "admin" ? (
+                          {user.role !== "admin" &&
+                          user.role !== "super_admin" ? (
                             <Button
                               size="sm"
                               variant="secondary"
@@ -104,7 +106,7 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                               Promote to Admin
                             </Button>
                           ) : null}
-                          {user.user_type === "admin" &&
+                          {user.role === "admin" &&
                           user.is_super_admin !== true ? (
                             <Button
                               size="sm"
@@ -122,14 +124,14 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                handleUserAccess(user.email, "revoke")
+                                handleUserAccess(user.email, "disable")
                               }
                               disabled={processingEmail === user.email}
                               className="border-orange-600 text-orange-600 hover:bg-orange-50"
                             >
                               {processingEmail === user.email
-                                ? "Revoking..."
-                                : "Revoke"}
+                                ? "Disabling..."
+                                : "Disable"}
                             </Button>
                           )}
                           {user.is_super_admin === true ? null : (
@@ -183,21 +185,21 @@ export function UserManagement({ users, onRefresh }: UserManagementProps) {
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge className="bg-red-100 text-red-800">
-                          REVOKED
+                          DISABLED
                         </Badge>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() =>
-                              handleUserAccess(user.email, "restore")
+                              handleUserAccess(user.email, "enable")
                             }
                             disabled={processingEmail === user.email}
                             className="border-green-600 text-green-600 hover:bg-green-50"
                           >
                             {processingEmail === user.email
-                              ? "Restoring..."
-                              : "Restore"}
+                              ? "Enabling..."
+                              : "Enable"}
                           </Button>
                           <Button
                             size="sm"

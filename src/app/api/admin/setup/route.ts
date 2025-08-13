@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
-import { initializeDocumentTable, User, ensureSuperAdminFlag } from "@/lib/sql";
+import {
+  initializeDocumentTable,
+  User,
+  ensureSuperAdminFlag,
+  ensureUsersSingleTableModel,
+  ensureUserStatusChangesTable,
+} from "@/lib/sql";
 import { SUPER_ADMIN_EMAIL } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
@@ -19,7 +25,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize document table
+    // Initialize user model and document table
+    await ensureUsersSingleTableModel();
+    await ensureUserStatusChangesTable();
     await initializeDocumentTable();
 
     // Ensure the configured super admin has elevated flag and admin role

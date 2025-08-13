@@ -3,12 +3,14 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import { isSuperAdminFromToken } from "@/lib/jwt";
 import {
   getAllUsers,
-  revokeUserAccess,
-  restoreUserAccess,
   deleteUser,
   promoteUserToAdmin,
   demoteUserToMember,
+  approveUser,
+  rejectUser,
+  disableUser,
   User,
+  type UserStatus,
 } from "@/lib/sql";
 
 export async function GET(request: NextRequest) {
@@ -27,7 +29,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = await getAllUsers();
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get("status");
+    const users = await getAllUsers(
+      statusParam ? (statusParam as UserStatus) : undefined
+    );
 
     return NextResponse.json({ users }, { status: 200 });
   } catch (error) {
@@ -60,7 +66,15 @@ export async function PATCH(request: NextRequest) {
     if (
       !email ||
       !action ||
-      !["revoke", "restore", "delete", "promote", "demote"].includes(action)
+      ![
+        "approve",
+        "reject",
+        "disable",
+        "enable",
+        "delete",
+        "promote",
+        "demote",
+      ].includes(action)
     ) {
       return NextResponse.json(
         { error: "Invalid request parameters" },
@@ -79,25 +93,29 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Prevent modifying Super Admin account by anyone (except restore)
-    if (email && isSuperAdminFromToken(decoded)) {
-      if (decoded.email === email && action !== "restore") {
-        return NextResponse.json(
-          { error: "Cannot modify Super Admin account via this endpoint" },
-          { status: 403 }
-        );
-      }
+    // Prevent modifying Super Admin account by anyone
+    if (
+      email === decoded.email &&
+      isSuperAdminFromToken(decoded) &&
+      action !== "enable"
+    ) {
+      return NextResponse.json(
+        { error: "Cannot modify Super Admin account via this endpoint" },
+        { status: 403 }
+      );
     }
 
     let success = false;
-    if (action === "revoke") {
-      success = await revokeUserAccess(email);
-    } else if (action === "restore") {
-      success = await restoreUserAccess(email);
+    if (action === "approve" || action === "enable") {
+      success = await approveUser(email, decoded.email);
+    } else if (action === "reject") {
+      success = await rejectUser(email, decoded.email);
+    } else if (action === "disable") {
+      success = await disableUser(email, decoded.email);
     } else if (action === "promote") {
       success = await promoteUserToAdmin(email);
     } else if (action === "demote") {
-      // Prevent demoting Super Admin or demoting self if Super Admin
+      // Prevent demoting self
       if (email === decoded.email) {
         return NextResponse.json(
           { error: "Cannot demote yourself" },
@@ -117,10 +135,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     let message = "User updated successfully";
-    if (action === "revoke") {
-      message = "User access revoked successfully";
-    } else if (action === "restore") {
-      message = "User access restored successfully";
+    if (action === "approve" || action === "enable") {
+      message = "User approved/activated";
+    } else if (action === "reject") {
+      message = "User rejected";
+    } else if (action === "disable") {
+      message = "User disabled";
     } else if (action === "promote") {
       message = "User promoted to admin";
     } else if (action === "demote") {

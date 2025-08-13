@@ -8,13 +8,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AccessRequest, User as AdminUser } from "@/types/admin";
+import { User as AdminUser } from "@/types/admin";
 import { Button } from "@/components/ui/button";
 
 interface ProcessedRequestsProps {
-  requests: AccessRequest[];
+  requests: AdminUser[];
   onRefresh: () => Promise<void>;
-  setAccessRequests: React.Dispatch<React.SetStateAction<AccessRequest[]>>;
+  setAccessRequests: React.Dispatch<React.SetStateAction<AdminUser[]>>;
   onUserRefresh: () => Promise<void>;
   setUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>;
 }
@@ -39,18 +39,18 @@ export function ProcessedRequests({
   onUserRefresh,
   setUsers,
 }: ProcessedRequestsProps) {
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (email: string) => {
     try {
       // optimistic update
-      let previous: AccessRequest[] | null = null;
+      let previous: AdminUser[] | null = null;
       setAccessRequests((curr) => {
         previous = curr;
-        return curr.filter((r) => r.id !== id);
+        return curr.filter((r) => r.email !== email);
       });
-      const response = await fetch("/api/admin/access-requests", {
+      const response = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action: "delete" }),
+        body: JSON.stringify({ email, action: "delete" }),
       });
       if (!response.ok) {
         // revert
@@ -65,11 +65,13 @@ export function ProcessedRequests({
       alert("Delete request failed");
     }
   };
-  const handleApprove = async (id: number, email: string) => {
-    let previous: AccessRequest[] | null = null;
+  const handleApprove = async (email: string) => {
+    let previous: AdminUser[] | null = null;
     setAccessRequests((curr) => {
       previous = curr;
-      return curr.map((r) => (r.id === id ? { ...r, status: "approved" } : r));
+      return curr.map((r) =>
+        r.email === email ? { ...r, status: "active" } : r
+      );
     });
 
     // Optimistically add/update Users list immediately
@@ -79,25 +81,23 @@ export function ProcessedRequests({
       const existing = curr.find((u) => u.email === email);
       if (existing) {
         return curr.map((u) =>
-          u.email === email
-            ? { ...u, is_active: true, user_type: u.user_type || "user" }
-            : u
+          u.email === email ? { ...u, status: "active" as const } : u
         );
       }
       const optimisticUser: AdminUser = {
-        id: `optimistic-${id}`,
+        id: `optimistic-${email}`,
         email,
-        user_type: "user",
+        role: "member",
+        status: "active",
         created_at: new Date().toISOString(),
-        is_active: true,
       } as AdminUser;
       return [optimisticUser, ...curr];
     });
     try {
-      const response = await fetch("/api/admin/access-requests", {
+      const response = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action: "approve" }),
+        body: JSON.stringify({ email, action: "approve" }),
       });
       if (!response.ok) {
         if (previous) setAccessRequests(previous);
@@ -140,14 +140,20 @@ export function ProcessedRequests({
                   <p className="font-medium">{request.email}</p>
                   <p className="text-sm text-gray-500">
                     Requested:{" "}
-                    {new Date(request.requested_at).toLocaleDateString()}
-                    {request.approved_at && (
+                    {request.requested_at
+                      ? new Date(
+                          request.requested_at as string
+                        ).toLocaleDateString()
+                      : "-"}
+                    {request.approved_at ? (
                       <>
                         {" • "}
                         Processed:{" "}
-                        {new Date(request.approved_at).toLocaleDateString()}
+                        {new Date(
+                          request.approved_at as string
+                        ).toLocaleDateString()}
                       </>
-                    )}
+                    ) : null}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -158,26 +164,18 @@ export function ProcessedRequests({
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApprove(request.id, request.email)}
+                      onClick={() => handleApprove(request.email)}
                     >
                       Approve
                     </Button>
                   )}
-                  {request.status === "approved" && (
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700"
-                      onClick={() => handleApprove(request.id, request.email)}
-                    >
-                      Sync to Users
-                    </Button>
-                  )}
+                  {/* Sync button removed in single-table model */}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      if (confirm("Delete this processed request?")) {
-                        handleDelete(request.id);
+                      if (confirm("Delete this user?")) {
+                        handleDelete(request.email);
                       }
                     }}
                   >
