@@ -228,7 +228,9 @@ export async function upsertPendingUser(
              status = 'pending',
              requested_at = $3,
              updated_at = CURRENT_TIMESTAMP,
-             is_active = false
+             is_active = false,
+             user_type = COALESCE(user_type, 'user'),
+             role = COALESCE(role, 'member')
          WHERE email = $1
          RETURNING *`,
         [email, passwordHash, now]
@@ -236,8 +238,8 @@ export async function upsertPendingUser(
       return res.rows[0] as User;
     }
     const res = await client.query(
-      `INSERT INTO users (id, email, password_hash, role, status, requested_at, is_active)
-       VALUES (gen_random_uuid()::text, $1, $2, 'member', 'pending', $3, false)
+      `INSERT INTO users (id, email, password_hash, user_type, role, status, requested_at, is_active)
+       VALUES (gen_random_uuid()::text, $1, $2, 'user', 'member', 'pending', $3, false)
        RETURNING *`,
       [email, passwordHash, now]
     );

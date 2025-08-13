@@ -22,6 +22,8 @@ export default function AdminDashboard() {
     fetchAccessRequests,
     fetchUsers,
     fetchDocuments,
+    setAccessRequests,
+    setUsers,
   } = useAdminData();
   const [editingDoc, setEditingDoc] = useState<DocumentRow | null>(null);
 
@@ -57,9 +59,9 @@ export default function AdminDashboard() {
         <ProcessedRequests
           requests={accessRequests}
           onRefresh={fetchAccessRequests}
-          setAccessRequests={() => {}}
+          setAccessRequests={setAccessRequests}
           onUserRefresh={fetchUsers}
-          setUsers={() => {}}
+          setUsers={setUsers}
         />
         <Card variant="glass">
           <div className="mb-4">

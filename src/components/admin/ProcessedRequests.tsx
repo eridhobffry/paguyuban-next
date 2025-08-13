@@ -23,7 +23,7 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case "pending":
       return "bg-yellow-100 text-yellow-800";
-    case "approved":
+    case "active":
       return "bg-green-100 text-green-800";
     case "rejected":
       return "bg-red-100 text-red-800";
@@ -43,9 +43,14 @@ export function ProcessedRequests({
     try {
       // optimistic update
       let previous: AdminUser[] | null = null;
+      let previousUsers: AdminUser[] | null = null;
       setAccessRequests((curr) => {
         previous = curr;
         return curr.filter((r) => r.email !== email);
+      });
+      setUsers((curr) => {
+        previousUsers = curr;
+        return curr.filter((u) => u.email !== email);
       });
       const response = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -55,11 +60,13 @@ export function ProcessedRequests({
       if (!response.ok) {
         // revert
         if (previous) setAccessRequests(previous);
+        if (previousUsers) setUsers(previousUsers);
         alert("Failed to delete request");
         return;
       }
       // ensure fresh state from server in background
       onRefresh().catch(() => {});
+      onUserRefresh().catch(() => {});
     } catch (e) {
       console.error("Delete request failed", e);
       alert("Delete request failed");
@@ -115,6 +122,7 @@ export function ProcessedRequests({
     }
   };
   const processedRequests = requests.filter((req) => req.status !== "pending");
+  console.log("🚀 ~ ProcessedRequests ~ processedRequests:", processedRequests);
 
   return (
     <Card>
@@ -170,17 +178,19 @@ export function ProcessedRequests({
                     </Button>
                   )}
                   {/* Sync button removed in single-table model */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (confirm("Delete this user?")) {
-                        handleDelete(request.email);
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
+                  {!request.is_super_admin && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (confirm("Delete this user?")) {
+                          handleDelete(request.email);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

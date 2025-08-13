@@ -12,6 +12,7 @@ import {
   User,
   type UserStatus,
 } from "@/lib/sql";
+import { notifyRequesterDecision } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,8 +109,15 @@ export async function PATCH(request: NextRequest) {
     let success = false;
     if (action === "approve" || action === "enable") {
       success = await approveUser(email, decoded.email);
+      if (success && action === "approve") {
+        // best-effort email to requester
+        notifyRequesterDecision(email, "approved").catch(() => {});
+      }
     } else if (action === "reject") {
       success = await rejectUser(email, decoded.email);
+      if (success) {
+        notifyRequesterDecision(email, "rejected").catch(() => {});
+      }
     } else if (action === "disable") {
       success = await disableUser(email, decoded.email);
     } else if (action === "promote") {

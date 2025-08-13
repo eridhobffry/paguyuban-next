@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
 import { upsertPendingUser } from "@/lib/sql";
+import { notifyAdminNewAccessRequest } from "@/lib/email";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -16,6 +17,10 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await hashPassword(password);
     await upsertPendingUser(email, hashedPassword);
+    // Best-effort notify admin about a new pending request
+    try {
+      await notifyAdminNewAccessRequest(email);
+    } catch {}
 
     return NextResponse.json(
       { message: "Access request submitted successfully" },
