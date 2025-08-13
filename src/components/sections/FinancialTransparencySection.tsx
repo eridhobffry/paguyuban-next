@@ -24,6 +24,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
 
 // Safe formatting function to prevent hydration mismatches
 const formatCurrency = (amount: number) => {
@@ -244,7 +245,16 @@ const FinancialTransparencySection = () => {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      try {
+                        trackCtaClick({
+                          section: "financial-transparency",
+                          cta: `Tab: ${tab.label}`,
+                          href: `#financial-transparency`,
+                        });
+                      } catch {}
+                    }}
                     className={`flex items-center space-x-3 px-6 py-3 rounded-xl transition-all duration-300 ${
                       activeTab === tab.id
                         ? "bg-gradient-to-r from-green-500 to-blue-600 text-white shadow-lg"
@@ -606,6 +616,15 @@ const FinancialTransparencySection = () => {
                   PUBLIC_DOWNLOAD_KEY.FINANCIAL_REPORT
                 )}
                 download
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "financial-transparency",
+                    cta: "Download Financial Report",
+                    href: getPublicDownloadUrl(
+                      PUBLIC_DOWNLOAD_KEY.FINANCIAL_REPORT
+                    ),
+                  })
+                }
                 className="inline-flex px-8 py-4 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 items-center"
               >
                 <Download className="w-5 h-5 mr-3" />
@@ -615,6 +634,15 @@ const FinancialTransparencySection = () => {
                 href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SPONSOR_DECK)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "financial-transparency",
+                    cta: "View Sponsor Deck",
+                    href: getPublicDownloadUrl(
+                      PUBLIC_DOWNLOAD_KEY.SPONSOR_DECK
+                    ),
+                  })
+                }
                 className="inline-flex px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300 items-center"
               >
                 <ExternalLink className="w-5 h-5 mr-3" />

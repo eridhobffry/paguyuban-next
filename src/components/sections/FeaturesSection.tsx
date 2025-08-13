@@ -10,6 +10,7 @@ import {
   Sparkles,
   Award,
 } from "lucide-react";
+import { trackCtaClick } from "@/lib/analytics/client";
 
 const features = [
   {
@@ -130,6 +131,13 @@ const FeaturesSection = () => {
 
               <a
                 href="#technology-platform"
+                onClick={() =>
+                  trackCtaClick({
+                    section: "features",
+                    cta: "Learn more",
+                    href: "#technology-platform",
+                  })
+                }
                 className="flex items-center text-sm font-medium text-cyan-400 group-hover:translate-x-1 transition-transform duration-300"
               >
                 Learn more
@@ -160,6 +168,14 @@ const FeaturesSection = () => {
         >
           <a
             href="/request-access?type=register"
+            onClick={() =>
+              trackCtaClick({
+                section: "features",
+                cta: "Register Now",
+                href: "/request-access?type=register",
+                type: "register",
+              })
+            }
             className="inline-block px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/20"
           >
             Register Now

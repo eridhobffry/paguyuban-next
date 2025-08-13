@@ -8,6 +8,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
 
 const sponsorTiers = [
   {
@@ -264,6 +265,14 @@ const SponsorsSection = () => {
 
               <Link
                 href="/request-access?type=sponsor"
+                onClick={() =>
+                  trackCtaClick({
+                    section: "sponsors",
+                    cta: "Secure Sponsorship",
+                    href: "/request-access?type=sponsor",
+                    type: "sponsor",
+                  })
+                }
                 className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
               >
                 Secure Sponsorship
@@ -358,6 +367,15 @@ const SponsorsSection = () => {
               <a
                 href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SPONSORSHIP_KIT)}
                 download
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "sponsors",
+                    cta: "Download Sponsorship Kit",
+                    href: getPublicDownloadUrl(
+                      PUBLIC_DOWNLOAD_KEY.SPONSORSHIP_KIT
+                    ),
+                  })
+                }
                 className="px-8 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 whitespace-nowrap"
               >
                 Download Sponsorship Kit

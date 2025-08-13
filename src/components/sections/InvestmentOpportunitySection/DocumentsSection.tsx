@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getIconComponent } from "./data";
 import Link from "next/link";
+import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
 
 type DocumentData = PublicDocument;
 
@@ -111,6 +112,23 @@ export function DocumentsSection() {
   };
 
   const handleDocumentAction = (doc: DocumentData) => {
+    try {
+      const href = doc.external_url || doc.file_url;
+      if (href) {
+        trackDownloadClick({
+          section: "investment-opportunity-documents",
+          cta: doc.external_url ? "View Document" : "Download Document",
+          href,
+        });
+      } else {
+        trackCtaClick({
+          section: "investment-opportunity-documents",
+          cta: "Request Access",
+          href: "mailto:nusantaraexpoofficial@gmail.com",
+          type: "docs",
+        });
+      }
+    } catch {}
     if (doc.external_url) {
       window.open(doc.external_url, "_blank", "noopener,noreferrer");
     } else if (doc.file_url) {
@@ -290,6 +308,14 @@ export function DocumentsSection() {
       <div className="mt-8 text-center">
         <Link
           href="/request-access?type=docs"
+          onClick={() =>
+            trackCtaClick({
+              section: "investment-opportunity-documents",
+              cta: "Request Complete Documentation Package",
+              href: "/request-access?type=docs",
+              type: "docs",
+            })
+          }
           className="inline-flex px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 items-center"
         >
           <FileText className="w-5 h-5 mr-3" />

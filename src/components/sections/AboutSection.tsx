@@ -6,6 +6,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackDownloadClick } from "@/lib/analytics/client";
 import {
   Calendar,
   MapPin,
@@ -213,6 +214,13 @@ const AboutSection = () => {
             <div className="flex flex-wrap gap-4">
               <a
                 href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.BROCHURE)}
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "about",
+                    cta: "Download Brochure",
+                    href: getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.BROCHURE),
+                  })
+                }
                 className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium rounded-xl transition-all transform hover:scale-105"
               >
                 Download Brochure

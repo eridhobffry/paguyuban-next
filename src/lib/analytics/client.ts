@@ -403,3 +403,75 @@ export function getCurrentAnalyticsSessionId(): string | null {
     return null;
   }
 }
+
+// ----- Lightweight helpers for CTA and download tracking -----
+export type CtaClick = {
+  section: string;
+  cta: string;
+  href?: string;
+  type?: string | null;
+};
+
+export type DownloadClick = {
+  section: string;
+  cta: string;
+  href?: string;
+};
+
+/**
+ * Dispatch a lightweight CTA click analytics event via the global bridge.
+ * This avoids creating additional AnalyticsClient instances.
+ */
+export function trackCtaClick(payload: CtaClick): void {
+  try {
+    if (typeof window === "undefined") return;
+    const detail = {
+      type: "cta_click",
+      data: {
+        section: payload.section,
+        element: "cta",
+        metadata: {
+          cta: payload.cta,
+          href: payload.href,
+          type: payload.type ?? undefined,
+        },
+      },
+    } as const;
+    window.dispatchEvent(
+      new CustomEvent(
+        "analytics-track" as unknown as string,
+        { detail } as unknown as EventInit
+      )
+    );
+  } catch {
+    // no-op
+  }
+}
+
+/**
+ * Dispatch a lightweight download click analytics event via the global bridge.
+ */
+export function trackDownloadClick(payload: DownloadClick): void {
+  try {
+    if (typeof window === "undefined") return;
+    const detail = {
+      type: "download_click",
+      data: {
+        section: payload.section,
+        element: "download",
+        metadata: {
+          cta: payload.cta,
+          href: payload.href,
+        },
+      },
+    } as const;
+    window.dispatchEvent(
+      new CustomEvent(
+        "analytics-track" as unknown as string,
+        { detail } as unknown as EventInit
+      )
+    );
+  } catch {
+    // no-op
+  }
+}

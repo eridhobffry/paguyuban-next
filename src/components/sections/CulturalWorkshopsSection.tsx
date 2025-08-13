@@ -17,6 +17,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
 
 const workshops = [
   {
@@ -339,12 +340,28 @@ const CulturalWorkshopsSection = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <a
                 href="#schedule"
+                onClick={() =>
+                  trackCtaClick({
+                    section: "cultural-workshops",
+                    cta: "View Full Schedule",
+                    href: "#schedule",
+                  })
+                }
                 className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
               >
                 View Full Schedule
               </a>
               <a
                 href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.WORKSHOP_GUIDE)}
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "cultural-workshops",
+                    cta: "Download Workshop Guide",
+                    href: getPublicDownloadUrl(
+                      PUBLIC_DOWNLOAD_KEY.WORKSHOP_GUIDE
+                    ),
+                  })
+                }
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300"
               >
                 Download Workshop Guide

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Globe, CheckCircle } from "lucide-react";
 import { sponsorshipTiers } from "./data";
 import Link from "next/link";
+import { trackCtaClick } from "@/lib/analytics/client";
 
 export function SponsorshipTiers() {
   return (
@@ -68,6 +69,14 @@ export function SponsorshipTiers() {
 
             <Link
               href="/request-access?type=sponsor"
+              onClick={() =>
+                trackCtaClick({
+                  section: "investment-opportunity-tiers",
+                  cta: "Become a Sponsor",
+                  href: "/request-access?type=sponsor",
+                  type: "sponsor",
+                })
+              }
               className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 ${
                 tier.highlight
                   ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white"

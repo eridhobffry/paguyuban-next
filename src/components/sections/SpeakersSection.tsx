@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getSafeImageSrc } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { PublicArtistDto, PublicSpeakerDto } from "@/types/people";
+import { trackCtaClick } from "@/lib/analytics/client";
 
 const SpeakerCard = ({
   speaker,
@@ -252,6 +253,14 @@ const SpeakersSection = () => {
             </p>
             <Link
               href="/request-access?type=updates"
+              onClick={() =>
+                trackCtaClick({
+                  section: "speakers",
+                  cta: "Stay Updated",
+                  href: "/request-access?type=updates",
+                  type: "updates",
+                })
+              }
               className="px-6 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-lg transition-all"
             >
               Stay Updated
@@ -268,6 +277,14 @@ const SpeakersSection = () => {
         >
           <Link
             href="/request-access?type=speaker"
+            onClick={() =>
+              trackCtaClick({
+                section: "speakers",
+                cta: "Become a Speaker",
+                href: "/request-access?type=speaker",
+                type: "speaker",
+              })
+            }
             className="inline-block px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/20"
           >
             Become a Speaker

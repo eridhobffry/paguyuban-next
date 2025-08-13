@@ -5,6 +5,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackDownloadClick } from "@/lib/analytics/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -384,6 +385,13 @@ const ScheduleSection = () => {
                         <p className="mb-4">{item.description}</p>
                         <a
                           href="/calendar/event.ics"
+                          onClick={() =>
+                            trackDownloadClick({
+                              section: "schedule",
+                              cta: "Add to calendar",
+                              href: "/calendar/event.ics",
+                            })
+                          }
                           className="inline-flex items-center text-cyan-400 hover:text-cyan-300 text-sm font-medium"
                         >
                           Add to calendar
@@ -420,6 +428,13 @@ const ScheduleSection = () => {
           <a
             href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SCHEDULE)}
             download
+            onClick={() =>
+              trackDownloadClick({
+                section: "schedule",
+                cta: "Download Full Schedule",
+                href: getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.SCHEDULE),
+              })
+            }
             className="inline-block px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-amber-900 font-bold rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-amber-500/20"
           >
             Download Full Schedule

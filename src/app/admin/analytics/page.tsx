@@ -52,6 +52,8 @@ type ApiResponse = {
     createdAt: string;
   }[];
   funnelA: { name: string; count: number }[];
+  topCtas?: { name: string; count: number }[];
+  topDownloads?: { name: string; count: number }[];
 };
 
 export default function AdminAnalyticsPage() {
@@ -458,6 +460,48 @@ export default function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top CTAs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Clicks", color: "#0ea5e9" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={(data?.topCtas || []).slice().reverse()}>
+                  <XAxis dataKey="name" hide />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#0ea5e9" name="Clicks" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Downloads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ count: { label: "Downloads", color: "#22c55e" } }}
+              className="aspect-auto h-[280px] w-full"
+            >
+              <ResponsiveContainer>
+                <BarChart data={(data?.topDownloads || []).slice().reverse()}>
+                  <XAxis dataKey="name" hide />
+                  <YAxis allowDecimals={false} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="#22c55e" name="Downloads" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Top Sections</CardTitle>

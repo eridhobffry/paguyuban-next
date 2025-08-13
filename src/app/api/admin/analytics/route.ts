@@ -16,6 +16,7 @@ type ChatSummaryItem = {
   created_at: string;
 };
 type FunnelStep = { name: string; count: number };
+type CtaItem = { name: string; count: number };
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -203,6 +204,28 @@ export async function GET(request: NextRequest) {
            select 'request_access_click' as name, (select count(*) from req)::int as count`
     )) as unknown as { rows: FunnelStep[] };
 
+    // Top CTA clicks (last N days)
+    const topCtasResult = (await db.execute(
+      dsql`select coalesce((metadata->>'cta')::text, '(unknown)') as name, count(*)::int as count
+           from analytics_events
+           where created_at >= now() - ${intervalLiteral}::interval
+             and type = 'cta_click'
+           group by 1
+           order by count desc
+           limit 10`
+    )) as unknown as { rows: CtaItem[] };
+
+    // Top Downloads (last N days)
+    const topDownloadsResult = (await db.execute(
+      dsql`select coalesce((metadata->>'cta')::text, '(unknown)') as name, count(*)::int as count
+           from analytics_events
+           where created_at >= now() - ${intervalLiteral}::interval
+             and type = 'download_click'
+           group by 1
+           order by count desc
+           limit 10`
+    )) as unknown as { rows: CtaItem[] };
+
     return json({
       range,
       rangeDays: days,
@@ -223,6 +246,8 @@ export async function GET(request: NextRequest) {
         createdAt: r.created_at,
       })),
       funnelA: funnelAResult.rows,
+      topCtas: topCtasResult.rows,
+      topDownloads: topDownloadsResult.rows,
     });
   } catch (error) {
     console.error("/api/admin/analytics GET error:", error);

@@ -24,6 +24,7 @@ import {
   getPublicDownloadUrl,
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
+import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
 
 const platforms = [
   {
@@ -514,6 +515,14 @@ const TechnologyPlatformSection = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <a
                 href="/request-access?type=demo"
+                onClick={() =>
+                  trackCtaClick({
+                    section: "technology-platform",
+                    cta: "Request Platform Demo",
+                    href: "/request-access?type=demo",
+                    type: "demo",
+                  })
+                }
                 className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105"
               >
                 Request Platform Demo
@@ -522,6 +531,15 @@ const TechnologyPlatformSection = () => {
                 href={getPublicDownloadUrl(PUBLIC_DOWNLOAD_KEY.TECHNICAL_SPECS)}
                 download
                 aria-label="Download Technical Specs PDF"
+                onClick={() =>
+                  trackDownloadClick({
+                    section: "technology-platform",
+                    cta: "Download Technical Specs",
+                    href: getPublicDownloadUrl(
+                      PUBLIC_DOWNLOAD_KEY.TECHNICAL_SPECS
+                    ),
+                  })
+                }
                 className="px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-all duration-300"
               >
                 Download Technical Specs
