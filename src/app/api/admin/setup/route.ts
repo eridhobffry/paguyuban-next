@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, isAdmin } from "@/lib/auth";
-import { initializeDocumentTable, User } from "@/lib/sql";
+import { initializeDocumentTable, User, ensureSuperAdminFlag } from "@/lib/sql";
+import { SUPER_ADMIN_EMAIL } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,8 +22,14 @@ export async function POST(request: NextRequest) {
     // Initialize document table
     await initializeDocumentTable();
 
+    // Ensure the configured super admin has elevated flag and admin role
+    await ensureSuperAdminFlag(SUPER_ADMIN_EMAIL);
+
     return NextResponse.json(
-      { message: "Database tables initialized successfully" },
+      {
+        message:
+          "Database tables initialized successfully and super admin ensured",
+      },
       { status: 200 }
     );
   } catch (error) {

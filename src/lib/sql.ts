@@ -218,6 +218,18 @@ export async function demoteUserToMember(email: string): Promise<boolean> {
   }
 }
 
+export async function ensureSuperAdminFlag(email: string): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "UPDATE users SET is_super_admin = true, user_type = 'admin', role = 'admin', is_active = true WHERE email = $1",
+      [email]
+    );
+  } finally {
+    client.release();
+  }
+}
+
 // Document management (raw SQL)
 export interface Document {
   id: string;
