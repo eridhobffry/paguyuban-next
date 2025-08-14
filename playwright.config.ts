@@ -8,15 +8,15 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
   webServer: {
-    command: "sh -c 'npm run build && npm run start'",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "sh -c 'npm run build && next start -p 3100'",
+    url: "http://localhost:3100",
+    reuseExistingServer: false,
     timeout: 120_000,
   },
   projects: [
