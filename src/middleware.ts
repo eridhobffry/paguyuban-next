@@ -4,6 +4,7 @@ import { verifyTokenMiddleware, isAdminFromToken } from "./lib/jwt";
 
 // Public routes that don't require authentication
 const publicRoutes = [
+  "/",
   "/login",
   "/request-access",
   "/api/auth/login",
@@ -16,7 +17,7 @@ const adminRoutes = ["/admin"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
+  // Allow public routes and public prefixes
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next();
   }
@@ -57,6 +58,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|login|request-access).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|login|request-access|calendar|docs).*)",
   ],
 };
