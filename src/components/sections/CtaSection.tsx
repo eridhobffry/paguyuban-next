@@ -243,15 +243,22 @@ const CtaSection = () => {
                 </Link>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button className="px-6 py-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/40 text-blue-200 rounded-xl hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-300 flex items-center justify-center">
+                  <a
+                    href={`tel:${SITE.contacts.phone.replace(/\s+/g, "")}`}
+                    className="px-6 py-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/40 text-blue-200 rounded-xl hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-300 flex items-center justify-center"
+                  >
                     <FileText className="w-5 h-5 mr-3" />
                     Request Documentation
-                  </button>
+                  </a>
 
-                  <button className="px-6 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-colors flex items-center justify-center">
+                  <a
+                    href="/calendar/event.ics"
+                    download
+                    className="px-6 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl transition-colors flex items-center justify-center"
+                  >
                     <Download className="w-5 h-5 mr-3" />
                     Download Proposal
-                  </button>
+                  </a>
                 </div>
               </div>
 
@@ -364,14 +371,21 @@ const CtaSection = () => {
                   Ready to Join Indonesia&apos;s European Success Story?
                 </h4>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center">
+                  <a
+                    href={`tel:${SITE.contacts.phone.replace(/\s+/g, "")}`}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center"
+                  >
                     <Phone className="w-5 h-5 mr-2" />
                     Schedule Call
-                  </button>
-                  <button className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-colors flex items-center justify-center">
+                  </a>
+                  <a
+                    href="/calendar/event.ics"
+                    download
+                    className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-xl transition-colors flex items-center justify-center"
+                  >
                     <ExternalLink className="w-5 h-5 mr-2" />
                     View Calendar
-                  </button>
+                  </a>
                 </div>
 
                 <p className="text-center text-xs text-gray-400 mt-4">
