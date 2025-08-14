@@ -33,7 +33,10 @@ export async function GET(req: Request) {
     const newestBySlug = bySlug.at(-1);
     const slugUrl = newestBySlug?.fileUrl || newestBySlug?.externalUrl;
     if (slugUrl) {
-      return NextResponse.redirect(slugUrl, 302);
+      const target = slugUrl.startsWith("http")
+        ? slugUrl
+        : new URL(slugUrl, req.url).toString();
+      return NextResponse.redirect(target, 302);
     }
 
     // Fallback to legacy type mapping for backwards compatibility
@@ -51,14 +54,20 @@ export async function GET(req: Request) {
         .orderBy(schema.documents.updatedAt);
       const doc = rows.at(-1);
       const url = doc?.fileUrl || doc?.externalUrl;
-      if (url) return NextResponse.redirect(url, 302);
+      if (url) {
+        const target = url.startsWith("http")
+          ? url
+          : new URL(url, req.url).toString();
+        return NextResponse.redirect(target, 302);
+      }
     }
 
     // Fallback to static placeholder in public/docs to avoid 404
     if (isDownloadKey(key)) {
       const fallback = KEY_TO_FALLBACK_FILE[key];
       if (fallback) {
-        return NextResponse.redirect(fallback, 302);
+        const target = new URL(fallback, req.url).toString();
+        return NextResponse.redirect(target, 302);
       }
     }
 
