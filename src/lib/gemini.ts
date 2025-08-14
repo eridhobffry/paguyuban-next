@@ -270,7 +270,7 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
 
   contact: {
     email: "nusantaraexpoofficial@gmail.com",
-    phone: "+491573 9396157",
+    phone: "+49 1573 9396157",
     location: "Hamburg, Germany",
     website: "paguyuban-messe.com",
   },
@@ -738,7 +738,7 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
 
       // Final fallback
       return assistantType === "ucup"
-        ? "I apologize for the technical issue. Please contact us at nusantaraexpoofficial@gmail.com or call +491573 9396157 for immediate assistance with Paguyuban Messe 2026."
+        ? "I apologize for the technical issue. Please contact us at nusantaraexpoofficial@gmail.com or call +49 1573 9396157 for immediate assistance with Paguyuban Messe 2026."
         : "Apologies for the inconvenience. For immediate information about Paguyuban Messe 2026, please reach out to nusantaraexpoofficial@gmail.com. Our team will assist you promptly.";
     }
   }
@@ -802,7 +802,7 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
       messageCount: this.conversationHistory.length,
       language: this.userProfile.language,
       suggestedFollowUp:
-        "Schedule a call to discuss partnership opportunities: +491573 9396157",
+        "Schedule a call to discuss partnership opportunities: +49 1573 9396157",
     };
   }
 

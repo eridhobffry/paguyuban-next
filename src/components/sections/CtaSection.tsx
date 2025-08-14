@@ -20,6 +20,7 @@ import {
   Globe,
 } from "lucide-react";
 import Link from "next/link";
+import { SITE } from "@/config/site";
 
 const investmentBenefits = [
   {
@@ -73,7 +74,7 @@ const contactMethods = [
   {
     type: "Investment Inquiry",
     method: "Schedule Executive Call",
-    contact: "+49 30 1234 5678",
+    contact: SITE.contacts.phone,
     icon: Phone,
     description: "Direct line to investment team",
     primary: true,
@@ -89,7 +90,7 @@ const contactMethods = [
   {
     type: "Documentation Request",
     method: "WhatsApp Business",
-    contact: "+49 176 1234 5678",
+    contact: SITE.contacts.whatsapp,
     icon: MessageCircle,
     description: "Instant access to business documents",
     primary: false,
