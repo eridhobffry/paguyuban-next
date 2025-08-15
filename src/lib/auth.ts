@@ -50,6 +50,7 @@ export async function authenticateUser(
   const user = await getUserByEmail(email);
   if (!user) return null;
 
+  if (!user.password_hash) return null;
   const isValid = await verifyPassword(password, user.password_hash);
   if (!isValid) return null;
 

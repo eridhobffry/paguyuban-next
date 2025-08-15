@@ -3,7 +3,7 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import { User } from "@/lib/sql";
 export const runtime = "nodejs";
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   return NextResponse.json({ requests: [] }, { status: 200 });
 }
 

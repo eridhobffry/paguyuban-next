@@ -3,3 +3,4 @@ export * from "./schemas/speakers";
 export * from "./schemas/artists";
 export * from "./schemas/documents";
 export * from "./schemas/analytics";
+export * from "./schemas/partnership";

@@ -20,3 +20,21 @@ export type PublicDocument = {
   ai_generated: DocumentRow["aiGenerated"];
   marketing_highlights?: DocumentRow["marketingHighlights"];
 };
+
+// Admin API input shape (snake_case), aligned to SQL columns
+export interface DocumentInput {
+  title: string;
+  description: string;
+  preview: string;
+  pages: string;
+  type: string;
+  icon: string;
+  slug?: string;
+  file_url?: string;
+  external_url?: string;
+  restricted: boolean;
+  file_size?: number;
+  mime_type?: string;
+  ai_generated?: boolean;
+  created_by: string;
+}

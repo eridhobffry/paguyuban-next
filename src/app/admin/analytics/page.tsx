@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ChatSummariesSection,
-  ChatRecommendationsDialog,
-} from "@/components/admin";
+import { SummariesSection, RecommendationsDialog } from "@/components/admin";
+import { useChatSummaries } from "@/hooks/useChatSummaries";
 import { getRecommendationsWithCache } from "@/hooks/useAdminRecommendations";
+import { extractProspectFromSummary } from "@/lib/prospect";
 import type { ChatRecommendationsData } from "@/types/analytics";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -64,20 +63,19 @@ export default function AdminAnalyticsPage() {
   const [recOpen, setRecOpen] = useState(false);
   const [recLoading, setRecLoading] = useState(false);
   const [recData, setRecData] = useState<ChatRecommendationsData | null>(null);
-  // Recent summaries pagination state
-  const [summaries, setSummaries] = useState<
-    {
-      id?: string;
-      sessionId: string;
-      summary: string;
-      sentiment: string | null;
-      createdAt: string;
-    }[]
-  >([]);
-  const [summariesNextCursor, setSummariesNextCursor] = useState<string | null>(
-    null
-  );
-  const [summariesLoading, setSummariesLoading] = useState(false);
+  const [currentRecItem, setCurrentRecItem] = useState<{
+    sessionId: string;
+    summary: string;
+    sentiment: string | null;
+  } | null>(null);
+  const [currentProspect, setCurrentProspect] = useState<ReturnType<typeof extractProspectFromSummary> | null>(null);
+  const {
+    summaries,
+    loading: summariesLoading,
+    hasMore: summariesHasMore,
+    loadMore: loadMoreSummaries,
+    deleteSummary,
+  } = useChatSummaries(range);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,101 +102,13 @@ export default function AdminAnalyticsPage() {
     };
   }, [range]);
 
-  // Load first page of recent summaries whenever range changes
-  useEffect(() => {
-    let cancelled = false;
-    async function loadPage(cursor?: string | null) {
-      try {
-        setSummariesLoading(true);
-        const url = new URL(
-          `/api/admin/analytics/summaries`,
-          window.location.origin
-        );
-        url.searchParams.set("range", range);
-        url.searchParams.set("limit", "10");
-        if (cursor) url.searchParams.set("cursor", cursor);
-        const res = await fetch(url.toString(), {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(`Failed: ${res.status}`);
-        const json = (await res.json()) as {
-          items: {
-            id: string;
-            sessionId: string;
-            summary: string;
-            sentiment: string | null;
-            createdAt: string;
-          }[];
-          nextCursor: string | null;
-        };
-        if (cancelled) return;
-        if (!cursor) {
-          setSummaries(json.items);
-        } else {
-          setSummaries((prev) => [...prev, ...json.items]);
-        }
-        setSummariesNextCursor(json.nextCursor);
-      } catch (e) {
-        // Do not fail entire page; keep console noise minimal
-        console.warn("Failed to load summaries", e);
-      } finally {
-        if (!cancelled) setSummariesLoading(false);
-      }
-    }
-    loadPage(null);
-    return () => {
-      cancelled = true;
-    };
-  }, [range]);
-
-  async function loadMoreSummaries() {
-    if (!summariesNextCursor || summariesLoading) return;
-    await (async () => {
-      const url = new URL(
-        `/api/admin/analytics/summaries`,
-        window.location.origin
-      );
-      url.searchParams.set("range", range);
-      url.searchParams.set("limit", "10");
-      url.searchParams.set("cursor", summariesNextCursor);
-      const res = await fetch(url.toString(), {
-        credentials: "include",
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const json = (await res.json()) as {
-        items: {
-          id: string;
-          sessionId: string;
-          summary: string;
-          sentiment: string | null;
-          createdAt: string;
-        }[];
-        nextCursor: string | null;
-      };
-      setSummaries((prev) => [...prev, ...json.items]);
-      setSummariesNextCursor(json.nextCursor);
-    })();
-  }
-
-  async function deleteSummary(id?: string) {
+  // delete confirmation wrapper
+  async function deleteSummaryWithConfirm(id?: string) {
     if (!id) return;
-    const confirmed = window.confirm("Delete this summary?");
-    if (!confirmed) return;
-    try {
-      const res = await fetch(`/api/admin/analytics/summaries`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      setSummaries((prev) => prev.filter((s) => s.id !== id));
-    } catch {
-      alert("Failed to delete summary");
-    }
+    await deleteSummary(id);
   }
+
+  // Using shared extractProspectFromSummary from '@/lib/prospect'
 
   async function handleRecommend(item: {
     sessionId: string;
@@ -209,10 +119,17 @@ export default function AdminAnalyticsPage() {
       setRecLoading(true);
       setRecOpen(true);
       setRecData(null);
+      setCurrentRecItem(item);
+
+      // Extract prospect data from summary
+      const prospect = extractProspectFromSummary(item.summary);
+      setCurrentProspect(prospect);
+
       const data = await getRecommendationsWithCache({
         sessionId: item.sessionId,
         summary: item.summary,
         sentiment: item.sentiment,
+        prospect,
       });
       setRecData(data);
     } catch {
@@ -652,7 +569,7 @@ export default function AdminAnalyticsPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-        <ChatSummariesSection
+        <SummariesSection
           summaries={
             (summaries.length
               ? summaries
@@ -664,10 +581,10 @@ export default function AdminAnalyticsPage() {
               createdAt: string;
             }>
           }
-          onDelete={deleteSummary}
+          onDelete={deleteSummaryWithConfirm}
           onRecommend={handleRecommend}
           loading={summariesLoading}
-          hasMore={Boolean(summariesNextCursor)}
+          hasMore={summariesHasMore}
           onLoadMore={loadMoreSummaries}
         />
         <Card className="lg:col-span-2">
@@ -694,11 +611,31 @@ export default function AdminAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-      <ChatRecommendationsDialog
+      <RecommendationsDialog
         open={recOpen}
         onOpenChange={setRecOpen}
         loading={recLoading}
         data={recData}
+        initialProspect={currentProspect || undefined}
+        onRegenerate={async (prospect) => {
+          if (!currentRecItem) return;
+          try {
+            setRecLoading(true);
+            const fresh = await getRecommendationsWithCache(
+              {
+                sessionId: currentRecItem.sessionId,
+                summary: currentRecItem.summary,
+                sentiment: currentRecItem.sentiment,
+                prospect,
+              },
+              { force: true }
+            );
+            setRecData(fresh);
+            setCurrentProspect(prospect);
+          } finally {
+            setRecLoading(false);
+          }
+        }}
       />
     </div>
   );

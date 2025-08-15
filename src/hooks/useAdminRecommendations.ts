@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ChatRecommendationsData } from "@/types/analytics";
+import type { Priority } from "@/types/recommendations";
 
 type CacheEntry = {
   data: ChatRecommendationsData;
@@ -22,9 +23,22 @@ export function buildRecommendKey(args: {
   sessionId: string;
   summary: string;
   sentiment: string | null;
+  prospect?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    company?: string | null;
+    interest?: string | null;
+    budget?: string | null;
+  };
 }) {
   // Keep it deterministic and compact
-  const base = `${args.sessionId}||${args.sentiment || ""}||${args.summary}`;
+  const p = args.prospect || {};
+  const base = `${args.sessionId}||${args.sentiment || ""}||${args.summary}||${
+    p.name || ""
+  }||${p.email || ""}||${p.phone || ""}||${p.company || ""}||${
+    p.interest || ""
+  }||${p.budget || ""}`;
   // Simple hash to avoid oversized localStorage keys
   let hash = 0;
   for (let i = 0; i < base.length; i++) {
@@ -47,7 +61,8 @@ export const useRecommendCache = create<RecommendCacheState>()(
         if (!entry) return null;
         const isExpired = Date.now() - entry.createdAt > state.ttlMs;
         if (isExpired) {
-          const { [key]: _, ...rest } = state.entries;
+          const rest = { ...state.entries };
+          delete rest[key];
           set({ entries: rest });
           return null;
         }
@@ -80,14 +95,25 @@ export const useRecommendCache = create<RecommendCacheState>()(
 );
 
 // Helper to fetch with cache
-export async function getRecommendationsWithCache(args: {
-  sessionId: string;
-  summary: string;
-  sentiment: string | null;
-}): Promise<ChatRecommendationsData> {
+export async function getRecommendationsWithCache(
+  args: {
+    sessionId: string;
+    summary: string;
+    sentiment: string | null;
+    prospect?: {
+      name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      company?: string | null;
+      interest?: string | null;
+      budget?: string | null;
+    };
+  },
+  opts?: { force?: boolean }
+): Promise<ChatRecommendationsData> {
   const cache = useRecommendCache.getState();
   const key = buildRecommendKey(args);
-  const cached = cache.get(key);
+  const cached = opts?.force ? null : cache.get(key);
   if (cached) return cached;
 
   const res = await fetch("/api/admin/analytics/chat/recommend", {
@@ -110,11 +136,31 @@ export async function getRecommendationsWithCache(args: {
       recommendation?: string;
     }>;
     nextBestAction: string;
+    prospectSummary?: string;
+    followUps?: {
+      emailPositive?: string;
+      emailNeutral?: string;
+      emailNegative?: string;
+      whatsappPositive?: string;
+      whatsappNeutral?: string;
+      whatsappNegative?: string;
+    };
+    sentiment?: string | null;
   };
+  const toPriority = (p?: string): Priority | undefined =>
+    p === "high" || p === "medium" || p === "low" ? p : undefined;
+
   const data: ChatRecommendationsData = {
     nextBestAction: json.nextBestAction,
-    recommendedActions: json.recommendedActions,
+    recommendedActions: json.recommendedActions.map((a) => ({
+      title: a.title,
+      description: a.description,
+      priority: toPriority(a.priority),
+    })),
     journey: json.journey,
+    prospectSummary: json.prospectSummary,
+    followUps: json.followUps,
+    sentiment: json.sentiment ?? null,
   };
   cache.set(key, data);
   return data;

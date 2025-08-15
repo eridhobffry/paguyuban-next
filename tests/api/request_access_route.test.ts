@@ -6,7 +6,7 @@ vi.mock("@/lib/auth", () => ({
 
 const upsertSpy = vi.fn(async () => ({}));
 vi.mock("@/lib/sql", () => ({
-  upsertPendingUser: (...args: any[]) => upsertSpy(...args),
+  upsertPendingUser: upsertSpy,
 }));
 
 describe("/api/auth/request-access route", () => {

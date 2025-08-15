@@ -2,11 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { UserManagement } from "@/components/admin/UserManagement";
+import type { User } from "@/types/admin";
 
 describe("UserManagement component", () => {
   it("renders active and disabled users and triggers actions", async () => {
     const onRefresh = vi.fn(async () => {});
-    const users = [
+    const users: User[] = [
       {
         id: "1",
         email: "member@x.com",

@@ -111,3 +111,63 @@ export async function notifyRequesterDecision(
   const { subject, html, text } = templateDecisionToRequester(decision);
   return sendEmailBrevo({ to: requesterEmail, subject, html, text });
 }
+
+// Partnership application notifications
+function templateNewPartnershipApplication(data: {
+  name: string;
+  email: string;
+  company?: string | null;
+  phone?: string | null;
+  interest?: string | null;
+  budget?: string | null;
+  message?: string | null;
+  source?: string | null;
+}) {
+  const subject = `New partnership application: ${data.name}`;
+  const rows = [
+    ["Name", data.name],
+    ["Email", data.email],
+    ["Company", data.company ?? "-"],
+    ["Phone", data.phone ?? "-"],
+    ["Interest", data.interest ?? "-"],
+    ["Budget", data.budget ?? "-"],
+    ["Source", data.source ?? "-"],
+  ]
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 8px;"><strong>${k}</strong></td><td style="padding:4px 8px;">${v}</td></tr>`
+    )
+    .join("");
+  const html = `
+    <div>
+      <p>A new partnership application was submitted.</p>
+      <table style="border-collapse:collapse;">${rows}</table>
+      <p style="margin-top:12px;"><strong>Message</strong></p>
+      <pre style="white-space:pre-wrap; background:#f7f7f7; padding:8px; border-radius:6px;">${
+        (data.message ?? "").trim() || "-"
+      }</pre>
+    </div>
+  `;
+  const text = `New partnership application\nName: ${data.name}\nEmail: ${
+    data.email
+  }\nCompany: ${data.company ?? "-"}\nPhone: ${data.phone ?? "-"}\nInterest: ${
+    data.interest ?? "-"
+  }\nBudget: ${data.budget ?? "-"}\nSource: ${
+    data.source ?? "-"
+  }\n\nMessage:\n${data.message ?? "-"}`;
+  return { subject, html, text };
+}
+
+export async function notifyAdminNewPartnershipApplication(data: {
+  name: string;
+  email: string;
+  company?: string | null;
+  phone?: string | null;
+  interest?: string | null;
+  budget?: string | null;
+  message?: string | null;
+  source?: string | null;
+}) {
+  const { subject, html, text } = templateNewPartnershipApplication(data);
+  return sendEmailBrevo({ to: SUPER_ADMIN_EMAIL, subject, html, text });
+}
