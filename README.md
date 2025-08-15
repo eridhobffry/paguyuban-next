@@ -20,6 +20,26 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - `npm run test:qa` - Automated QA: checks in-page anchors/ids and presence of required public docs + ICS
 - `npm run test:downloads` - Smoke test that downloads (PDFs + ICS) return 200 from a running server
 
+## Environment
+
+Set the following server-side environment variables:
+
+- `DATABASE_URL`: Postgres connection string
+- `GEMINI_API_KEY`: Google Generative Language API key used for chat replies, summaries and admin recommendations
+- `BREVO_API_KEY`: Brevo (Sendinblue) transactional email API key
+- `BREVO_SENDER_EMAIL` and `BREVO_SENDER_NAME` (optional): default sender
+- `SUPER_ADMIN_EMAIL`: email that should be ensured as super admin at setup
+
+## Admin setup
+
+- POST `/api/admin/setup` initializes required tables (`users`, `user_status_changes`, `documents`) and ensures the super admin flag.
+- Admin Analytics pages provide: traffic charts, chat summaries, and AI recommendations.
+
+## New features
+
+- Partnership application page: `/partnership-application` with `PartnershipForm` posting to `/api/partnership-application` and notifying admin via email.
+- Admin Follow-ups: `/admin/follow-ups` shows recent chat summaries, lets admins open AI recommendations, mark items completed, and set local reminders.
+
 ## Getting Started
 
 First, run the development server:
