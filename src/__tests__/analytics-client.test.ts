@@ -5,14 +5,14 @@ import {
   vi,
   beforeEach,
   afterEach,
-  type SpyInstance,
+  type MockInstance,
 } from "vitest";
 import { trackCtaClick, trackDownloadClick } from "../lib/analytics/client";
 
 describe("analytics lightweight helpers", () => {
   const addEventListenerSpy = vi.fn();
   const removeEventListenerSpy = vi.fn();
-  let dispatchSpy: SpyInstance<[event: Event], boolean>;
+  let dispatchSpy: MockInstance;
 
   beforeEach(() => {
     // @ts-expect-error jsdom window typing compatibility
@@ -34,15 +34,10 @@ describe("analytics lightweight helpers", () => {
     trackCtaClick({ section: "hero", cta: "View", href: "#x", type: "demo" });
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
     const evt = dispatchSpy!.mock.calls[0][0] as CustomEvent;
-    // @ts-expect-error custom detail
     expect(evt.detail.type).toBe("cta_click");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.section).toBe("hero");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.metadata.cta).toBe("View");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.metadata.href).toBe("#x");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.metadata.type).toBe("demo");
   });
 
@@ -54,13 +49,9 @@ describe("analytics lightweight helpers", () => {
     });
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
     const evt = dispatchSpy!.mock.calls[0][0] as CustomEvent;
-    // @ts-expect-error custom detail
     expect(evt.detail.type).toBe("download_click");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.section).toBe("docs");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.metadata.cta).toBe("Download");
-    // @ts-expect-error custom detail
     expect(evt.detail.data.metadata.href).toBe("/docs/x.pdf");
   });
 });

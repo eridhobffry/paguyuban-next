@@ -109,10 +109,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const json = await request.json();
     const body = BodySchema.parse(json);
 
-    let userId: string | undefined = undefined;
+    // Preserve potential side-effects of user fetch without using the value
     try {
-      const user = await stackServerApp.getUser();
-      userId = user?.id ?? undefined;
+      await stackServerApp.getUser();
     } catch {}
 
     const { summary, topics, sentiment } = await generateSummary(
