@@ -35,7 +35,7 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
           CI: true
-          NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+          NEXT_PUBLIC_STACK_PROJECT_ID: 29035b10-1827-4894-aa27-bba40c02aa09
         run: npx playwright test --project=chromium
 
       - name: Upload Playwright report
