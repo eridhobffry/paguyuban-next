@@ -1,5 +1,4 @@
 // Enhanced Gemini API Integration for Paguyuban Messe 2026 Chat Assistant
-// Using your provided API key: AIzaSyC6xXoR5PpkQy4vfagbJsgB-A2C-NeXR48
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";

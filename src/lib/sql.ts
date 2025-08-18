@@ -1,52 +1,29 @@
-import { Pool } from "pg";
+import { pool } from "@/lib/db/drizzle";
+import type { UserRole, UserStatus, User, AccessRequest } from "@/types/admin";
+import type {
+  PartnershipApplication,
+  PartnershipApplicationInput,
+  PartnershipApplicationRecommendation,
+  PartnershipApplicationRecommendationInput,
+} from "@/types/partnership";
+import type { PublicDocument, DocumentInput } from "@/types/documents";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-
-export { pool };
-
-export type UserRole = "member" | "admin" | "super_admin";
-export type UserStatus =
-  | "pending"
-  | "active"
-  | "rejected"
-  | "disabled"
-  | "archived";
-
-export interface User {
-  id: string;
-  email: string;
-  password_hash: string;
-  // Legacy columns kept for backward compatibility with older data
-  user_type?: "admin" | "user";
-  is_super_admin?: boolean;
-  is_active?: boolean;
-  // New canonical fields
-  role: UserRole;
-  status: UserStatus;
-  requested_at?: Date;
-  approved_at?: Date;
-  approved_by?: string;
-  rejected_at?: Date;
-  rejected_by?: string;
-  disabled_at?: Date;
-  disabled_by?: string;
-  created_at: Date;
-  updated_at: Date;
-}
+// Re-export for legacy imports like: import type { User } from "@/lib/sql";
+export type { User, UserRole, UserStatus, AccessRequest } from "@/types/admin";
+export type {
+  PartnershipApplication,
+  PartnershipApplicationInput,
+  PartnershipApplicationRecommendation,
+  PartnershipApplicationRecommendationInput,
+} from "@/types/partnership";
+export type {
+  DocumentRow,
+  NewDocumentRow,
+  PublicDocument,
+  DocumentInput,
+} from "@/types/documents";
 
 // Deprecated: Access requests are now represented by users with status='pending'
-export interface AccessRequest {
-  id: number;
-  email: string;
-  password_hash: string;
-  status: "pending" | "approved" | "rejected";
-  requested_at: Date;
-  approved_at?: Date;
-  approved_by?: string;
-}
 
 // ----- Utilities for migrating/ensuring the single-table model -----
 export async function ensureUsersSingleTableModel(): Promise<void> {
@@ -268,6 +245,9 @@ export async function createAccessRequest(
   email: string,
   passwordHash: string
 ): Promise<AccessRequest> {
+  // Intentionally unused: deprecated API surface kept for backward compatibility
+  void email;
+  void passwordHash;
   throw new Error(
     "createAccessRequest is deprecated. Use upsertPendingUser instead."
   );
@@ -276,6 +256,8 @@ export async function createAccessRequest(
 export async function getAccessRequests(
   _status?: string
 ): Promise<AccessRequest[]> {
+  // Intentionally unused placeholder param
+  void _status;
   return [];
 }
 
@@ -284,18 +266,26 @@ export async function updateAccessRequestStatus(
   _status: "approved" | "rejected",
   _approvedBy: string
 ): Promise<AccessRequest> {
+  // Intentionally unused placeholder params
+  void _id;
+  void _status;
+  void _approvedBy;
   throw new Error(
     "updateAccessRequestStatus is deprecated. Use approveUser/rejectUser instead."
   );
 }
 
 export async function deleteAccessRequestById(_id: number): Promise<boolean> {
+  // Intentionally unused placeholder param
+  void _id;
   return false;
 }
 
 export async function getAccessRequestByEmail(
   _email: string
 ): Promise<AccessRequest | null> {
+  // Intentionally unused placeholder param
+  void _email;
   return null;
 }
 
@@ -452,42 +442,6 @@ export async function rejectUser(
 }
 
 // Document management (raw SQL)
-export interface Document {
-  id: string;
-  title: string;
-  description: string;
-  preview: string;
-  pages: string;
-  type: string;
-  icon: string;
-  slug?: string;
-  file_url?: string;
-  external_url?: string;
-  restricted: boolean;
-  file_size?: number;
-  mime_type?: string;
-  ai_generated: boolean;
-  created_by: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface DocumentInput {
-  title: string;
-  description: string;
-  preview: string;
-  pages: string;
-  type: string;
-  icon: string;
-  slug?: string;
-  file_url?: string;
-  external_url?: string;
-  restricted: boolean;
-  file_size?: number;
-  mime_type?: string;
-  ai_generated?: boolean;
-  created_by: string;
-}
 
 export async function initializeDocumentTable(): Promise<void> {
   const client = await pool.connect();
@@ -533,7 +487,9 @@ export async function initializeDocumentTable(): Promise<void> {
   }
 }
 
-export async function createDocument(doc: DocumentInput): Promise<Document> {
+export async function createDocument(
+  doc: DocumentInput
+): Promise<PublicDocument> {
   const client = await pool.connect();
   try {
     const result = await client.query(
@@ -559,31 +515,33 @@ export async function createDocument(doc: DocumentInput): Promise<Document> {
         doc.created_by,
       ]
     );
-    return result.rows[0];
+    return result.rows[0] as PublicDocument;
   } finally {
     client.release();
   }
 }
 
-export async function getAllDocuments(): Promise<Document[]> {
+export async function getAllDocuments(): Promise<PublicDocument[]> {
   const client = await pool.connect();
   try {
     const result = await client.query(
       "SELECT * FROM documents ORDER BY created_at DESC"
     );
-    return result.rows;
+    return result.rows as PublicDocument[];
   } finally {
     client.release();
   }
 }
 
-export async function getDocumentById(id: string): Promise<Document | null> {
+export async function getDocumentById(
+  id: string
+): Promise<PublicDocument | null> {
   const client = await pool.connect();
   try {
     const result = await client.query("SELECT * FROM documents WHERE id = $1", [
       id,
     ]);
-    return result.rows[0] || null;
+    return (result.rows[0] as PublicDocument | undefined) || null;
   } finally {
     client.release();
   }
@@ -592,7 +550,7 @@ export async function getDocumentById(id: string): Promise<Document | null> {
 export async function updateDocument(
   id: string,
   updates: Partial<DocumentInput>
-): Promise<Document | null> {
+): Promise<PublicDocument | null> {
   const client = await pool.connect();
   try {
     const fields = Object.keys(updates)
@@ -604,7 +562,7 @@ export async function updateDocument(
        WHERE id = $1 RETURNING *`,
       [id, ...values]
     );
-    return result.rows[0] || null;
+    return (result.rows[0] as PublicDocument | undefined) || null;
   } finally {
     client.release();
   }
@@ -622,13 +580,147 @@ export async function deleteDocument(id: string): Promise<boolean> {
   }
 }
 
-export async function getPublicDocuments(): Promise<Document[]> {
+export async function getPublicDocuments(): Promise<PublicDocument[]> {
   const client = await pool.connect();
   try {
     const result = await client.query(
       "SELECT * FROM documents WHERE restricted = false ORDER BY created_at DESC"
     );
-    return result.rows;
+    return result.rows as PublicDocument[];
+  } finally {
+    client.release();
+  }
+}
+
+// Partnership Applications (raw SQL, runtime-initialized table)
+
+export async function ensurePartnershipApplicationsTable(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS partnership_applications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        company TEXT,
+        phone TEXT,
+        interest TEXT,
+        budget TEXT,
+        message TEXT,
+        source TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_partnership_applications_email ON partnership_applications(email);
+      CREATE INDEX IF NOT EXISTS idx_partnership_applications_created_at ON partnership_applications(created_at);
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function createPartnershipApplication(
+  input: PartnershipApplicationInput
+): Promise<PartnershipApplication> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO partnership_applications (name, email, company, phone, interest, budget, message, source)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        input.name,
+        input.email,
+        input.company ?? null,
+        input.phone ?? null,
+        input.interest ?? null,
+        input.budget ?? null,
+        input.message ?? null,
+        input.source ?? null,
+      ]
+    );
+    return result.rows[0] as PartnershipApplication;
+  } finally {
+    client.release();
+  }
+}
+
+// Lookup a partnership application by id
+export async function getPartnershipApplicationById(
+  id: string
+): Promise<PartnershipApplication | null> {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(
+      `SELECT * FROM partnership_applications WHERE id = $1 LIMIT 1`,
+      [id]
+    );
+    const row = res.rows[0] as PartnershipApplication | undefined;
+    return row || null;
+  } finally {
+    client.release();
+  }
+}
+
+// Recommendations for partnership applications
+
+export async function ensurePartnershipApplicationRecommendationsTable(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS partnership_application_recommendations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        application_id UUID NOT NULL,
+        sentiment TEXT,
+        recommended_actions JSONB,
+        journey JSONB,
+        follow_ups JSONB,
+        next_best_action TEXT,
+        prospect_summary TEXT,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE table_name = 'partnership_application_recommendations'
+            AND constraint_type = 'FOREIGN KEY'
+        ) THEN
+          ALTER TABLE partnership_application_recommendations
+          ADD CONSTRAINT fk_par_app_rec_app
+          FOREIGN KEY (application_id)
+          REFERENCES partnership_applications(id)
+          ON DELETE CASCADE;
+        END IF;
+      END $$;
+      CREATE INDEX IF NOT EXISTS idx_par_app_rec_app ON partnership_application_recommendations(application_id);
+      CREATE INDEX IF NOT EXISTS idx_par_app_rec_created_at ON partnership_application_recommendations(created_at);
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function createPartnershipApplicationRecommendation(
+  input: PartnershipApplicationRecommendationInput
+): Promise<PartnershipApplicationRecommendation> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO partnership_application_recommendations (
+        application_id, sentiment, recommended_actions, journey, follow_ups, next_best_action, prospect_summary
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *`,
+      [
+        input.applicationId,
+        input.sentiment ?? null,
+        input.recommendedActions ?? null,
+        input.journey ?? null,
+        input.followUps ?? null,
+        input.nextBestAction ?? null,
+        input.prospectSummary ?? null,
+      ]
+    );
+    return result.rows[0] as PartnershipApplicationRecommendation;
   } finally {
     client.release();
   }
