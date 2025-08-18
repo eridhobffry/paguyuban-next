@@ -1,20 +1,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SummaryItem } from "@/types/analytics";
 
-export type ChatSummaryItem = {
-  id?: string;
-  sessionId: string;
-  summary: string;
-  sentiment: string | null;
-  createdAt: string;
-};
-
-export function ChatSummariesSection(props: {
+export function SummariesSection(props: {
   title?: string;
-  summaries: ChatSummaryItem[];
-  onDelete?: (id?: string) => void;
-  onRecommend?: (item: ChatSummaryItem) => void;
+  summaries: SummaryItem[];
+  onDelete?: (id?: string) => Promise<void>;
+  onRecommend?: (item: SummaryItem) => void;
   loading?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
@@ -57,7 +50,7 @@ export function ChatSummariesSection(props: {
                   {"id" in r && onDelete ? (
                     <button
                       className="text-sm underline text-red-600"
-                      onClick={() => onDelete(r.id)}
+                      onClick={async () => await onDelete(r.id)}
                     >
                       Delete
                     </button>
@@ -98,3 +91,6 @@ export function ChatSummariesSection(props: {
     </Card>
   );
 }
+
+export type ChatSummaryItem = SummaryItem;
+export { SummariesSection as ChatSummariesSection };

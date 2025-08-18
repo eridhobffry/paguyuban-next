@@ -22,6 +22,8 @@ export interface User {
   status: UserStatus;
   created_at: string;
   updated_at?: string;
+  // Authentication hash (internal use only)
+  password_hash?: string;
   // Legacy/compat fields
   user_type?: string;
   is_active?: boolean;
@@ -34,26 +36,6 @@ export interface User {
   rejected_by?: string;
   disabled_at?: string;
   disabled_by?: string;
-}
-
-export interface Document {
-  id: string;
-  title: string;
-  description: string;
-  preview: string;
-  pages: string;
-  type: string;
-  icon: string;
-  slug?: string;
-  file_url?: string;
-  external_url?: string;
-  restricted: boolean;
-  file_size?: number;
-  mime_type?: string;
-  ai_generated: boolean;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface DocumentFormData {
