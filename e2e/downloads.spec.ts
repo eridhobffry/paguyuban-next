@@ -11,6 +11,10 @@ test.describe("public downloads", () => {
       const res = await request.get(`/api/documents/public/download/${key}`);
       const status = res.status();
       expect([200, 302]).toContain(status);
+      if (status === 200) {
+        const buf = await res.body();
+        expect(buf.byteLength).toBeGreaterThan(0);
+      }
     });
   }
 });
