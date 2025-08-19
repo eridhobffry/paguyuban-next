@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("homepage anchors", () => {
+test.describe("@smoke homepage anchors", () => {
   test.beforeEach(async ({ page }) => {
     // Craft a dummy JWT accepted by middleware (no signature verification)
     const header = Buffer.from(

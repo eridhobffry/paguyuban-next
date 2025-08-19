@@ -88,3 +88,77 @@ jobs:
 
       - name: Smoke public APIs
         run: node scripts/smoke-public-apis.mjs http://localhost:3100
+
+  e2e-smoke-desktop:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, webkit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers (all)
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright smoke (@smoke) on ${{ matrix.project }}
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3100
+          CI: true
+          NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+        run: npx playwright test --grep @smoke --project=${{ matrix.project }}
+
+      - name: Upload Playwright report (${{ matrix.project }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}-smoke
+          path: playwright-report
+          if-no-files-found: ignore
+
+  e2e-smoke-mobile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [mobile-chrome, mobile-safari]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers (all)
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright mobile smoke (@smoke) on ${{ matrix.project }}
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3100
+          CI: true
+          NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+        run: npx playwright test --grep @smoke --project=${{ matrix.project }}
+
+      - name: Upload Playwright report (${{ matrix.project }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}-smoke
+          path: playwright-report
+          if-no-files-found: ignore

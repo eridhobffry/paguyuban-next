@@ -19,6 +19,16 @@ Acceptance criteria
 - Fast smoke job for downloads and anchors
 - CI uses a consistent baseURL with the Playwright web server
 
+Implementation update (QA hardening branch)
+
+- Target branch: `feature/qa-hardening-playwright-smoke` (to house these changes)
+- Added Playwright mobile projects `mobile-chrome` and `mobile-safari` in `playwright.config.ts` to enable mobile smoke.
+- Tagged `@smoke` on `e2e/home.spec.ts` for minimal cross-browser/mobile smoke.
+- CI: added two jobs to avoid duplication and keep scope clear:
+  - `e2e-smoke-desktop` (matrix: `chromium`, `webkit`) runs `--grep @smoke`.
+  - `e2e-smoke-mobile` (matrix: `mobile-chrome`, `mobile-safari`) runs `--grep @smoke`.
+- Kept existing Node-based `smoke` job (downloads/APIs) as complementary. Playwright smoke only covers page-level checks; no duplication.
+
 ---
 
 ### Previous Sprint — Homepage MVP Finalization
