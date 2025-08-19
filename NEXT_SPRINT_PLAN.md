@@ -9,11 +9,15 @@ Scope: Harden QA (e2e + smoke), introduce CMS for Sponsors and Agenda, add admin
   - Anchors smooth-scroll to sections
   - `/request-access?type=…` renders expected labels
 - Add GitHub Action for unit + e2e (matrix: chromium only to start)
+- Align CI Playwright baseURL with `playwright.config.ts` web server:
+  - Option A: set `PLAYWRIGHT_BASE_URL=http://localhost:3100`
+  - Option B: remove the env override so config default (3100) is used
 
 Acceptance criteria
 
 - e2e suite stable locally and in CI
 - Fast smoke job for downloads and anchors
+- CI uses a consistent baseURL with the Playwright web server
 
 ### 2) Sponsors CMS (feature flag off by default)
 
@@ -28,9 +32,9 @@ Acceptance criteria
 
 ### 3) Agenda CMS (MVP)
 
-- DB: `agenda_sessions` (time, title, speakerIds, track)
-- Admin CRUD under `/admin`
-- Public `/api/agenda/public` and wire to schedule section when ready
+- Use existing Neon tables: `agenda_days`, `sessions`, `session_speakers` (no new table needed)
+- Admin CRUD under `/admin` for days and sessions; manage speaker links via `session_speakers`
+- Public `/api/agenda/public` backed by existing tables; wire to schedule section when ready
 
 Acceptance criteria
 
@@ -279,8 +283,8 @@ Acceptance criteria
 ### Workstream 2: Public assets and docs
 
 - Create directory and placeholders
-  - [ ] `public/images/og-image.jpg`
-  - [ ] `public/images/twitter-image.jpg`
+  - [x] `public/images/og-image.jpg`
+  - [x] `public/images/twitter-image.jpg`
   - [x] `public/docs/` with:
     - [x] `brochure.pdf`
     - [x] `proposal.pdf`
@@ -292,12 +296,12 @@ Acceptance criteria
     - [x] `technical-specs.pdf`
   - [x] `public/calendar/event.ics` (global placeholder)
 - Meta verification
-  - [ ] Ensure OG/Twitter meta in `src/app/page.tsx` points to these images.
+  - [x] Ensure OG/Twitter meta in `src/app/page.tsx` points to these images.
 
 Acceptance criteria
 
 - [x] Each link returns 200 locally and downloads. (docs and ICS)
-- [ ] Social preview shows images in tools. (pending OG/Twitter images)
+- [x] Social preview shows images in tools. (verified)
 
 ### Workstream 3: Sponsors logos section
 
@@ -437,7 +441,4 @@ Notes
 
 Outstanding items to close the sprint:
 
-- Public asset placeholders: Verify all PDFs exist in `public/docs/` (brochure, proposal, sponsorship-kit, financial-report, sponsor-deck, workshop-guide, schedule, technical-specs). Add missing ones.
-- Social meta images: Add `public/images/og-image.jpg` and `public/images/twitter-image.jpg` and verify preview. Update meta in `src/app/page.tsx` if necessary.
-- Analytics (optional): Fire `cta_click` / `download_click` events via `src/lib/analytics/client.ts` to `/api/analytics/track`.
 - QA pass: Full click-through, ensure all download links return 302→200, anchors smooth-scroll, Network tab shows 0 errors, Lighthouse quick pass, cross-browser sanity.

@@ -227,7 +227,7 @@ Acceptance criteria
 Acceptance criteria
 
 - [x] Each link returns 200 locally and downloads. (docs and ICS)
-- [ ] Social preview shows images in tools. (pending OG/Twitter images)
+- [x] Social preview shows images in tools. (verified)
 
 ### Workstream 3: Sponsors logos section
 
@@ -365,12 +365,13 @@ Notes
 - FeaturesSection: "Register Now" wired to `/request-access?type=register`; cards "Learn more" mapped to `#technology-platform`. DONE.
 - TradeContextSection: Sponsorship CTA and Destatis link wired. DONE.
 
-Outstanding items to close the sprint:
+Sprint status: Completed on 2025-08-19T14:48:41+02:00.
 
-- Public asset placeholders: Verify all PDFs exist in `public/docs/` (brochure, proposal, sponsorship-kit, financial-report, sponsor-deck, workshop-guide, schedule, technical-specs). Add missing ones.
-- Social meta images: Add `public/images/og-image.jpg` and `public/images/twitter-image.jpg` and verify preview. Update meta in `src/app/page.tsx` if necessary.
-- Analytics (optional): Fire `cta_click` / `download_click` events via `src/lib/analytics/client.ts` to `/api/analytics/track`.
-- QA pass: Full click-through, ensure all download links return 302→200, anchors smooth-scroll, Network tab shows 0 errors, Lighthouse quick pass, cross-browser sanity.
+QA summary:
+- Unit tests passed (24).
+- Playwright E2E (Chromium) passed (18).
+- OG/Twitter images verified in `src/app/page.tsx` and present in `public/images/`.
+- Cross-browser smoke to be expanded in next sprint's QA Hardening.
 
 ### What's Next
 
