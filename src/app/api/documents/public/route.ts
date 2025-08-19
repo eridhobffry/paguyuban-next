@@ -4,6 +4,19 @@ import { desc } from "drizzle-orm";
 
 export async function GET() {
   try {
+    // CI smoke mode: return empty list without hitting DB
+    if (process.env.CI_SMOKE === "1") {
+      return NextResponse.json(
+        { documents: [] },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
+          },
+        }
+      );
+    }
+
     // Show both public and restricted docs on the homepage. For restricted docs,
     // mask file/external URLs; the UI shows a lock and uses a mailto request.
     const documents = await db

@@ -6,6 +6,19 @@ import type { SQL } from "drizzle-orm";
 
 export async function GET(_request: NextRequest) {
   try {
+    // CI smoke mode: return empty arrays without hitting DB
+    if (process.env.CI_SMOKE === "1") {
+      return NextResponse.json(
+        { artists: [] },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
+          },
+        }
+      );
+    }
+
     const { searchParams } = new URL(_request.url);
     const q = (searchParams.get("q") || "").trim();
     const tag = (searchParams.get("tag") || "").trim();
