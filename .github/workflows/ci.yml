@@ -33,7 +33,7 @@ jobs:
 
       - name: E2E tests (Chromium)
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:3100
           CI: true
           NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
         run: npx playwright test --project=chromium

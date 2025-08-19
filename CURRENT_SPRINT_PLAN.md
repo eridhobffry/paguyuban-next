@@ -1,4 +1,27 @@
-### Current Sprint Plan — Homepage MVP Finalization
+### Current Sprint Plan — QA Hardening, CMS Extensions, and Refactors
+
+Scope: Harden QA (e2e + smoke), introduce CMS for Sponsors and Agenda, add admin test coverage, and begin component refactors per `NEXT_SPRINT_COMPONENT_REFACTOR_PLAN.md`. Keep changes incremental and reversible.
+
+### 1) QA Hardening (in progress)
+
+- Expand Playwright e2e to cover:
+  - Public downloads return 200 (PDFs, ICS)
+  - Anchors smooth-scroll to sections
+  - `/request-access?type=…` renders expected labels
+- Add GitHub Action for unit + e2e (matrix: chromium only to start)
+- Align CI Playwright baseURL with `playwright.config.ts` web server:
+  - Option A: set `PLAYWRIGHT_BASE_URL=http://localhost:3100`
+  - Option B: remove the env override so config default (3100) is used
+
+Acceptance criteria
+
+- e2e suite stable locally and in CI
+- Fast smoke job for downloads and anchors
+- CI uses a consistent baseURL with the Playwright web server
+
+---
+
+### Previous Sprint — Homepage MVP Finalization
 
 Scope: Wire all homepage CTAs, replace broken anchors, add/download assets, and close hardcoded placeholders with minimal working paths. Keep changes incremental and reversible.
 
