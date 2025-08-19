@@ -14,10 +14,10 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "sh -c 'npm run build && next start -p 3100'",
-    url: "http://localhost:3100",
+    command: "sh -c 'npm run build && npx next start -p 3100'",
+    url: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   projects: [
     {

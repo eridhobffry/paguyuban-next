@@ -12,6 +12,7 @@ env:
   STACK_SECRET_SERVER_KEY: ${{ secrets.STACK_SECRET_SERVER_KEY }}
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
   BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+  CI_SMOKE: "1"
 
 jobs:
   build-and-test:

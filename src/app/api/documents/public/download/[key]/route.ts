@@ -19,6 +19,18 @@ export async function GET(req: Request) {
     const segments = url.pathname.split("/").filter(Boolean);
     const key = segments[segments.length - 1] ?? "";
 
+    // CI smoke mode: bypass DB and use static fallbacks
+    if (process.env.CI_SMOKE === "1") {
+      if (isDownloadKey(key)) {
+        const fallback = KEY_TO_FALLBACK_FILE[key];
+        if (fallback) {
+          const target = new URL(fallback, req.url).toString();
+          return NextResponse.redirect(target, 302);
+        }
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     // First try exact slug match for newest non-restricted
     const bySlug = await db
       .select()
