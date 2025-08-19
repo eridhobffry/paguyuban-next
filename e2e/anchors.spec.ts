@@ -18,7 +18,11 @@ test.describe("homepage anchors", () => {
       {
         name: "auth-token",
         value: token,
-        url: "http://localhost:3000",
+        domain: "localhost",
+        path: "/",
+        httpOnly: false,
+        secure: false,
+        sameSite: "Lax",
       },
     ]);
     await page.goto("/");
