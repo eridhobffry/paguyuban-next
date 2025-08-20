@@ -7,6 +7,7 @@ import {
   getPartnershipApplicationById,
   createPartnershipApplicationRecommendation,
 } from "@/lib/sql";
+import { generateText } from "@/lib/ai/gemini-client";
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -46,8 +47,12 @@ export async function POST(request: NextRequest) {
 
     const body = BodySchema.safeParse(await request.json());
     if (!body.success) return json({ error: "Invalid payload" }, 400);
-    const { applicationId, sentiment: bodySentiment, prospect, summary } =
-      body.data;
+    const {
+      applicationId,
+      sentiment: bodySentiment,
+      prospect,
+      summary,
+    } = body.data;
 
     await ensurePartnershipApplicationRecommendationsTable();
 
@@ -55,9 +60,6 @@ export async function POST(request: NextRequest) {
     if (!app) return json({ error: "Application not found" }, 404);
 
     // Build prompt for Gemini
-    const geminiKey = process.env.GEMINI_API_KEY || "";
-    const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
     const prompt = `You are a partner-success strategist for a tech event. Respond ONLY with strict JSON (no markdown) in this exact shape:
 {
@@ -92,8 +94,17 @@ APPLICATION: ${JSON.stringify({
 PERSONALIZATION (optional): ${JSON.stringify(prospect || {})}`;
 
     type Parsed = {
-      recommended_actions?: Array<{ title?: string; description?: string; priority?: string }>;
-      journey?: Array<{ stage?: string; insight?: string; risk?: string; recommendation?: string }>;
+      recommended_actions?: Array<{
+        title?: string;
+        description?: string;
+        priority?: string;
+      }>;
+      journey?: Array<{
+        stage?: string;
+        insight?: string;
+        risk?: string;
+        recommendation?: string;
+      }>;
       next_best_action?: string;
       prospect_summary?: string;
       follow_ups?: {
@@ -107,24 +118,15 @@ PERSONALIZATION (optional): ${JSON.stringify(prospect || {})}`;
     };
 
     let parsed: Parsed = {};
-    if (geminiKey) {
-      const resp = await fetch(`${endpoint}?key=${geminiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 600 },
-        }),
+    try {
+      let text = await generateText(prompt, {
+        temperature: 0.4,
+        maxOutputTokens: 600,
       });
-      if (!resp.ok) return json({ error: `gemini_${resp.status}` }, 502);
-      const data = await resp.json();
-      let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) text = jsonMatch[0];
-      try {
-        parsed = JSON.parse(text);
-      } catch {}
-    }
+      parsed = JSON.parse(text);
+    } catch {}
 
     // Fallback logic to ensure completeness without overwriting valid AI output
     const s = (bodySentiment ?? "neutral").toLowerCase();
@@ -143,7 +145,9 @@ PERSONALIZATION (optional): ${JSON.stringify(prospect || {})}`;
       parsed.follow_ups = {
         email_positive: `Subject: Next steps for Paguyuban Messe partnership\n\nHi ${name},\n\nGreat reviewing your application about ${
           app.interest || "your goals"
-        }. Based on what you shared${app.company ? ` at ${app.company}` : ""}, I suggest a quick 20‑minute call this week to walk through the ${
+        }. Based on what you shared${
+          app.company ? ` at ${app.company}` : ""
+        }, I suggest a quick 20‑minute call this week to walk through the ${
           app.budget ? `${app.budget} range ` : ""
         }options and ROI examples for your sector. I’ve attached our concise deck.\n\nWould Tue 10:00 or Wed 14:00 work?\n\nBest,\nPaguyuban Team`,
         email_neutral: `Subject: Info you can forward internally\n\nHi ${name},\n\nThanks for the application. I’m sharing a one‑pager and deck you can forward to your team outlining audience, tiers, and case studies. If helpful, I can tailor a short scenario for ${
@@ -177,7 +181,10 @@ PERSONALIZATION (optional): ${JSON.stringify(prospect || {})}`;
           : "Propose a 20‑minute call this week and attach the sponsorship deck tailored to their industry.";
     }
 
-    if (!parsed.recommended_actions || parsed.recommended_actions.length === 0) {
+    if (
+      !parsed.recommended_actions ||
+      parsed.recommended_actions.length === 0
+    ) {
       parsed.recommended_actions = [
         {
           title: "Schedule sponsorship call",

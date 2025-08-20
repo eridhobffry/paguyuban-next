@@ -1,4 +1,6 @@
 // Enhanced Gemini API Integration for Paguyuban Messe 2026 Chat Assistant
+import { generateText } from "@/lib/ai/gemini-client";
+import { loadKnowledgeOverlay, deepMerge } from "@/lib/knowledge/loader";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -6,6 +8,7 @@ interface ChatMessage {
   timestamp?: Date;
   metadata?: {
     topic?: string;
+    intent?: string;
     confidence?: number;
   };
 }
@@ -22,7 +25,7 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
   event: {
     name: "Paguyuban Messe 2026 - Level-Up Indonesia",
     dates: "August 7-8, 2026",
-    days: ["Wednesday, August 7", "Thursday, August 8"],
+    days: ["August 7", "August 8"],
     duration: "2 days",
     location: "Arena Berlin (Halle CE, Beach Club, and Club)",
     venue: {
@@ -199,7 +202,7 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
 
   program: {
     day1: {
-      title: "Culture & Business (August 5)",
+      title: "Culture & Business (August 7)",
       highlights: [
         "Opening Ceremony with Indonesian Ambassador (09:00-10:30)",
         "B2B Matchmaking & Exhibition (10:30-18:00)",
@@ -212,7 +215,7 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
       ],
     },
     day2: {
-      title: "Innovation & Creative Economy (August 6)",
+      title: "Innovation & Creative Economy (August 8)",
       highlights: [
         "Continued Exhibition & Startup Showcase (08:00-18:00)",
         "Mascot Contest with €1,000 prize (11:30-13:30)",
@@ -331,6 +334,33 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
   },
 };
 
+// Intent keywords to support finer-grained understanding beyond broad topics
+// Priority matters: put more specific/decisive intents first
+const INTENT_KEYWORDS: Record<string, string[]> = {
+  sponsorship_cost: [
+    "price",
+    "cost",
+    "how much",
+    "investment",
+    "tier price",
+  ],
+  sponsorship_interest: [
+    "benefits",
+    "package",
+    "offer",
+    "provide for sponsor",
+    "what do sponsors get",
+  ],
+  roi_query: ["roi", "return", "pipeline", "value", "lead generation"],
+  tech_details: [
+    "how does ai work",
+    "algorithm",
+    "platform details",
+    "matchmaking details",
+  ],
+  venue_details: ["capacity", "layout", "address", "getting there"],
+};
+
 // Topic Detection for Better Responses
 const TOPIC_KEYWORDS = {
   dates: ["when", "date", "kapan", "tanggal", "august", "2026"],
@@ -435,11 +465,10 @@ const ASSISTANT_PERSONALITIES: { [key: string]: AssistantPersonality } = {
 };
 
 export class PaguyubanChatService {
-  private apiKey: string;
-  private baseUrl =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
   private conversationHistory: ChatMessage[] = [];
   private sessionStartTime: Date;
+  // Runtime knowledge overlay, defaults to static constant and may be enriched from JSON/CSV
+  private knowledge: typeof PAGUYUBAN_MESSE_KNOWLEDGE = PAGUYUBAN_MESSE_KNOWLEDGE;
   private userProfile: {
     interests: string[];
     language: string;
@@ -450,8 +479,18 @@ export class PaguyubanChatService {
   };
 
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
     this.sessionStartTime = new Date();
+    // Best-effort async knowledge overlay (JSON/CSV). Non-blocking.
+    void (async () => {
+      try {
+        const overlay = await loadKnowledgeOverlay();
+        if (overlay) {
+          this.knowledge = deepMerge(PAGUYUBAN_MESSE_KNOWLEDGE, overlay);
+        }
+      } catch (e) {
+        console.warn("Knowledge overlay load failed:", e);
+      }
+    })();
   }
 
   // Detect user's primary interest/topic
@@ -465,6 +504,19 @@ export class PaguyubanChatService {
     }
 
     return "general";
+  }
+
+  // Detect more granular intent; derive topic when possible
+  private detectIntent(message: string): { topic: string; intent: string } {
+    const lowerMessage = message.toLowerCase();
+    for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS)) {
+      if (keywords.some((keyword) => lowerMessage.includes(keyword))) {
+        const topic = intent.split("_")[0] || "general";
+        return { topic, intent };
+      }
+    }
+    const topic = this.detectTopic(message);
+    return { topic, intent: "general_query" };
   }
 
   // Detect language preference
@@ -499,12 +551,44 @@ export class PaguyubanChatService {
     return "en";
   }
 
+  // Resolve inline function-call style lookups like [get:path.to.value]
+  private resolveFunctionCall(text: string): string {
+    const regex = /\[get:([\w.]+)\]/g;
+    return text.replace(regex, (_match, path: string) => {
+      const keys = path.split(".");
+      let value: unknown = this.knowledge as unknown;
+      for (const key of keys) {
+        if (
+          value !== null &&
+          typeof value === "object" &&
+          key in (value as Record<string, unknown>)
+        ) {
+          value = (value as Record<string, unknown>)[key];
+        } else {
+          return `[Data for ${path} not found]`;
+        }
+      }
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+      ) {
+        return String(value);
+      }
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    });
+  }
+
   // Build comprehensive context based on topic
   private buildTopicContext(topic: string): string {
     const contexts: { [key: string]: string } = {
       dates: `Event Dates: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.dates}
-Day 1 (Wednesday): ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day1.title}
-Day 2 (Thursday): ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day2.title}
+Day 1: ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day1.title}
+Day 2: ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day2.title}
 Duration: 2 days of intensive business networking and cultural celebration`,
 
       location: `Venue: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.location}
@@ -570,9 +654,9 @@ Vision: Bringing Indonesian entrepreneurship, culture and technology onto the Eu
   ): string {
     const responses = {
       dates: {
-        en: `Paguyuban Messe 2026 takes place on August 7-8, 2026 (Wednesday-Thursday) at Arena Berlin. Day 1 focuses on Culture & Business with opening ceremony, B2B matchmaking, cultural workshops, and evening concerts. Day 2 emphasizes Innovation & Creative Economy with startup showcases, creative summits, and the grand finale with Dewa 19.`,
-        id: `Paguyuban Messe 2026 berlangsung pada 7-8 Agustus 2026 (Rabu-Kamis) di Arena Berlin. Hari 1 fokus pada Budaya & Bisnis dengan upacara pembukaan, B2B matchmaking, workshop budaya, dan konser malam. Hari 2 menekankan Inovasi & Ekonomi Kreatif dengan showcase startup, summit kreatif, dan grand finale bersama Dewa 19.`,
-        de: `Die Paguyuban Messe 2026 findet am 7.-8. August 2026 (Mittwoch-Donnerstag) in der Arena Berlin statt. Tag 1 konzentriert sich auf Kultur & Business, Tag 2 auf Innovation & Kreativwirtschaft.`,
+        en: `Paguyuban Messe 2026 takes place on August 7-8, 2026 at Arena Berlin. Day 1 focuses on Culture & Business with opening ceremony, B2B matchmaking, cultural workshops, and evening concerts. Day 2 emphasizes Innovation & Creative Economy with startup showcases, creative summits, and the grand finale with Dewa 19.`,
+        id: `Paguyuban Messe 2026 berlangsung pada 7-8 Agustus 2026 di Arena Berlin. Hari 1 fokus pada Budaya & Bisnis dengan upacara pembukaan, B2B matchmaking, workshop budaya, dan konser malam. Hari 2 menekankan Inovasi & Ekonomi Kreatif dengan showcase startup, summit kreatif, dan grand finale bersama Dewa 19.`,
+        de: `Die Paguyuban Messe 2026 findet am 7.-8. August 2026 in der Arena Berlin statt. Tag 1 konzentriert sich auf Kultur & Business, Tag 2 auf Innovation & Kreativwirtschaft.`,
       },
       sponsorship: {
         en: `We offer five sponsorship tiers from €15,000 (Bronze) to €120,000 (Title Sponsor). Title sponsors receive naming rights, 50 AI-facilitated introductions, 20 VIP passes, and speaking opportunities. With 77.6% of our €1M+ revenue from sponsorship, partners can expect €200,000-€650,000 in business pipeline over 12-18 months. Each tier includes AI matchmaking, brand visibility to 5-8M impressions, and access to 1,440+ business professionals.`,
@@ -594,7 +678,7 @@ Vision: Bringing Indonesian entrepreneurship, culture and technology onto the Eu
     assistantType: "ucup" | "rima" = "ucup"
   ): Promise<string> {
     try {
-      const topic = this.detectTopic(message);
+      const { topic, intent } = this.detectIntent(message);
       const language = this.detectLanguage(message);
 
       // Update user profile
@@ -608,7 +692,7 @@ Vision: Bringing Indonesian entrepreneurship, culture and technology onto the Eu
         role: "user",
         content: message,
         timestamp: new Date(),
-        metadata: { topic },
+        metadata: { topic, intent },
       });
 
       // Build comprehensive prompt
@@ -648,51 +732,47 @@ DETECTED TOPIC: ${topic}
 
 Respond as ${selectedPersonality.name} with accurate, specific information. Include relevant numbers, dates, and concrete benefits. Keep response focused and actionable.`;
 
-      // Call Gemini API
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 600,
-            stopSequences: [],
+      // Call Gemini API via centralized client
+      let text = await generateText(prompt, {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 600,
+        stopSequences: [],
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
           },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-          ],
-        }),
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+        ],
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      // If the model requested concrete data via [get:...] patterns, resolve and re-ask for a final answer
+      if (text && text.includes("[get:")) {
+        const resolvedText = this.resolveFunctionCall(text);
+        const secondPrompt = `Here is the data you requested: ${resolvedText}. Now, please provide the final, user-facing answer. Be precise and concise.`;
+        text = await generateText(secondPrompt, {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 400,
+          stopSequences: [],
+        });
       }
 
-      const data = await response.json();
-
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      if (!text) {
         // Use smart fallback response
         const fallback = this.generateSmartResponse(topic, language);
         if (fallback) {
@@ -707,7 +787,7 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
         throw new Error("No response from API");
       }
 
-      const assistantResponse = data.candidates[0].content.parts[0].text;
+      const assistantResponse = text;
 
       // Add to history with metadata
       this.conversationHistory.push({

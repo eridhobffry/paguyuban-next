@@ -163,6 +163,12 @@ Acceptance criteria
 - Fully dynamic sponsor logos CMS
 - Advanced chat voice transcription pipeline
 
+### Deferred (scheduled for next sprint)
+
+- Knowledge Overlay CMS (Neon CRUD for chat knowledge overlays)
+  - See `NEXT_SPRINT_PLAN.md` → Section "4) Knowledge Overlay CMS (Phase 2 — Neon CRUD for chat knowledge)"
+  - Includes DB overlay JSON, admin API + UI, loader TTL cache, and tests
+
 ### Backlog (post-sprint)
 
 - Sponsors CMS: Add `sponsors` table (DB), `/api/admin/sponsors` (CRUD), admin page at `src/app/admin/sponsors/page.tsx` with upload flow, optional `/api/sponsors/public` feed, and wire `SponsorsSection.tsx` to fetch. Enable logos later by uploading assets to `public/images/sponsors/*` and flipping `SHOW_LOGOS` to true.

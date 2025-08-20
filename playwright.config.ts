@@ -18,6 +18,15 @@ export default defineConfig({
     url: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
     reuseExistingServer: false,
     timeout: 180_000,
+    env: {
+      NEXT_PUBLIC_FEATURE_SPONSORS: "1",
+      JWT_SECRET: process.env.JWT_SECRET || "your-secret-key-change-in-production",
+      ...(process.env.DATABASE_URL ? { DATABASE_URL: process.env.DATABASE_URL } : {}),
+      // If set locally/CI, this enables logo upload path to work during tests
+      ...(process.env.BLOB_READ_WRITE_TOKEN
+        ? { BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN }
+        : {}),
+    },
   },
   projects: [
     {

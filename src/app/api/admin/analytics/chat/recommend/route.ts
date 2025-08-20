@@ -4,6 +4,7 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import type { User } from "@/lib/sql";
 import { db } from "@/lib/db/drizzle";
 import { sql as dsql } from "drizzle-orm";
+import { generateContent } from "@/lib/ai/gemini-client";
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -31,6 +32,126 @@ const BodySchema = z.object({
 
 type ChatRow = { role: string; message: string };
 
+// Zod schema for AI JSON output with camel/snake tolerance
+const AiResponseSchema = z
+  .object({
+    recommended_actions: z
+      .array(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+          priority: z.enum(["high", "medium", "low"]).optional(),
+        })
+      )
+      .optional(),
+    recommendedActions: z
+      .array(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+          priority: z.enum(["high", "medium", "low"]).optional(),
+        })
+      )
+      .optional(),
+    journey: z
+      .array(
+        z.object({
+          stage: z.string(),
+          insight: z.string(),
+          risk: z.string(),
+          recommendation: z.string(),
+        })
+      )
+      .optional(),
+    next_best_action: z.string().optional(),
+    nextBestAction: z.string().optional(),
+    prospect_summary: z.string().optional(),
+    prospectSummary: z.string().optional(),
+    sentiment: z.enum(["positive", "neutral", "negative"]).optional(),
+    follow_ups: z
+      .object({
+        email_positive: z.string().optional(),
+        email_neutral: z.string().optional(),
+        email_negative: z.string().optional(),
+        whatsapp_positive: z.string().optional(),
+        whatsapp_neutral: z.string().optional(),
+        whatsapp_negative: z.string().optional(),
+        emailPositive: z.string().optional(),
+        emailNeutral: z.string().optional(),
+        emailNegative: z.string().optional(),
+        whatsappPositive: z.string().optional(),
+        whatsappNeutral: z.string().optional(),
+        whatsappNegative: z.string().optional(),
+      })
+      .optional(),
+    followUps: z
+      .object({
+        email_positive: z.string().optional(),
+        email_neutral: z.string().optional(),
+        email_negative: z.string().optional(),
+        whatsapp_positive: z.string().optional(),
+        whatsapp_neutral: z.string().optional(),
+        whatsapp_negative: z.string().optional(),
+        emailPositive: z.string().optional(),
+        emailNeutral: z.string().optional(),
+        emailNegative: z.string().optional(),
+        whatsappPositive: z.string().optional(),
+        whatsappNeutral: z.string().optional(),
+        whatsappNegative: z.string().optional(),
+      })
+      .optional(),
+  })
+  .transform((data) => {
+    const follow = (data.follow_ups || data.followUps) as
+      | Record<string, string>
+      | undefined;
+    const normalizedFollow = follow
+      ? {
+          email_positive: follow.email_positive || follow.emailPositive || "",
+          email_neutral: follow.email_neutral || follow.emailNeutral || "",
+          email_negative: follow.email_negative || follow.emailNegative || "",
+          whatsapp_positive:
+            follow.whatsapp_positive || follow.whatsappPositive || "",
+          whatsapp_neutral:
+            follow.whatsapp_neutral || follow.whatsappNeutral || "",
+          whatsapp_negative:
+            follow.whatsapp_negative || follow.whatsappNegative || "",
+        }
+      : undefined;
+    return {
+      recommended_actions:
+        data.recommended_actions || data.recommendedActions || [],
+      journey: data.journey || [],
+      next_best_action: data.next_best_action || data.nextBestAction || "",
+      prospect_summary: data.prospect_summary || data.prospectSummary || "",
+      sentiment: data.sentiment,
+      follow_ups: normalizedFollow,
+    } as {
+      recommended_actions: Array<{
+        title: string;
+        description: string;
+        priority?: "high" | "medium" | "low";
+      }>;
+      journey: Array<{
+        stage: string;
+        insight: string;
+        risk: string;
+        recommendation: string;
+      }>;
+      next_best_action: string;
+      prospect_summary: string;
+      sentiment?: "positive" | "neutral" | "negative";
+      follow_ups?: {
+        email_positive?: string;
+        email_neutral?: string;
+        email_negative?: string;
+        whatsapp_positive?: string;
+        whatsapp_neutral?: string;
+        whatsapp_negative?: string;
+      };
+    };
+  });
+
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get("auth-token")?.value;
@@ -53,28 +174,21 @@ export async function POST(request: NextRequest) {
       transcript = rows.rows || [];
     }
 
-    const geminiKey = process.env.GEMINI_API_KEY || "";
-    const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
+    // Build prompt (JSON mode removes need for strict JSON admonitions)
+    const prompt = `You are a senior CX strategist. Analyze the following chat data and respond with a JSON object that adheres to the provided schema.
+Focus on concrete next steps for sponsorship conversion.
 
-    const prompt = `You are a senior CX strategist. Respond ONLY with strict JSON (no markdown, no commentary) in this exact shape:
+SCHEMA:
 {
   "recommended_actions": [{"title": string, "description": string, "priority": "high"|"medium"|"low"}],
   "journey": [{"stage": string, "insight": string, "risk": string, "recommendation": string}],
   "next_best_action": string,
   "prospect_summary": string,
   "sentiment": "positive"|"neutral"|"negative",
-  "follow_ups": {
-    "email_positive": string,
-    "email_neutral": string,
-    "email_negative": string,
-    "whatsapp_positive": string,
-    "whatsapp_neutral": string,
-    "whatsapp_negative": string
-  }
+  "follow_ups": { "email_positive": string, "email_neutral": string, "email_negative": string, "whatsapp_positive": string, "whatsapp_neutral": string, "whatsapp_negative": string }
 }
-Use the chat SUMMARY and TRANSCRIPT below. Focus on concrete next steps for sponsorship conversion.
 
+DATA:
 SUMMARY: ${body.summary ?? "(none)"}
 SENTIMENT: ${body.sentiment ?? "(unknown)"}
 PROSPECT (if any): ${JSON.stringify(body.prospect || {})}
@@ -83,148 +197,40 @@ TRANSCRIPT:\n${transcript
       .join("\n")
       .slice(0, 4000)}\n`;
 
-    const resp = await fetch(`${endpoint}?key=${geminiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 600 },
-      }),
-    });
-    if (!resp.ok) return json({ error: `gemini_${resp.status}` }, 502);
-    const data = await resp.json();
-    let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) text = jsonMatch[0];
-    const parsed: {
-      recommended_actions?: Array<{
-        title?: string;
-        description?: string;
-        priority?: string;
-      }>;
-      journey?: Array<{
-        stage?: string;
-        insight?: string;
-        risk?: string;
-        recommendation?: string;
-      }>;
-      next_best_action?: string;
-      prospect_summary?: string;
-      sentiment?: string;
-      follow_ups?: {
-        email_positive?: string;
-        email_neutral?: string;
-        email_negative?: string;
-        whatsapp_positive?: string;
-        whatsapp_neutral?: string;
-        whatsapp_negative?: string;
-      };
-    } = {};
+    let aiJson: unknown;
     try {
-      const raw = JSON.parse(text) as unknown;
-      // Normalize camelCase keys to expected snake_case structure
-      if (raw && typeof raw === "object") {
-        const r = raw as Record<string, unknown>;
-        // recommended_actions / recommendedActions
-        const ra1 = r["recommended_actions"];
-        if (Array.isArray(ra1)) {
-          parsed.recommended_actions = ra1 as Array<{
-            title?: string;
-            description?: string;
-            priority?: string;
-          }>;
-        } else {
-          const ra2 = r["recommendedActions"];
-          if (Array.isArray(ra2)) {
-            parsed.recommended_actions = ra2 as Array<{
-              title?: string;
-              description?: string;
-              priority?: string;
-            }>;
-          }
-        }
+      aiJson = await generateContent<object>(prompt, {
+        temperature: 0.4,
+        maxOutputTokens: 800,
+        responseMimeType: "application/json",
+      });
+    } catch {
+      return json({ error: "gemini_502" }, 502);
+    }
 
-        // journey
-        const jv = r["journey"];
-        if (Array.isArray(jv)) parsed.journey = jv as Array<{
-          stage?: string;
-          insight?: string;
-          risk?: string;
-          recommendation?: string;
-        }>;
-
-        // next_best_action / nextBestAction
-        const nba = (r["next_best_action"] ?? r["nextBestAction"]) as unknown;
-        parsed.next_best_action = typeof nba === "string" ? nba : undefined;
-
-        // prospect_summary / prospectSummary
-        const ps = (r["prospect_summary"] ?? r["prospectSummary"]) as unknown;
-        parsed.prospect_summary = typeof ps === "string" ? ps : undefined;
-
-        // sentiment (optional)
-        const rsent = r["sentiment"] as unknown;
-        if (typeof rsent === "string") {
-          parsed.sentiment = rsent;
-        }
-
-        // follow_ups / followUps
-        const fu = (r["follow_ups"] ?? r["followUps"]) as unknown;
-        if (fu && typeof fu === "object") {
-          const furec = fu as Record<string, unknown>;
-          parsed.follow_ups = {
-            email_positive:
-              (typeof furec["email_positive"] === "string"
-                ? (furec["email_positive"] as string)
-                : typeof furec["emailPositive"] === "string"
-                ? (furec["emailPositive"] as string)
-                : ""),
-            email_neutral:
-              (typeof furec["email_neutral"] === "string"
-                ? (furec["email_neutral"] as string)
-                : typeof furec["emailNeutral"] === "string"
-                ? (furec["emailNeutral"] as string)
-                : ""),
-            email_negative:
-              (typeof furec["email_negative"] === "string"
-                ? (furec["email_negative"] as string)
-                : typeof furec["emailNegative"] === "string"
-                ? (furec["emailNegative"] as string)
-                : ""),
-            whatsapp_positive:
-              (typeof furec["whatsapp_positive"] === "string"
-                ? (furec["whatsapp_positive"] as string)
-                : typeof furec["whatsappPositive"] === "string"
-                ? (furec["whatsappPositive"] as string)
-                : ""),
-            whatsapp_neutral:
-              (typeof furec["whatsapp_neutral"] === "string"
-                ? (furec["whatsapp_neutral"] as string)
-                : typeof furec["whatsappNeutral"] === "string"
-                ? (furec["whatsappNeutral"] as string)
-                : ""),
-            whatsapp_negative:
-              (typeof furec["whatsapp_negative"] === "string"
-                ? (furec["whatsapp_negative"] as string)
-                : typeof furec["whatsappNegative"] === "string"
-                ? (furec["whatsappNegative"] as string)
-                : ""),
-          };
-        }
-      }
-    } catch {}
+    const validated = AiResponseSchema.safeParse(aiJson);
+    if (!validated.success) {
+      console.error("AI response failed validation", validated.error);
+      return json({ error: "gemini_validation_failed" }, 502);
+    }
+    const parsed = validated.data;
 
     // Normalize sentiment from model or body
     const modelSent = (parsed.sentiment || "").toLowerCase();
     const bodySent = (body.sentiment || "").toLowerCase();
-    function normalizeSent(s: string): "positive" | "neutral" | "negative" | undefined {
+    function normalizeSent(
+      s: string
+    ): "positive" | "neutral" | "negative" | undefined {
       if (!s) return undefined;
       if (s.startsWith("pos")) return "positive";
       if (s.startsWith("neg")) return "negative";
       if (s.startsWith("neu")) return "neutral";
-      if (s === "positive" || s === "negative" || s === "neutral") return s as "positive" | "neutral" | "negative";
+      if (s === "positive" || s === "negative" || s === "neutral")
+        return s as "positive" | "neutral" | "negative";
       return undefined;
     }
-    const sentiment = normalizeSent(modelSent) ?? normalizeSent(bodySent) ?? "neutral";
+    const sentiment =
+      normalizeSent(modelSent) ?? normalizeSent(bodySent) ?? "neutral";
 
     // Build sensible defaults only when missing pieces, without overwriting
     const p = body.prospect || {};

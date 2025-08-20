@@ -171,6 +171,7 @@ What remains from Phase 4
 - Schedule sessionizer (cron/edge) and surface engagement trend/averages.
 - Admin accessibility audit (contrast/labels/keyboard-only QA).
 - Optional: gated real-time reads pilot for `speakers` when infra is ready.
+ - Knowledge Overlay CMS (Neon CRUD for chat knowledge overlays) — scheduled next sprint. See `NEXT_SPRINT_PLAN.md` → Section "4) Knowledge Overlay CMS (Phase 2 — Neon CRUD for chat knowledge)".
 
 #### 4.1 Admin Shell & Navigation
 

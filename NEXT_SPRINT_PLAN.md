@@ -40,7 +40,21 @@ Acceptance criteria
 
 - Agenda visible when feature flag enabled
 
-### 4) Admin Test Coverage
+### 4) Knowledge Overlay CMS (Phase 2 — Neon CRUD for chat knowledge)
+
+- DB: `knowledge` table with `overlay` JSONB, `updated_at`, optional `is_active`
+- API: `GET /api/admin/knowledge`, `PUT /api/admin/knowledge` (admin-protected, Zod-validated)
+- Loader/Service: add `loadDbKnowledgeOverlay()` with short TTL cache; merge static + file + DB via `deepMerge` from `src/lib/knowledge/loader.ts`
+- Admin UI: minimal JSON editor with validation; preview key paths (e.g., `event.dates`, `financials.revenue.total`)
+- Tests: repo unit tests, API route tests, and chat integration verifying `[get:path]` uses merged overlay
+
+Acceptance criteria
+
+- Admin can edit overlay JSON and save; API returns updated document
+- Chat uses updated knowledge within TTL without redeploys
+- New tests for repo/API/integration pass in CI
+
+### 5) Admin Test Coverage
 
 - Add unit tests for admin CRUD validation (Zod schemas)
 - Basic route tests for admin APIs (happy path + validation errors)
@@ -49,7 +63,7 @@ Acceptance criteria
 
 - New tests passing in CI
 
-### 5) Refactors (start top 2 from plan)
+### 6) Refactors (start top 2 from plan)
 
 - `src/app/admin/analytics/page.tsx` split into subcomponents
 - `src/components/admin/DocumentUpload.tsx` split as per plan
@@ -63,8 +77,8 @@ Acceptance criteria
 - Day 1: QA hardening and CI job
 - Day 2: Sponsors CMS DB + admin
 - Day 3: Agenda CMS DB + admin
-- Day 4: Admin tests
-- Day 5: Refactors (begin top 2)
+- Day 4: Knowledge Overlay CMS (Neon CRUD + loader/cache)
+- Day 5: Admin tests (Refactors move to stretch if time)
 
 ### Definition of Done
 
