@@ -58,8 +58,8 @@ jobs:
           done
           echo "Postgres did not become ready in time"; exit 1
 
-      - name: Run DB migrations (Drizzle)
-        run: npx drizzle-kit migrate --config=drizzle.config.ts
+      - name: Apply schema (Drizzle push)
+        run: npx drizzle-kit push --config=drizzle.config.ts
 
       - name: Seed sponsors data
         run: node scripts/seed-sponsors.mjs
