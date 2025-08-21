@@ -62,7 +62,7 @@ jobs:
         run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
       - name: Apply schema (Drizzle push)
-        run: npx drizzle-kit push --config=drizzle.config.ts --yes
+        run: npx drizzle-kit push --config=drizzle.config.ts
 
       - name: Verify sponsors tables exist
         run: |
@@ -88,6 +88,23 @@ jobs:
 
       - name: Unit tests
         run: npm run test:unit:run
+
+      - name: Build app
+        run: npm run -s build
+
+      - name: Start app (port 3100)
+        run: nohup npx next start -p 3100 >/dev/null 2>&1 & echo $! > next.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -sf http://localhost:3100/ >/dev/null; then
+              echo "Server is up"; exit 0;
+            fi
+            echo "Waiting for Next.js on :3100...";
+            sleep 2
+          done
+          echo "Server failed to start"; exit 1
 
       - name: Install Playwright Browsers (Chromium only)
         run: npx playwright install --with-deps chromium
