@@ -61,9 +61,6 @@ jobs:
       - name: Ensure pgcrypto extension
         run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
-      - name: Apply schema (Drizzle push)
-        run: npx drizzle-kit push --config=drizzle.config.ts
-
       - name: Verify sponsors tables exist
         run: |
           psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsor_tiers');"
