@@ -84,18 +84,27 @@ test.describe.serial("Admin Sponsors CRUD", () => {
 
     // Wait for both the POST request and subsequent GET request to complete
     const savePromise = Promise.all([
-      // Wait for POST to /api/admin/sponsors
+      // Wait for POST to /api/admin/sponsors (accept any response, not just ok())
       page.waitForResponse(
         (resp) =>
           resp.url().includes("/api/admin/sponsors") &&
-          resp.request().method() === "POST" &&
-          resp.ok()
+          resp.request().method() === "POST"
       ),
       // Click save button
       page.getByRole("button", { name: /save/i }).click(),
     ]);
 
-    await savePromise;
+    const [response] = await savePromise;
+
+    // Log response details if not ok for debugging
+    if (!response.ok()) {
+      console.error("POST request failed:", response.status(), response.url());
+      const body = await response.text();
+      console.error("Response body:", body);
+      throw new Error(
+        `POST request failed with status ${response.status()}: ${body}`
+      );
+    }
 
     // Wait for the GET request that refreshes the table data
     await page.waitForResponse(
@@ -125,18 +134,31 @@ test.describe.serial("Admin Sponsors CRUD", () => {
 
     // Wait for PUT request and table refresh
     const updatePromise = Promise.all([
-      // Wait for PUT to /api/admin/sponsors
+      // Wait for PUT to /api/admin/sponsors (accept any response, not just ok())
       page.waitForResponse(
         (resp) =>
           resp.url().includes("/api/admin/sponsors") &&
-          resp.request().method() === "PUT" &&
-          resp.ok()
+          resp.request().method() === "PUT"
       ),
       // Click save button
       page.getByRole("button", { name: /save/i }).click(),
     ]);
 
-    await updatePromise;
+    const [updateResponse] = await updatePromise;
+
+    // Log response details if not ok for debugging
+    if (!updateResponse.ok()) {
+      console.error(
+        "PUT request failed:",
+        updateResponse.status(),
+        updateResponse.url()
+      );
+      const body = await updateResponse.text();
+      console.error("Response body:", body);
+      throw new Error(
+        `PUT request failed with status ${updateResponse.status()}: ${body}`
+      );
+    }
 
     // Wait for the GET request that refreshes the table data
     await page.waitForResponse(
@@ -174,13 +196,26 @@ test.describe.serial("Admin Sponsors CRUD", () => {
         page.waitForResponse(
           (resp) =>
             resp.url().includes("/api/admin/sponsors") &&
-            resp.request().method() === "PUT" &&
-            resp.ok()
+            resp.request().method() === "PUT"
         ),
         page.getByRole("button", { name: /save/i }).click(),
       ]);
 
-      await logoSavePromise;
+      const [logoResponse] = await logoSavePromise;
+
+      // Log response details if not ok for debugging
+      if (!logoResponse.ok()) {
+        console.error(
+          "PUT request (logo) failed:",
+          logoResponse.status(),
+          logoResponse.url()
+        );
+        const body = await logoResponse.text();
+        console.error("Response body:", body);
+        throw new Error(
+          `PUT request (logo) failed with status ${logoResponse.status()}: ${body}`
+        );
+      }
 
       // Wait for table refresh after logo update
       await page.waitForResponse(
@@ -203,8 +238,7 @@ test.describe.serial("Admin Sponsors CRUD", () => {
       page.waitForResponse(
         (resp) =>
           resp.url().includes("/api/admin/sponsors") &&
-          resp.request().method() === "DELETE" &&
-          resp.ok()
+          resp.request().method() === "DELETE"
       ),
       new Promise<void>((resolve) => {
         page.once("dialog", (dialog) => {
@@ -215,7 +249,21 @@ test.describe.serial("Admin Sponsors CRUD", () => {
       row.getByRole("button", { name: /delete/i }).click(),
     ]);
 
-    await deletePromise;
+    const [deleteResponse] = await deletePromise;
+
+    // Log response details if not ok for debugging
+    if (!deleteResponse.ok()) {
+      console.error(
+        "DELETE request failed:",
+        deleteResponse.status(),
+        deleteResponse.url()
+      );
+      const body = await deleteResponse.text();
+      console.error("Response body:", body);
+      throw new Error(
+        `DELETE request failed with status ${deleteResponse.status()}: ${body}`
+      );
+    }
 
     // Wait for table refresh after delete
     await page.waitForResponse(
