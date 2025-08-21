@@ -58,8 +58,27 @@ jobs:
           done
           echo "Postgres did not become ready in time"; exit 1
 
+      - name: Ensure pgcrypto extension
+        run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
       - name: Apply schema (Drizzle push)
-        run: npx drizzle-kit push --config=drizzle.config.ts
+        run: npx drizzle-kit push --config=drizzle.config.ts --yes
+
+      - name: Verify sponsors tables exist
+        run: |
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsor_tiers');"
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsors');"
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsor_logos');"
+
+      - name: Ensure sponsors schema (fallback via SQL)
+        run: |
+          OUT=$(psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.sponsor_tiers')")
+          if [ "$OUT" != "public.sponsor_tiers" ]; then
+            echo "sponsor_tiers missing; applying SQL fallback from drizzle/2025-08-20_add_sponsors.sql"
+            psql "$DATABASE_URL" -f drizzle/2025-08-20_add_sponsors.sql
+          else
+            echo "sponsor_tiers present; skipping SQL fallback"
+          fi
 
       - name: Seed sponsors data
         run: node scripts/seed-sponsors.mjs
