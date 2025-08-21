@@ -2,7 +2,7 @@
 
 Scope: Harden QA (e2e + smoke), introduce CMS for Sponsors and Agenda, add admin test coverage, and begin component refactors per `NEXT_SPRINT_COMPONENT_REFACTOR_PLAN.md`. Keep changes incremental and reversible.
 
-### 1) QA Hardening (in progress)
+### 1) QA Hardening (completed for this sprint)
 
 - Expand Playwright e2e to cover:
   - Public downloads return 200 (PDFs, ICS)
@@ -21,13 +21,14 @@ Acceptance criteria
 
 Implementation update (QA hardening branch)
 
-- Target branch: `feature/qa-hardening-playwright-smoke` (to house these changes)
-- Added Playwright mobile projects `mobile-chrome` and `mobile-safari` in `playwright.config.ts` to enable mobile smoke.
-- Tagged `@smoke` on `e2e/home.spec.ts` for minimal cross-browser/mobile smoke.
-- CI: added two jobs to avoid duplication and keep scope clear:
-  - `e2e-smoke-desktop` (matrix: `chromium`, `webkit`) runs `--grep @smoke`.
-  - `e2e-smoke-mobile` (matrix: `mobile-chrome`, `mobile-safari`) runs `--grep @smoke`.
-- Kept existing Node-based `smoke` job (downloads/APIs) as complementary. Playwright smoke only covers page-level checks; no duplication.
+ - Target branch: `feature/qa-hardening-playwright-smoke` (to house these changes)
+ - Added Playwright mobile projects `mobile-chrome` and `mobile-safari` in `playwright.config.ts` to enable mobile smoke.
+ - Tagged `@smoke` on `e2e/home.spec.ts` for minimal cross-browser/mobile smoke.
+ - CI: added two jobs to avoid duplication and keep scope clear:
+   - `e2e-smoke-desktop` (matrix: `chromium`, `webkit`) runs `--grep @smoke`.
+   - `e2e-smoke-mobile` (matrix: `mobile-chrome`, `mobile-safari`) runs `--grep @smoke`.
+ - Kept existing Node-based `smoke` job (downloads/APIs) as complementary. Playwright smoke only covers page-level checks; no duplication.
+ - CI refined: removed interactive `drizzle-kit push`; rely on SQL fallback `drizzle/2025-08-20_add_sponsors.sql` and `scripts/seed-sponsors.mjs`. Next.js server builds/starts on :3100 and Playwright reuses it.
 
 ---
 
@@ -404,14 +405,20 @@ Notes
 - FeaturesSection: "Register Now" wired to `/request-access?type=register`; cards "Learn more" mapped to `#technology-platform`. DONE.
 - TradeContextSection: Sponsorship CTA and Destatis link wired. DONE.
 
-Sprint status: Completed on 2025-08-19T14:48:41+02:00.
+Sprint status: Completed on 2025-08-21T11:50:00+02:00.
 
 QA summary:
-- Unit tests passed (24).
-- Playwright E2E (Chromium) passed (18).
+- Unit tests passed (37).
+- Playwright E2E passed (19) including sponsors admin flow.
 - OG/Twitter images verified in `src/app/page.tsx` and present in `public/images/`.
-- Cross-browser smoke to be expanded in next sprint's QA Hardening.
+- CI stable: non-interactive DB setup (SQL fallback), single web server on :3100 with Playwright reuse.
 
 ### What's Next
 
-- Prepare the next sprint plan in `NEXT_SPRINT_PLAN.md` (QA hardening, sponsors logos CMS, agenda CMS, admin test coverage, and refactor milestones). Link major carry-overs and backlog items, and sequence into small, incremental PRs.
+- Merge `feature/qa-hardening-playwright-smoke` into `master`.
+- Kick off next sprint per `NEXT_SPRINT_PLAN.md` with focus on:
+  - Knowledge Overlay CMS (DB/API/UI/loader/cache/tests).
+  - Agenda CMS MVP (admin CRUD + public API; behind flag).
+  - Admin test coverage expansion (validation + route tests).
+  - Component refactors (admin analytics page, document upload split).
+  - Playwright smoke already added; expand selective coverage as needed.
