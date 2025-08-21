@@ -16,8 +16,18 @@ export default defineConfig({
   webServer: {
     command: "sh -c 'npm run build && npx next start -p 3100'",
     url: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
-    reuseExistingServer: false,
+    // In CI we may pre-start the server in the workflow; reuse if it's already up.
+    reuseExistingServer: !!process.env.CI,
     timeout: 180_000,
+    env: {
+      NEXT_PUBLIC_FEATURE_SPONSORS: "1",
+      JWT_SECRET: process.env.JWT_SECRET || "your-secret-key-change-in-production",
+      ...(process.env.DATABASE_URL ? { DATABASE_URL: process.env.DATABASE_URL } : {}),
+      // If set locally/CI, this enables logo upload path to work during tests
+      ...(process.env.BLOB_READ_WRITE_TOKEN
+        ? { BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN }
+        : {}),
+    },
   },
   projects: [
     {

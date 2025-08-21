@@ -1,5 +1,11 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { artists, speakers } from "@/lib/db/schema";
+import {
+  artists,
+  speakers,
+  sponsorTiers,
+  sponsors,
+  sponsorLogos,
+} from "@/lib/db/schema";
 
 // Speakers — mirror DB exactly
 export type Speaker = InferSelectModel<typeof speakers>;
@@ -10,6 +16,18 @@ export type NewSpeaker = InferInsertModel<typeof speakers>;
 // Artists — mirror DB exactly
 export type Artist = InferSelectModel<typeof artists>;
 export type NewArtist = InferInsertModel<typeof artists>;
+
+// Sponsors — mirror DB exactly
+export type Sponsor = InferSelectModel<typeof sponsors>;
+export type NewSponsor = InferInsertModel<typeof sponsors>;
+
+// Sponsor Tiers — mirror DB exactly
+export type SponsorTier = InferSelectModel<typeof sponsorTiers>;
+export type NewSponsorTier = InferInsertModel<typeof sponsorTiers>;
+
+// Sponsor Logos — mirror DB exactly
+export type SponsorLogo = InferSelectModel<typeof sponsorLogos>;
+export type NewSponsorLogo = InferInsertModel<typeof sponsorLogos>;
 
 // Public DTOs (optional): what our public endpoints commonly expose
 export type PublicArtistDto = Pick<

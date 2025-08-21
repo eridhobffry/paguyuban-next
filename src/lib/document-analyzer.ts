@@ -1,5 +1,6 @@
 // Document Analysis Service using Gemini AI
 // Analyzes uploaded documents and generates marketing-optimized metadata
+import { generateText } from "@/lib/ai/gemini-client";
 
 interface DocumentAnalysisInput {
   content: string;
@@ -21,16 +22,7 @@ interface DocumentAnalysisResult {
 }
 
 export class DocumentAnalyzer {
-  private apiKey: string;
-  private baseUrl =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
-
-  constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
-    if (!this.apiKey) {
-      console.warn("GEMINI_API_KEY not found in environment variables");
-    }
-  }
+  constructor() {}
 
   async analyzeDocument(
     input: DocumentAnalysisInput
@@ -38,44 +30,30 @@ export class DocumentAnalyzer {
     try {
       const prompt = this.buildAnalysisPrompt(input);
 
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1500,
+      const aiResponse = await generateText(prompt, {
+        temperature: 0.3,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1500,
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
           },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-          ],
-        }),
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+          },
+        ],
       });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!aiResponse) {
         throw new Error("No response from Gemini API");
@@ -118,18 +96,10 @@ REQUIREMENTS:
 - Provide at most 3 marketingHighlights.
 - Return JSON with keys: title, description, preview, pages, type, icon, marketingHighlights (array of strings).`;
 
-      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 800 },
-        }),
+      const aiResponse = await generateText(prompt, {
+        temperature: 0.3,
+        maxOutputTokens: 800,
       });
-      if (!response.ok)
-        throw new Error(`Gemini refine error: ${response.status}`);
-      const data = await response.json();
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
       const jsonMatch = aiResponse?.match(/\{[\s\S]*\}/);
       const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
       return {

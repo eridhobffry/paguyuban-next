@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { db } from "@/lib/db/drizzle";
 import { chatbotSummaries } from "@/lib/db/schema";
 import { stackServerApp } from "@/stack";
+import { generateContent } from "@/lib/ai/gemini-client";
+import { AiSummarySchema, type SummaryData } from "@/lib/ai/schemas";
 
 function corsHeaders(): Record<string, string> {
   return {
@@ -27,80 +29,82 @@ const BodySchema = z.object({
   transcript: z.array(TranscriptItemSchema).min(1).max(50),
 });
 
-async function generateSummary(
+// AiSummarySchema and SummaryData are now imported from shared module
+
+function buildAiPrompt(
   transcript: Array<{ role: string; content: string }>
-): Promise<{ summary: string; topics: string[]; sentiment: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || "";
-  const endpoint =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
-  const prompt = `You are an analytics assistant. Respond ONLY with strict JSON (no markdown) in this shape: {"summary": string (3-5 sentences), "topics": string[] (3-6 concise topics), "sentiment": "positive"|"neutral"|"negative"}.\n\nTranscript:\n${transcript
+): string {
+  return `You are an analytics assistant. Return a JSON object with: {"summary": string (3-5 sentences), "topics": string[] (3-6 concise topics), "sentiment": "positive"|"neutral"|"negative"}.\n\nTranscript:\n${transcript
     .map((m) => `${m.role}: ${m.content}`)
     .join("\n")}`;
+}
 
+async function generateSummaryWithAI(
+  transcript: Array<{ role: string; content: string }>
+): Promise<SummaryData> {
+  const prompt = buildAiPrompt(transcript);
+  const aiJson = await generateContent<unknown>(prompt, {
+    temperature: 0.4,
+    maxOutputTokens: 300,
+    responseMimeType: "application/json",
+  });
+  const parsed = AiSummarySchema.safeParse(aiJson);
+  if (!parsed.success) {
+    console.error("Gemini response validation failed:", parsed.error);
+    throw new Error("gemini_validation_failed");
+  }
+  return parsed.data;
+}
+
+function createHeuristicSummary(
+  transcript: Array<{ role: string; content: string }>
+): SummaryData {
+  const content = transcript.map((m) => m.content).join(" ");
+  const words = (content.toLowerCase().match(/[a-z][a-z\-]{2,}/g) ?? []).filter(
+    (w) =>
+      ![
+        "the",
+        "and",
+        "you",
+        "for",
+        "with",
+        "that",
+        "this",
+        "atau",
+        "dan",
+        "yang",
+        "untuk",
+        "dengan",
+      ].includes(w)
+  );
+  const freq = new Map<string, number>();
+  for (const w of words) freq.set(w, (freq.get(w) || 0) + 1);
+  const topics = Array.from(freq.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([w]) => w);
+  const sentences = content
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .slice(0, 5);
+  const summary = sentences.join(" ").slice(0, 600);
+  const lc = content.toLowerCase();
+  const sentiment = /terima kasih|thanks|great|awesome|bagus|baik/.test(lc)
+    ? "positive"
+    : /disappoint|bad|buruk|kecewa|maaf/.test(lc)
+    ? "negative"
+    : "neutral";
+  return { summary, topics, sentiment };
+}
+
+async function generateSummary(
+  transcript: Array<{ role: string; content: string }>
+): Promise<SummaryData> {
   try {
-    const res = await fetch(`${endpoint}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 300 },
-      }),
-    });
-    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
-    const data = await res.json();
-    let text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) text = jsonMatch[0];
-    const parsed = JSON.parse(text) as {
-      summary?: string;
-      topics?: string[];
-      sentiment?: string;
-    };
-    return {
-      summary: parsed.summary || text || "",
-      topics: Array.isArray(parsed.topics) ? parsed.topics.slice(0, 8) : [],
-      sentiment: parsed.sentiment || "neutral",
-    };
-  } catch {
-    // Heuristic fallback
-    const content = transcript.map((m) => m.content).join(" ");
-    const words = (
-      content.toLowerCase().match(/[a-z][a-z\-]{2,}/g) ?? []
-    ).filter(
-      (w) =>
-        ![
-          "the",
-          "and",
-          "you",
-          "for",
-          "with",
-          "that",
-          "this",
-          "atau",
-          "dan",
-          "yang",
-          "untuk",
-          "dengan",
-        ].includes(w)
-    );
-    const freq = new Map<string, number>();
-    for (const w of words) freq.set(w, (freq.get(w) || 0) + 1);
-    const topics = Array.from(freq.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([w]) => w);
-    const sentences = content
-      .replace(/\s+/g, " ")
-      .split(/(?<=[.!?])\s+/)
-      .slice(0, 5);
-    const summary = sentences.join(" ").slice(0, 600);
-    const lc = content.toLowerCase();
-    const sentiment = /terima kasih|thanks|great|awesome|bagus|baik/.test(lc)
-      ? "positive"
-      : /disappoint|bad|buruk|kecewa|maaf/.test(lc)
-      ? "negative"
-      : "neutral";
-    return { summary, topics, sentiment };
+    return await generateSummaryWithAI(transcript);
+  } catch (e) {
+    console.warn("AI summary generation failed. Falling back to heuristic.", e);
+    return createHeuristicSummary(transcript);
   }
 }
 
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const json = await request.json();
     const body = BodySchema.parse(json);
 
-    // Preserve potential side-effects of user fetch without using the value
+    // Preserve existing optional auth behavior
     try {
       await stackServerApp.getUser();
     } catch {}
@@ -132,10 +136,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { id: inserted.id },
       { status: 201, headers: corsHeaders() }
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: error.issues },
+        { status: 400, headers: corsHeaders() }
+      );
+    }
+    console.error("Error in chat summary endpoint:", error);
     return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400, headers: corsHeaders() }
+      { error: "Internal server error" },
+      { status: 500, headers: corsHeaders() }
     );
   }
 }

@@ -47,3 +47,53 @@ This project uses Google Gemini server-side in three places. Keep this doc updat
 - `src/app/api/admin/analytics/chat/recommend/route.ts` (recommendations)
 - UI trigger: `src/components/sections/ChatAssistantSection.tsx` (summary dispatch)
 - Admin UI: `src/app/admin/analytics/page.tsx` (recommend button)
+
+### JSON-mode and Zod validation
+
+To ensure structured AI outputs are reliable, we validate model responses with Zod schemas.
+
+- Shared schemas live in `src/lib/ai/schemas.ts` and can be imported across routes/services.
+- Example schema: `AiSummarySchema` with `SummaryData` type inference.
+
+Two patterns are supported:
+
+1) Using the helper to extract JSON directly
+
+```ts
+import { AiSummarySchema, type SummaryData } from "@/lib/ai/schemas";
+import { extractJsonObject } from "@/lib/ai/gemini-client";
+
+const result = await extractJsonObject<SummaryData>({
+  schema: AiSummarySchema,
+  systemInstruction: "You are an analytics assistant...",
+  userContent: transcriptText,
+});
+
+if (!result.ok) {
+  // handle error or fallback
+}
+
+// result.data is typed as SummaryData and validated by Zod
+```
+
+2) Manual validation after a text generation call
+
+```ts
+import { AiSummarySchema } from "@/lib/ai/schemas";
+import { generateText } from "@/lib/ai/gemini-client";
+
+const { text } = await generateText({ prompt: myPrompt });
+let parsed: unknown;
+try {
+  parsed = JSON.parse(text);
+} catch {
+  // handle non-JSON output (fallback or error)
+}
+const safe = AiSummarySchema.safeParse(parsed);
+if (!safe.success) {
+  // handle validation errors
+}
+const summary = safe.success ? safe.data : null;
+```
+
+Reference implementation: `src/app/api/analytics/chat/summary/route.ts` consumes `AiSummarySchema` for validation and storage.

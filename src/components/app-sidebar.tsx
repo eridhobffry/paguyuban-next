@@ -32,6 +32,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+const ENABLE_SPONSORS = process.env.NEXT_PUBLIC_FEATURE_SPONSORS === "1";
+
 const data = {
   user: {
     name: "shadcn",
@@ -54,6 +56,16 @@ const data = {
       url: "/admin/speakers",
       icon: IconUsers,
     },
+    // Feature-flagged: Sponsors admin
+    ...(ENABLE_SPONSORS
+      ? ([
+          {
+            title: "Sponsors",
+            url: "/admin/sponsors",
+            icon: IconUsers,
+          },
+        ] as const)
+      : []),
     {
       title: "Analytics",
       url: "/admin/analytics",

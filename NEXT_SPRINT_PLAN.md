@@ -12,6 +12,7 @@ Scope: Harden QA (e2e + smoke), introduce CMS for Sponsors and Agenda, add admin
 - Align CI Playwright baseURL with `playwright.config.ts` web server:
   - Option A: set `PLAYWRIGHT_BASE_URL=http://localhost:3100`
   - Option B: remove the env override so config default (3100) is used
+  - Current: Using default 3100 with Playwright `reuseExistingServer` in CI; keep consistent.
 
 Acceptance criteria
 
@@ -40,7 +41,21 @@ Acceptance criteria
 
 - Agenda visible when feature flag enabled
 
-### 4) Admin Test Coverage
+### 4) Knowledge Overlay CMS (Phase 2 — Neon CRUD for chat knowledge)
+
+- DB: `knowledge` table with `overlay` JSONB, `updated_at`, optional `is_active`
+- API: `GET /api/admin/knowledge`, `PUT /api/admin/knowledge` (admin-protected, Zod-validated)
+- Loader/Service: add `loadDbKnowledgeOverlay()` with short TTL cache; merge static + file + DB via `deepMerge` from `src/lib/knowledge/loader.ts`
+- Admin UI: minimal JSON editor with validation; preview key paths (e.g., `event.dates`, `financials.revenue.total`)
+- Tests: repo unit tests, API route tests, and chat integration verifying `[get:path]` uses merged overlay
+
+Acceptance criteria
+
+- Admin can edit overlay JSON and save; API returns updated document
+- Chat uses updated knowledge within TTL without redeploys
+- New tests for repo/API/integration pass in CI
+
+### 5) Admin Test Coverage
 
 - Add unit tests for admin CRUD validation (Zod schemas)
 - Basic route tests for admin APIs (happy path + validation errors)
@@ -49,7 +64,7 @@ Acceptance criteria
 
 - New tests passing in CI
 
-### 5) Refactors (start top 2 from plan)
+### 6) Refactors (start top 2 from plan)
 
 - `src/app/admin/analytics/page.tsx` split into subcomponents
 - `src/components/admin/DocumentUpload.tsx` split as per plan
@@ -63,8 +78,8 @@ Acceptance criteria
 - Day 1: QA hardening and CI job
 - Day 2: Sponsors CMS DB + admin
 - Day 3: Agenda CMS DB + admin
-- Day 4: Admin tests
-- Day 5: Refactors (begin top 2)
+- Day 4: Knowledge Overlay CMS (Neon CRUD + loader/cache)
+- Day 5: Admin tests (Refactors move to stretch if time)
 
 ### Definition of Done
 
@@ -394,6 +409,11 @@ Acceptance criteria
 - Small PRs, each tied to one workstream with clear acceptance criteria.
 - Include before/after screenshots and quick test notes in PR descriptions.
 
+Implementation notes carried over from last sprint
+
+- CI refined and stable: removed interactive `drizzle-kit push`; use SQL fallback `drizzle/2025-08-20_add_sponsors.sql` and `scripts/seed-sponsors.mjs`.
+- Next.js server builds/starts on :3100 in CI and Playwright reuses it.
+
 ### Definition of Done
 
 - Homepage has no `href="#"`, all CTAs work, all downloads work.
@@ -425,7 +445,7 @@ Notes
 
 - If helpful, proceed to create stub assets (`public/docs/*.pdf`, `public/calendar/event.ics`) and wire the first batch of anchors in the relevant section components next.
 
-### Current Sprint Progress Update
+### Previous Sprint Summary (for context)
 
 - Anchors and CTA wiring: DONE across homepage sections. All primary CTAs now target valid sections or `/request-access` routes with `type` params.
 - Document downloads: Migrated to DB-backed resolver URLs and centralized via typed helper.
@@ -439,6 +459,10 @@ Notes
 - FeaturesSection: "Register Now" wired to `/request-access?type=register`; cards "Learn more" mapped to `#technology-platform`. DONE.
 - TradeContextSection: Sponsorship CTA and Destatis link wired. DONE.
 
-Outstanding items to close the sprint:
+### Kickoff tasks for this sprint
 
-- QA pass: Full click-through, ensure all download links return 302→200, anchors smooth-scroll, Network tab shows 0 errors, Lighthouse quick pass, cross-browser sanity.
+- Create initial DB/API/UI skeleton for Knowledge Overlay CMS behind a feature flag.
+- Create Agenda CMS MVP (admin CRUD + public API), feature-flagged.
+- Add admin API route tests + Zod validation tests for new endpoints.
+- Start component refactors (admin analytics split; document upload split).
+- Expand Playwright smoke minimally to cover a couple of admin flows (tagged `@smoke`).

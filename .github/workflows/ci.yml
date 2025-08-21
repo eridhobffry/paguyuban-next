@@ -17,6 +17,21 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
+    services:
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,11 +45,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "Postgres is ready"; exit 0;
+            fi
+            echo "Waiting for Postgres..."; sleep 2;
+          done
+          echo "Postgres did not become ready in time"; exit 1
+
+      - name: Ensure pgcrypto extension
+        run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
+      - name: Verify sponsors tables exist
+        run: |
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsor_tiers');"
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsors');"
+          psql "$DATABASE_URL" -c "SELECT to_regclass('public.sponsor_logos');"
+
+      - name: Ensure sponsors schema (fallback via SQL)
+        run: |
+          OUT=$(psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.sponsor_tiers')")
+          if [ "$OUT" != "public.sponsor_tiers" ]; then
+            echo "sponsor_tiers missing; applying SQL fallback from drizzle/2025-08-20_add_sponsors.sql"
+            psql "$DATABASE_URL" -f drizzle/2025-08-20_add_sponsors.sql
+          else
+            echo "sponsor_tiers present; skipping SQL fallback"
+          fi
+
+      - name: Seed sponsors data
+        run: node scripts/seed-sponsors.mjs
+
       - name: Lint
         run: npm run lint --silent || true
 
       - name: Unit tests
         run: npm run test:unit:run
+
+      - name: Build app
+        run: npm run -s build
+
+      - name: Start app (port 3100)
+        run: nohup npx next start -p 3100 >/dev/null 2>&1 & echo $! > next.pid
+
+      - name: Wait for server
+        run: |
+          for i in {1..60}; do
+            if curl -sf http://localhost:3100/ >/dev/null; then
+              echo "Server is up"; exit 0;
+            fi
+            echo "Waiting for Next.js on :3100...";
+            sleep 2
+          done
+          echo "Server failed to start"; exit 1
 
       - name: Install Playwright Browsers (Chromium only)
         run: npx playwright install --with-deps chromium
@@ -44,6 +111,7 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3100
           CI: true
           NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
         run: npx playwright test --project=chromium
 
       - name: Upload Playwright report
