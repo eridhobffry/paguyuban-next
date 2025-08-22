@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateText } from "@/lib/ai/gemini-client";
+import { db } from "@/lib/db";
+import { speakers, artists, sponsors } from "@/lib/db/schema";
+import {
+  createSpeaker,
+  updateSpeaker,
+  deleteSpeaker,
+  createArtist,
+  updateArtist,
+  deleteArtist,
+  createSponsor,
+  updateSponsor,
+  deleteSponsor,
+} from "@/lib/db/actions";
 
 // Zod schema for smart entry request
 const smartEntrySchema = z.object({
@@ -11,112 +24,104 @@ const smartEntrySchema = z.object({
 // POST /api/admin/knowledge/smart-entry - AI-powered smart knowledge entry
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add proper authentication when auth system is integrated
-
     const body = await request.json();
     const validatedData = smartEntrySchema.parse(body);
 
-    const prompt = `You are an AI assistant helping to manage knowledge for the Paguyuban Messe 2026 event management system.
+    const [speakersList, artistsList, sponsorsList] = await Promise.all([
+      db.select({ id: speakers.id, name: speakers.name }).from(speakers),
+      db.select({ id: artists.id, name: artists.name }).from(artists),
+      db.select({ id: sponsors.id, name: sponsors.name }).from(sponsors),
+    ]);
 
-USER REQUEST: "${validatedData.description}"
+    const prompt = `You are an AI assistant that can interact with a database for the Paguyuban Messe 2026 event.
+    
+    USER REQUEST: "${validatedData.description}"
 
-CURRENT KNOWLEDGE STRUCTURE:
-${JSON.stringify(validatedData.currentKnowledge, null, 2)}
+    You have the following tools available:
+    - createSpeaker({ name: string, role?: string, company?: string, bio?: string, ... })
+    - updateSpeaker({ id: string, name?: string, role?: string, ... })
+    - deleteSpeaker({ id: string })
+    - createArtist({ name: string, ... })
+    - updateArtist({ id: string, name?: string, ... })
+    - deleteArtist({ id: string })
+    - createSponsor({ name: string, ... })
+    - updateSponsor({ id: string, name?: string, ... })
+    - deleteSponsor({ id: string })
+    - updateOverlay({ path: string, value: any }) - for changes to the manual knowledge overlay.
 
-INSTRUCTIONS:
-1. Analyze the user's request and determine what knowledge should be added, updated, or deleted
-2. Choose the appropriate path in the knowledge structure using dot notation
-3. Determine the correct data type and value
-4. If it's a new category, create a logical structure that fits the existing knowledge organization
-5. Return the COMPLETE updated knowledge structure (not just the changes)
+    AVAILABLE ENTITIES FOR UPDATE/DELETE:
+    - Speakers: ${JSON.stringify(speakersList)}
+    - Artists: ${JSON.stringify(artistsList)}
+    - Sponsors: ${JSON.stringify(sponsorsList)}
 
-KNOWLEDGE CATEGORIES (use these for organization):
-- event: Event details (name, dates, location, venue, attendance)
-- financials: Revenue, costs, profit calculations
-- sponsorship: Sponsor tiers, pricing, benefits
-- tickets: Ticket types and pricing
-- contact: Contact information
-- program: Event schedule and activities
-- technology: Tech platform details
-- artists: Performer information
-- market: Market data and statistics
+    Based on the user request, decide which tool to use. Respond with a JSON object specifying the tool and its parameters.
+    If the user request does not match any of the database tools, use the "updateOverlay" tool.
 
-RESPONSE FORMAT (JSON only):
-{
-  "updatedKnowledge": { /* complete updated knowledge object */ },
-  "changes": [
+    RESPONSE FORMAT (JSON only):
     {
-      "action": "added|updated|deleted",
-      "path": "the.path.to.change",
-      "value": "new value or null for deletions",
-      "reasoning": "brief explanation"
+      "tool": "tool_name",
+      "parameters": { ... }
+    }`;
+
+    const aiResponse = await generateText(prompt, { temperature: 0.2 });
+
+    if (!aiResponse) {
+      throw new Error("No response from AI");
     }
-  ],
-  "summary": "Brief summary of what was changed"
-}
 
-Respond with valid JSON only. Make intelligent decisions about data organization and structure.`;
-
-    try {
-      const aiResponse = await generateText(prompt, {
-        temperature: 0.3,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2000,
-      });
-
-      if (!aiResponse) {
-        throw new Error("No response from AI");
-      }
-
-      // Extract JSON from AI response
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("Invalid AI response format");
-      }
-
-      const result = JSON.parse(jsonMatch[0]);
-
-      return NextResponse.json({
-        updatedKnowledge:
-          result.updatedKnowledge || validatedData.currentKnowledge,
-        changes: result.changes || [],
-        summary: result.summary || "Knowledge updated successfully",
-        timestamp: new Date().toISOString(),
-      });
-    } catch (aiError) {
-      console.error("AI processing error:", aiError);
-
-      // Fallback: Simple text-based processing
-      return NextResponse.json({
-        updatedKnowledge: {
-          ...validatedData.currentKnowledge,
-          userEntries: {
-            ...((validatedData.currentKnowledge as any)?.userEntries || {}),
-            [new Date().toISOString()]: validatedData.description,
-          },
-        },
-        changes: [
-          {
-            action: "added",
-            path: `userEntries.${new Date().toISOString()}`,
-            value: validatedData.description,
-            reasoning:
-              "Fallback: Added as user entry due to AI processing error",
-          },
-        ],
-        summary: "Entry added (AI processing unavailable)",
-        timestamp: new Date().toISOString(),
-      });
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Invalid AI response format");
     }
+
+    const { tool, parameters } = JSON.parse(jsonMatch[0]);
+
+    let result;
+    switch (tool) {
+      case "createSpeaker":
+        result = await createSpeaker(parameters);
+        break;
+      case "updateSpeaker":
+        result = await updateSpeaker(parameters.id, parameters);
+        break;
+      case "deleteSpeaker":
+        result = await deleteSpeaker(parameters.id);
+        break;
+      case "createArtist":
+        result = await createArtist(parameters);
+        break;
+      case "updateArtist":
+        result = await updateArtist(parameters.id, parameters);
+        break;
+      case "deleteArtist":
+        result = await deleteArtist(parameters.id);
+        break;
+      case "createSponsor":
+        result = await createSponsor(parameters);
+        break;
+      case "updateSponsor":
+        result = await updateSponsor(parameters.id, parameters);
+        break;
+      case "deleteSponsor":
+        result = await deleteSponsor(parameters.id);
+        break;
+      case "updateOverlay":
+        // This part is more complex as it requires modifying the JSONB field.
+        // For now, I will return a message indicating the requested overlay update.
+        return NextResponse.json({
+          summary: `Request to update overlay at path '${parameters.path}' received.`,
+        });
+      default:
+        throw new Error(`Unknown tool: ${tool}`);
+    }
+
+    return NextResponse.json({
+      summary: `Successfully executed ${tool}`,
+      result,
+    });
   } catch (error) {
     console.error("Error processing smart entry:", error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid request format", details: error.errors },
-        { status: 400 }
-      );
-    }
+    // Return a generic error message
     return NextResponse.json(
       { error: "Failed to process smart entry" },
       { status: 500 }

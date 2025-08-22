@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,40 +12,44 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Loader2,
-  Upload,
-  Save,
-  RefreshCw,
-  Eye,
-  EyeOff,
-  Sparkles,
-  AlertTriangle,
-} from "lucide-react";
+import { Loader2, Save, RefreshCw, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Speaker } from "@/types/people";
+import { Artist } from "@/types/people";
+import { Sponsor } from "@/types/people";
 
 interface KnowledgeData {
-  id?: string;
+  speakers: Speaker[];
+  artists: Artist[];
+  sponsors: Sponsor[];
   overlay: Record<string, unknown>;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+}
+
+interface CompilationResult {
+  conflicts?: Array<{
+    path: string;
+    existingValue: unknown;
+    newValue: unknown;
+    reasoning: string;
+    resolution: string;
+  }>;
+  enhancements?: Array<{
+    path: string;
+    type: string;
+    description: string;
+  }>;
+  summary: string;
+  compiledKnowledge: Record<string, unknown>;
 }
 
 export default function KnowledgeAdminPage() {
   const [knowledge, setKnowledge] = useState<KnowledgeData>({
+    speakers: [],
+    artists: [],
+    sponsors: [],
     overlay: {},
-    isActive: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,22 +57,8 @@ export default function KnowledgeAdminPage() {
   const [jsonText, setJsonText] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [compiling, setCompiling] = useState(false);
-  const [compilationResult, setCompilationResult] = useState<{
-    conflicts?: Array<{
-      path: string;
-      existingValue: unknown;
-      newValue: unknown;
-      reasoning: string;
-      resolution: string;
-    }>;
-    enhancements?: Array<{
-      path: string;
-      type: string;
-      description: string;
-    }>;
-    summary: string;
-    compiledKnowledge: Record<string, unknown>;
-  } | null>(null);
+  const [compilationResult, setCompilationResult] =
+    useState<CompilationResult | null>(null);
 
   // Manual entry form state
   const [manualDescription, setManualDescription] = useState("");
@@ -76,22 +66,13 @@ export default function KnowledgeAdminPage() {
   const { toast } = useToast();
 
   // Load current knowledge overlay with static knowledge merged
-  const loadKnowledge = async () => {
+  const loadKnowledge = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/admin/knowledge");
       if (!response.ok) throw new Error("Failed to load knowledge");
 
       const data = await response.json();
-
-      // Merge with static knowledge from gemini.ts if overlay is empty
-      if (Object.keys(data.overlay).length === 0) {
-        const staticResponse = await fetch("/api/admin/knowledge/static");
-        if (staticResponse.ok) {
-          const staticData = await staticResponse.json();
-          data.overlay = staticData.knowledge || {};
-        }
-      }
 
       setKnowledge(data);
       setJsonText(JSON.stringify(data.overlay, null, 2));
@@ -105,7 +86,7 @@ export default function KnowledgeAdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   // Save knowledge overlay
   const saveKnowledge = async () => {
@@ -116,7 +97,7 @@ export default function KnowledgeAdminPage() {
       if (jsonText.trim()) {
         try {
           parsedOverlay = JSON.parse(jsonText);
-        } catch (error) {
+        } catch {
           toast({
             title: "Invalid JSON",
             description: "Please check your JSON syntax",
@@ -131,14 +112,14 @@ export default function KnowledgeAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           overlay: parsedOverlay,
-          isActive: knowledge.isActive,
+          isActive: true, // Keep the overlay active
         }),
       });
 
       if (!response.ok) throw new Error("Failed to save knowledge");
 
       const updatedData = await response.json();
-      setKnowledge(updatedData);
+      setKnowledge((prev) => ({ ...prev, overlay: updatedData.overlay }));
       setJsonText(JSON.stringify(updatedData.overlay, null, 2));
 
       toast({
@@ -166,7 +147,7 @@ export default function KnowledgeAdminPage() {
       if (jsonText.trim()) {
         try {
           newKnowledge = JSON.parse(jsonText);
-        } catch (error) {
+        } catch {
           toast({
             title: "Invalid JSON",
             description: "Please check your JSON syntax before compiling",
@@ -221,14 +202,14 @@ export default function KnowledgeAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           overlay: compilationResult.compiledKnowledge,
-          isActive: knowledge.isActive,
+          isActive: true,
         }),
       });
 
       if (!response.ok) throw new Error("Failed to apply compilation");
 
       const updatedData = await response.json();
-      setKnowledge(updatedData);
+      setKnowledge((prev) => ({ ...prev, overlay: updatedData.overlay }));
       setJsonText(JSON.stringify(updatedData.overlay, null, 2));
       setCompilationResult(null);
 
@@ -276,12 +257,14 @@ export default function KnowledgeAdminPage() {
 
       // Reload knowledge to show merged data
       await loadKnowledge();
-    } catch (error) {
-      console.error("Error uploading CSV:", error);
+    } catch (uploadError) {
+      console.error("Error uploading CSV:", uploadError);
       toast({
         title: "Upload Error",
         description:
-          error instanceof Error ? error.message : "Failed to upload CSV",
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Failed to upload CSV",
         variant: "destructive",
       });
     } finally {
@@ -301,7 +284,7 @@ export default function KnowledgeAdminPage() {
       } else {
         setKnowledge((prev) => ({ ...prev, overlay: {} }));
       }
-    } catch (error) {
+    } catch {
       // Invalid JSON - don't update overlay yet
     }
   };
@@ -357,29 +340,6 @@ export default function KnowledgeAdminPage() {
     }
   };
 
-  // Delete knowledge entry
-  const deleteKnowledgeEntry = async (path: string) => {
-    try {
-      const currentOverlay = { ...knowledge.overlay };
-      deleteDeepValue(currentOverlay, path);
-
-      setKnowledge((prev) => ({ ...prev, overlay: currentOverlay }));
-      setJsonText(JSON.stringify(currentOverlay, null, 2));
-
-      toast({
-        title: "Entry Deleted",
-        description: `Removed entry at: ${path}`,
-      });
-    } catch (error) {
-      console.error("Error deleting entry:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete entry",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Clear all knowledge
   const clearAllKnowledge = async () => {
     if (
@@ -406,55 +366,6 @@ export default function KnowledgeAdminPage() {
     }
   };
 
-  // Helper function to set deep value
-  const setDeepValue = (
-    obj: Record<string, unknown>,
-    path: string,
-    value: unknown
-  ): void => {
-    const keys = path.split(".");
-    let current = obj;
-
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i];
-      if (
-        !(key in current) ||
-        typeof current[key] !== "object" ||
-        current[key] === null ||
-        Array.isArray(current[key])
-      ) {
-        current[key] = {};
-      }
-      current = current[key] as Record<string, unknown>;
-    }
-
-    current[keys[keys.length - 1]] = value;
-  };
-
-  // Helper function to delete deep value
-  const deleteDeepValue = (
-    obj: Record<string, unknown>,
-    path: string
-  ): void => {
-    const keys = path.split(".");
-    let current = obj;
-
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i];
-      if (
-        !(key in current) ||
-        typeof current[key] !== "object" ||
-        current[key] === null ||
-        Array.isArray(current[key])
-      ) {
-        return; // Path doesn't exist
-      }
-      current = current[key] as Record<string, unknown>;
-    }
-
-    delete current[keys[keys.length - 1]];
-  };
-
   // Validate JSON
   const isValidJson = () => {
     try {
@@ -467,7 +378,7 @@ export default function KnowledgeAdminPage() {
 
   useEffect(() => {
     loadKnowledge();
-  }, []);
+  }, [loadKnowledge]);
 
   if (loading) {
     return (
@@ -494,22 +405,20 @@ export default function KnowledgeAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Current Status
-              <Badge variant={knowledge.isActive ? "default" : "secondary"}>
-                {knowledge.isActive ? "Active" : "Inactive"}
-              </Badge>
+              Knowledge Base Status
             </CardTitle>
             <CardDescription>
-              Last updated:{" "}
-              {knowledge.updatedAt
-                ? new Date(knowledge.updatedAt).toLocaleString()
-                : "Never"}
+              Live view of the dynamically compiled knowledge base.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Records: {Object.keys(knowledge.overlay).length}</span>
-              {knowledge.id && <span>ID: {knowledge.id}</span>}
+              <span>Speakers: {knowledge.speakers.length}</span>
+              <span>Artists: {knowledge.artists.length}</span>
+              <span>Sponsors: {knowledge.sponsors.length}</span>
+              <span>
+                Manual Overlays: {Object.keys(knowledge.overlay).length}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -520,7 +429,8 @@ export default function KnowledgeAdminPage() {
             <TabsTrigger value="editor">JSON Editor</TabsTrigger>
             <TabsTrigger value="upload">CSV Upload</TabsTrigger>
             <TabsTrigger value="ai-compile">AI Compilation</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
+            <TabsTrigger value="preview">Live Knowledge Preview</TabsTrigger>
+            <TabsTrigger value="dynamic-data">Dynamic Data Sources</TabsTrigger>
           </TabsList>
 
           <TabsContent value="editor" className="space-y-4">
@@ -642,14 +552,16 @@ export default function KnowledgeAdminPage() {
                     <AlertDescription>
                       <strong>Smart Entry Examples:</strong>
                       <br />
-                      • "Add a new speaker: John Doe, AI expert from Google"
+                      • &quot;Add a new speaker: John Doe, AI expert from
+                      Google&quot;
                       <br />
-                      • "Update the venue capacity to 2000 people"
+                      • &quot;Update the venue capacity to 2000 people&quot;
                       <br />
-                      • "Set the Gold sponsor price to €45,000"
+                      • &quot;Set the Gold sponsor price to €45,000&quot;
                       <br />
-                      • "Remove the outdated contact phone number"
-                      <br />• "Add networking session on Day 2 from 3-5 PM"
+                      • &quot;Remove the outdated contact phone number&quot;
+                      <br />• &quot;Add networking session on Day 2 from 3-5
+                      PM&quot;
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -731,7 +643,7 @@ export default function KnowledgeAdminPage() {
                         </h4>
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {compilationResult.conflicts?.map(
-                            (conflict: any, idx: number) => (
+                            (conflict, idx: number) => (
                               <div
                                 key={idx}
                                 className="text-xs p-2 bg-yellow-50 rounded"
@@ -753,7 +665,7 @@ export default function KnowledgeAdminPage() {
                         </h4>
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {compilationResult.enhancements?.map(
-                            (enhancement: any, idx: number) => (
+                            (enhancement, idx: number) => (
                               <div
                                 key={idx}
                                 className="text-xs p-2 bg-blue-50 rounded"
@@ -856,13 +768,60 @@ export default function KnowledgeAdminPage() {
               <CardContent>
                 {showPreview ? (
                   <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
-                    {JSON.stringify(knowledge.overlay, null, 2)}
+                    {JSON.stringify(knowledge, null, 2)}
                   </pre>
                 ) : (
                   <div className="text-muted-foreground">
                     Click the eye icon to preview the knowledge structure
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="dynamic-data" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dynamic Data Sources</CardTitle>
+                <CardDescription>
+                  This data is pulled in real-time from the database. Edit this
+                  information on their respective admin pages.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold">
+                    Speakers ({knowledge.speakers.length})
+                  </h3>
+                  <div className="text-xs text-muted-foreground">
+                    {knowledge.speakers.map((s) => s.name).join(", ")}
+                  </div>
+                  <Button asChild variant="link" className="p-0 h-4">
+                    <a href="/admin/speakers">Edit Speakers</a>
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">
+                    Artists ({knowledge.artists.length})
+                  </h3>
+                  <div className="text-xs text-muted-foreground">
+                    {knowledge.artists.map((a) => a.name).join(", ")}
+                  </div>
+                  <Button asChild variant="link" className="p-0 h-4">
+                    <a href="/admin/artists">Edit Artists</a>
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold">
+                    Sponsors ({knowledge.sponsors.length})
+                  </h3>
+                  <div className="text-xs text-muted-foreground">
+                    {knowledge.sponsors.map((s) => s.name).join(", ")}
+                  </div>
+                  <Button asChild variant="link" className="p-0 h-4">
+                    <a href="/admin/sponsors">Edit Sponsors</a>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

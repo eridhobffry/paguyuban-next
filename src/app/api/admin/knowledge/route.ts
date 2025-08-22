@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { knowledge } from "@/lib/db/schemas/knowledge";
 import { eq, desc } from "drizzle-orm";
+import { dynamicKnowledgeBuilder } from "@/lib/knowledge/builder";
 // Note: Using custom auth instead of next-auth for this project
 // import { getServerSession } from "next-auth";
 // import { authOptions } from "@/lib/auth";
@@ -28,29 +29,9 @@ export async function GET(request: NextRequest) {
     // }
 
     // Get the active knowledge overlay
-    const activeKnowledge = await db
-      .select()
-      .from(knowledge)
-      .where(eq(knowledge.isActive, true))
-      .orderBy(desc(knowledge.updatedAt))
-      .limit(1);
+    const compiledKnowledge = await dynamicKnowledgeBuilder.buildKnowledge();
 
-    if (!activeKnowledge.length) {
-      return NextResponse.json({
-        overlay: {},
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-
-    return NextResponse.json({
-      id: activeKnowledge[0].id,
-      overlay: activeKnowledge[0].overlay,
-      isActive: activeKnowledge[0].isActive,
-      createdAt: activeKnowledge[0].createdAt?.toISOString(),
-      updatedAt: activeKnowledge[0].updatedAt?.toISOString(),
-    });
+    return NextResponse.json(compiledKnowledge);
   } catch (error) {
     console.error("Error fetching knowledge:", error);
     return NextResponse.json(
