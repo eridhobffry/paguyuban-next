@@ -5,13 +5,16 @@ import { paguyubanChat } from "@/lib/gemini";
 const BodySchema = z.object({
   message: z.string().min(1),
   assistantType: z.enum(["ucup", "rima"]).default("ucup"),
+  mode: z.enum(["auto", "local"]).optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const json = await req.json();
     const body = BodySchema.parse(json);
-    const reply = await paguyubanChat.chat(body.message, body.assistantType);
+    const reply = await paguyubanChat.chat(body.message, body.assistantType, {
+      mode: body.mode ?? "auto",
+    });
     return NextResponse.json({ reply });
   } catch (error) {
     console.error("/api/chat/generate error", error);

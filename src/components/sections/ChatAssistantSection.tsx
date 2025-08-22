@@ -155,6 +155,8 @@ const ChatAssistantSection = () => {
         body: JSON.stringify({
           message: text,
           assistantType: selectedAssistant === 0 ? "ucup" : "rima",
+          // Allow server to decide: if GEMINI_API_KEY is unset it will fallback to local
+          mode: "auto",
         }),
       });
       if (!res.ok) throw new Error(`chat_failed ${res.status}`);
