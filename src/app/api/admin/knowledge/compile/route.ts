@@ -79,16 +79,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error compiling knowledge:", error);
 
-    // Check if it's a Zod error by checking the constructor name
-    if (error && error.constructor && error.constructor.name === "ZodError") {
-      return NextResponse.json(
-        { error: "Invalid request format", details: (error as any).errors },
-        { status: 400 }
-      );
-    }
-
+    // Since we're not using Zod for now, just return a simple error
     return NextResponse.json(
-      { error: "Failed to compile knowledge", details: error.message },
+      { error: "Failed to compile knowledge", details: String(error) },
       { status: 500 }
     );
   }
