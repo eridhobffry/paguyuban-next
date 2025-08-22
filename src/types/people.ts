@@ -55,3 +55,28 @@ export type PublicSpeakerDto = {
   linkedin?: Speaker["linkedin"];
   website?: Speaker["website"];
 };
+
+// Enhanced sponsor types based on actual database schema
+export type PublicSponsorTierDto = {
+  id: SponsorTier["id"];
+  name: SponsorTier["name"];
+  slug?: SponsorTier["slug"];
+  description?: SponsorTier["description"];
+  price?: number; // bigint converted to number
+  available?: number;
+  sold?: number;
+  color?: string;
+  features?: string[]; // jsonb array of strings
+  sortOrder?: number;
+};
+
+export type PublicSponsorDto = {
+  id: Sponsor["id"];
+  name: Sponsor["name"];
+  url?: string;
+  logoUrl?: string;
+  slug?: string;
+  tierId?: Sponsor["tierId"];
+  tags?: string[];
+  sortOrder?: number;
+};

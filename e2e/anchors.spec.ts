@@ -45,6 +45,76 @@ test.describe("@smoke homepage anchors", () => {
         href: "/request-access?type=register",
         targetId: "",
       },
+      {
+        label: "Secure Sponsorship",
+        href: "/request-access?type=sponsor",
+        targetId: "",
+      },
+      {
+        label: "Request Complete Documentation Package",
+        href: "/request-access?type=docs",
+        targetId: "",
+      },
+      {
+        label: "Become a Sponsor",
+        href: "/request-access?type=sponsor",
+        targetId: "",
+      },
+      {
+        label: "Download Financial Report",
+        href: "/docs/financial-report.pdf",
+        targetId: "",
+      },
+      {
+        label: "View Sponsor Deck",
+        href: "/docs/sponsor-deck.pdf",
+        targetId: "",
+      },
+      {
+        label: "Reserve Your Spot",
+        href: "/request-access?type=workshop",
+        targetId: "",
+      },
+      {
+        label: "View Full Schedule",
+        href: "#schedule",
+        targetId: "schedule",
+      },
+      {
+        label: "Download Workshop Guide",
+        href: "/docs/workshop-guide.pdf",
+        targetId: "",
+      },
+      {
+        label: "Download Full Schedule",
+        href: "/docs/schedule.pdf",
+        targetId: "",
+      },
+      {
+        label: "Stay Updated",
+        href: "/request-access?type=updates",
+        targetId: "",
+      },
+      {
+        label: "Become a Speaker",
+        href: "/request-access?type=speaker",
+        targetId: "",
+      },
+      {
+        label: "Download Brochure",
+        href: "/docs/brochure.pdf",
+        targetId: "",
+      },
+      {
+        label: "Download Technical Specs",
+        href: "/docs/technical-specs.pdf",
+        targetId: "",
+      },
+      {
+        label: "Request Platform Demo",
+        href: "/request-access?type=demo",
+        targetId: "",
+      },
     ];
 
   for (const { label, href, targetId } of anchorTests) {

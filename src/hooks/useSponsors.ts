@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { Sponsor } from "@/types/people";
+import type { Sponsor, SponsorTier } from "@/types/people";
 import { useMediaUpload } from "@/hooks/useUpload";
 
 export function useSponsorsAdmin() {
@@ -11,8 +11,12 @@ export function useSponsorsAdmin() {
   const [error, setError] = useState<string | null>(null);
 
   // Use shared upload utility; store to `logos/` folder
-  const { uploading, uploadFile: uploadLogo, discardTemp, commitTemp } =
-    useMediaUpload("logos");
+  const {
+    uploading,
+    uploadFile: uploadLogo,
+    discardTemp,
+    commitTemp,
+  } = useMediaUpload("logos");
 
   const fetchSponsors = useCallback(async () => {
     try {
@@ -101,5 +105,43 @@ export function useSponsorsAdmin() {
     uploadLogo,
     discardTemp,
     commitTemp,
+  };
+}
+
+export function useSponsorsPublic() {
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [sponsorTiers, setSponsorTiers] = useState<SponsorTier[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSponsors = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/sponsors/public", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch sponsors");
+      const data = (await res.json()) as {
+        sponsors: Sponsor[];
+        sponsorTiers: SponsorTier[];
+      };
+      setSponsors(data.sponsors ?? []);
+      setSponsorTiers(data.sponsorTiers ?? []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSponsors();
+  }, [fetchSponsors]);
+
+  return {
+    sponsors,
+    sponsorTiers,
+    loading,
+    error,
+    refetch: fetchSponsors,
   };
 }
