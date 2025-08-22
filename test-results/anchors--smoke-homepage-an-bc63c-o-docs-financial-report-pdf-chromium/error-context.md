@@ -1,0 +1,504 @@
+# Page snapshot
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- main:
+  - main:
+    - text: Government Endorsed • Indonesian & German Support Arena Berlin Confirmed • €236K Venue Investment AI-Powered Platform • First-of-Kind Technology 25+ Regions • Nationwide Representation Europe's Premier Indonesian Business & Cultural Expo
+    - heading "€7.32 Billion MARKET OPPORTUNITY Indonesia ↔ Germany Business Gateway" [level=1]
+    - paragraph: Access Europe's largest Indonesian business community through our AI-powered matchmaking platform
+    - text: €1.2M+ Qualified Pipeline 1,800+ Business Leaders 25+ Indonesian Regions
+    - link "View Investment Opportunity":
+      - /url: "#investment-opportunity"
+    - link "Executive Summary":
+      - /url: "#financial-transparency"
+    - link "Request Full Access":
+      - /url: /request-access
+    - text: €1.02M Total Revenue Premium Sponsorship Event 6,800+ Expected Attendees 1,800 Offline + 5,000 Online €650K Business Pipeline Conservative Projection 2 Days Event Duration August 7-8, 2026 8.3% Net Margin Projected Profitability with Conservative Estimates Sponsorship Opportunities
+    - heading "Partner with Europe's Premier Indonesia-Germany Platform" [level=2]
+    - paragraph: Join the launch of a sustainable platform designed to forge the next generation of Indonesia-Germany partnerships. Access verified market opportunities with measurable brand benefits.
+    - text: €7.32 Billion Verified 2024 Bilateral Trade Volume Germany-Indonesia Annual Trade 21,559 Citizens + Students Indonesian Community Professionals & Students in Germany €650K Conservative Est. Business Pipeline Qualified Opportunities 5-8M Impressions Media Reach Digital Campaign Coverage
+    - heading "Revenue Breakdown - 1.018.660 € Total" [level=3]
+    - text: Sponsorships 790.000 € 78% Ticket Sales 104.660 € 10% Exhibitor Fees 66.000 € 6% Additional Revenue 58.000 € 6% Total Media Value For All Sponsors €220K+ Combined Benefits
+    - img
+    - text: 1.018.660 € Total Revenue
+    - heading "Sponsorship Partnership Tiers" [level=3]
+    - text: Maximum Impact
+    - heading "Title Sponsor" [level=4]
+    - text: "€120,000 1 Available 4.0M+ Media Value: €150,000"
+    - list:
+      - listitem: Naming rights to entire event
+      - listitem: Premier booth placement & branding
+      - listitem: 2 keynote speaking opportunities
+      - listitem: 40% of total event impressions
+      - listitem: 20 VIP passes & exclusive networking
+      - listitem: 50 AI-facilitated introductions
+    - link "Become a Sponsor":
+      - /url: /request-access?type=sponsor
+    - heading "Platinum Sponsor" [level=4]
+    - text: "€60,000 3 Available 2.5M+ Media Value: €85,000"
+    - list:
+      - listitem: High-impact visibility & branding
+      - listitem: 30 AI-facilitated introductions
+      - listitem: Panel participation opportunity
+      - listitem: Access to segmented attendee list
+      - listitem: 15 VIP passes & VVIP networking
+      - listitem: Featured in digital campaigns
+    - link "Become a Sponsor":
+      - /url: /request-access?type=sponsor
+    - heading "Gold Sponsor" [level=4]
+    - text: "€40,000 4 Available 1.5M+ Media Value: €55,000"
+    - list:
+      - listitem: Strong visibility in high-traffic areas
+      - listitem: 20 AI matchmaking connections
+      - listitem: Speaking slot or demo opportunity
+      - listitem: Shared booth space in expo hall
+      - listitem: 10 VIP passes & networking access
+      - listitem: Inclusion in email campaigns
+    - link "Become a Sponsor":
+      - /url: /request-access?type=sponsor
+    - heading "Silver Sponsor" [level=4]
+    - text: "€25,000 6 Available 800K+ Media Value: €35,000"
+    - list:
+      - listitem: Solid visibility placement
+      - listitem: 10 AI introductions
+      - listitem: Exhibition table option
+      - listitem: 5 VIP passes & networking
+      - listitem: Social media mentions
+    - link "Become a Sponsor":
+      - /url: /request-access?type=sponsor
+    - heading "Bronze Sponsor" [level=4]
+    - text: "€15,000 8 Available 400K+ Media Value: €20,000"
+    - list:
+      - listitem: Entry-level visibility
+      - listitem: 5 AI matches
+      - listitem: General networking access
+      - listitem: 3 VIP passes
+      - listitem: Basic CSR alignment
+    - link "Become a Sponsor":
+      - /url: /request-access?type=sponsor
+    - heading "Executive Documentation" [level=3]
+    - paragraph: Access comprehensive business analysis, financial projections, and strategic planning documents. Request full access to detailed investor materials.
+    - heading "Indonesia Diaspora Expo 2026 Berlin" [level=4]
+    - text: • Business Strategy
+    - paragraph: Strategic plan for the Indonesia Diaspora Expo in Berlin, 2026. Driving investment and cultural exchange.
+    - paragraph: “Expo 2026 strategy Unlock growth and global collaboration opportunities with the Indonesian diaspora.”
+    - heading "Highlights" [level=5]
+    - list:
+      - listitem: Attract global investment to Indonesia.
+      - listitem: Showcase Indonesian culture on a global stage.
+      - listitem: Strengthen ties with the Indonesian diaspora.
+    - button "Request access to Indonesia Diaspora Expo 2026 Berlin": Request Access
+    - button "Open Indonesia Diaspora Expo 2026 Berlin"
+    - link "Request Complete Documentation Package":
+      - /url: /request-access?type=docs
+    - paragraph: Full investor package includes confidential financials, legal documentation, and partnership agreements
+    - text: Market Opportunity
+    - heading "Indonesia-Germany Trade Partnership" [level=2]
+    - paragraph: Discover the €7.3 billion bilateral trade opportunity and why Paguyuban Messe 2026 is your gateway to this dynamic market.
+    - text: "€7.3 Billion Total Bilateral Trade 2024 +8.5% annual growth €4.4 Billion German Imports from Indonesia Source: Germany Federal Statistical Office (Destatis) €3.1 Billion German Exports to Indonesia US$$3.1 Billion (Trading Economics)"
+    - heading "Market Challenge" [level=3]
+    - paragraph: Despite €7.32 Billion in bilateral trade, meaningful business connections between Indonesia and Germany remain limited due to cultural barriers and lack of structured networking opportunities.
+    - text: The Opportunity Gap Current trade represents only a fraction of potential between two dynamic economies. Paguyuban Messe 2026 addresses this gap through cultural diplomacy and AI-powered business matching.
+    - heading "Indonesian Community" [level=3]
+    - text: Permanent Residents 15.829 Students (DAAD 2023/24) 5.730 Total Community ~21.559 Our Unique Position Direct access to Germany's Indonesian community, plus 150M+ digital users in Indonesia through hybrid event format.
+    - heading "Key Collaboration Sectors" [level=3]
+    - paragraph: Target sectors with highest growth potential for Indonesia-Germany partnerships (2025-2030 projections)
+    - heading "Green Technology & Renewable Energy" [level=4]
+    - paragraph: Solar panels, wind turbines, energy storage
+    - text: Market Potential €50.2B cumulative 2025-2030
+    - heading "Digital Economy & Fintech" [level=4]
+    - paragraph: Digital payments, blockchain, e-commerce infrastructure
+    - text: Market Potential €134B by 2025, ~€276B by 2030
+    - heading "Manufacturing & Industry 4.0" [level=4]
+    - paragraph: Smart factories, IoT solutions, quality systems
+    - text: Market Potential €69.3B ICT market by 2030
+    - heading "Food Technology & Sustainable Agriculture" [level=4]
+    - paragraph: Processing technology, cold chain, organic certification
+    - text: Market Potential €5B equipment market by 2030
+    - heading "Healthcare & Medical Technology" [level=4]
+    - paragraph: Diagnostic equipment, telemedicine, hospital management
+    - text: Market Potential €3.7B by 2030
+    - heading "Education Technology & Vocational Training" [level=4]
+    - paragraph: Online learning, vocational programs, certification systems
+    - text: Market Potential €9-18B potential share by 2030
+    - heading "Position Your Business in This Growth Market" [level=3]
+    - paragraph: Paguyuban Messe 2026 connects you directly to this €7.3 billion trade opportunity through targeted networking, cultural understanding, and AI-powered business matching.
+    - link "Explore Sponsorship":
+      - /url: /request-access?type=sponsor
+    - link "View Trade Statistics":
+      - /url: https://www.destatis.de/EN/Home/_node.html
+    - text: ROI Calculator
+    - heading "Calculate Your Investment Impact" [level=2]
+    - paragraph: Discover the potential return on your Nusantara Messe 2026 investment with our transparent, data-driven calculator based on actual market research and conservative projections.
+    - button "Reset"
+    - button "Methodology"
+    - heading "Sponsorship Details" [level=3]
+    - text: Choose Sponsorship Tier Title Sponsor Maximum visibility and market impact 120.000 € Platinum Sponsor Strategic partnership with measurable ROI 60.000 € Gold Sponsor Solid ROI with focused benefits 40.000 € Silver Sponsor Cost-effective sponsorship benefits 25.000 € Bronze Sponsor Accessible sponsorship entry point 15.000 € Custom Sponsorship Amount
+    - slider: "120000"
+    - text: €15K 120.000 € €150K Company Size
+    - combobox:
+      - option "Startup (1-25 employees)"
+      - option "SME (26-100 employees)" [selected]
+      - option "Mid-size (101-500 employees)"
+      - option "Enterprise (500+ employees)"
+    - text: Annual Marketing Budget
+    - combobox:
+      - option "€100K - €250K"
+      - option "€250K - €750K" [selected]
+      - option "€750K - €1.5M"
+      - option "€1.5M+"
+    - text: Primary Sponsorship Goal
+    - combobox:
+      - option "Brand Awareness" [selected]
+      - option "Lead Generation"
+      - option "Strategic Partnerships"
+      - option "Market Entry"
+    - heading "Total Sponsorship Value" [level=3]
+    - text: 574.500 €
+    - paragraph: Estimated sponsorship benefits and market value
+    - text: +379% Value vs Investment 3 months Value Realization
+    - heading "Lead Generation" [level=4]
+    - text: Estimated Leads 33 Lead Value 115.500 € Brand Lift 20%
+    - heading "Brand Exposure" [level=4]
+    - text: Total Impressions 4.000.000 Cost per 1K Impressions €30.00 Media Value 10.000 €
+    - heading "Investment Benefits" [level=4]
+    - text: Naming rights to entire event Premier booth placement & branding 2 keynote speaking opportunities 40% of total event impressions 20 VIP passes & exclusive networking 50 AI-facilitated introductions
+    - button "Download Report"
+    - button "Share Results"
+    - button "Contact Sales"
+    - text: Your browser does not support the video tag.
+    - button
+    - button
+    - button
+    - heading "Halle CE - Main Exhibition Hall" [level=3]
+    - paragraph: 6,500m² main space for exhibitions, stage, and dining
+    - button
+    - button
+    - button
+    - text: €236K Venue Investment About The Event
+    - heading "Where Culture Meets Innovation" [level=2]
+    - paragraph: Paguyuban Messe 2026 is more than an event—it's the launch of a sustainable platform designed to forge the next generation of Indonesia-Germany partnerships. Over two intensive days, we combine a high-profile cultural festival with an AI-powered business forum, creating tangible opportunities for businesses, artists, and young professionals.
+    - heading "2 Days of Excellence" [level=3]
+    - paragraph: August 7-8, 2026
+    - heading "Arena Berlin" [level=3]
+    - paragraph: Halle CE, Beach Club & Club spaces
+    - heading "1,800+ Attendees" [level=3]
+    - paragraph: Business professionals & cultural enthusiasts
+    - heading "Global Reach" [level=3]
+    - paragraph: 25+ Indonesian regions represented
+    - link "Download Brochure":
+      - /url: /api/documents/public/download/brochure
+    - button "Play Video"
+    - text: Cultural Workshops
+    - heading "Where Tradition Meets Modern Business" [level=2]
+    - paragraph: Experience authentic Indonesian cultural practices while discovering their relevance to modern business applications. Each workshop combines hands-on learning with practical business insights.
+    - button "Batik Design Workshop"
+    - button "Sagu Processing Demo"
+    - button "Cakalele Dance"
+    - button "Tifa Drumming"
+    - text: Beginner Friendly
+    - heading "Batik Design Workshop" [level=3]
+    - paragraph: Traditional Artistry Meets Modern Business
+    - paragraph: Learn traditional Indonesian batik techniques while exploring modern applications in fashion and textile trade.
+    - text: Duration 90 minutes Max Participants 25 people
+    - heading "Business Application" [level=4]
+    - paragraph: Fashion & Textile Trade Opportunities
+    - heading "Workshop Highlights" [level=4]
+    - text: Hands-on wax-resist dyeing techniques Cultural significance and symbolism Modern textile business applications Sustainable production methods Export market opportunities
+    - heading "Instructor" [level=5]
+    - paragraph: Certified Batik Artisan from Yogyakarta
+    - heading "Materials" [level=5]
+    - paragraph: All tools and materials provided
+    - heading "Take Away" [level=5]
+    - paragraph: Custom batik artwork + business insights
+    - link "Reserve Your Spot":
+      - /url: /request-access?type=workshop
+    - heading "All Workshops Included in Event Registration" [level=3]
+    - paragraph: These cultural workshops are part of your Paguyuban Messe 2026 experience. Each session runs multiple times throughout Day 1, allowing flexible participation around your business meetings and networking activities.
+    - link "View Full Schedule":
+      - /url: "#schedule"
+    - link "Download Workshop Guide":
+      - /url: /api/documents/public/download/workshop-guide
+    - text: Why Attend?
+    - heading "Unparalleled Opportunities" [level=2]
+    - paragraph: Discover what makes Nusantara Messe 2026 the premier platform for cultural exchange and business growth
+    - heading "AI-Powered B2B Matchmaking" [level=3]
+    - paragraph: Our intelligent platform connects you with the most relevant business partners using advanced algorithms.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - heading "SmartStaff AI Management" [level=3]
+    - paragraph: Experience seamless event operations with our AI-driven workforce coordination system.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - heading "250+ Volunteers" [level=3]
+    - paragraph: 15 specialized teams ensuring a flawless experience for all attendees and exhibitors.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - heading "Global Reach" [level=3]
+    - paragraph: Connect with 1,800+ attendees from 25+ Indonesian regions and beyond.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - heading "€1.2M+ Business Pipeline" [level=3]
+    - paragraph: Access to high-value investment opportunities and strategic partnerships.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - heading "Cultural Showcase" [level=3]
+    - paragraph: Experience the rich diversity of Indonesian culture through authentic performances and exhibitions.
+    - link "Learn more":
+      - /url: "#technology-platform"
+      - text: Learn more
+      - img
+    - link "Register Now":
+      - /url: /request-access?type=register
+    - paragraph: Early bird pricing available until March 31, 2026
+    - text: Technology Platform
+    - heading "AI-Powered Event Innovation" [level=2]
+    - paragraph: Experience the future of business networking with our proprietary AI-driven platforms, developed by Indonesian tech teams specifically for cultural-intelligent business matching.
+    - button "PaguyubanConnect AI Platform"
+    - button "SmartStaff AI Platform"
+    - text: "Budget: €20,000"
+    - heading "PaguyubanConnect" [level=3]
+    - paragraph: AI-Powered B2B Matchmaking Platform
+    - paragraph: First-of-kind cultural intelligence algorithms designed specifically for Indonesia-Germany business networking.
+    - heading "Development Details" [level=4]
+    - text: "Team: Indonesian Tech Company (Jakarta-based) Budget: €20,000 Type: Custom Development vs. Existing Solutions"
+    - heading "Revenue Model" [level=4]
+    - heading "Subscription Tiers" [level=5]
+    - text: "• Free: €0/month - Basic matching (5 matches/month) • Basic: €39/month - Smart matching & analytics (20 matches/month) • Pro: €89/month - Advanced features & integrations (50 matches/month) • Enterprise: €299+/month - Custom AI models & white-label options"
+    - heading "White-Label Licensing" [level=5]
+    - text: €5,000/event - Full platform for other events
+    - heading "Key Features" [level=4]
+    - heading "Intelligent Matching" [level=5]
+    - paragraph: AI algorithm matches based on sector alignment, company size compatibility, and language preferences
+    - heading "Cultural Intelligence" [level=5]
+    - paragraph: Understanding of Indonesian business culture and German market dynamics for optimal connections
+    - heading "Meeting Analytics" [level=5]
+    - paragraph: Track meeting history, success rates, and follow-up opportunities with detailed analytics
+    - heading "Multi-Language Support" [level=5]
+    - paragraph: Seamless communication in Indonesian, German, and English with real-time translation features
+    - heading "Smart Scheduling" [level=5]
+    - paragraph: Automated 15-minute meeting scheduling with calendar integration and conflict resolution
+    - heading "Follow-up Tools" [level=5]
+    - paragraph: Post-event relationship management with automated follow-up reminders and contact sharing
+    - heading "Technical Specifications - PaguyubanConnect" [level=3]
+    - text: "AI/ML Framework: TensorFlow & PyTorch Backend: Python Django, PostgreSQL Frontend: React Native & Progressive Web App APIs: OpenAI GPT-4, Google Cloud Translation Infrastructure: AWS with auto-scaling Security: End-to-end encryption, GDPR compliant"
+    - heading "Technical Resilience Framework" [level=3]
+    - 'heading "Primary: AI-Powered Digital Systems" [level=4]'
+    - paragraph: Advanced algorithms handling intelligent matchmaking and volunteer coordination
+    - 'heading "Backup: 150 Trained Volunteers" [level=4]'
+    - paragraph: Human backup system with printed attendee lists, manual matching cards, and two-way radios
+    - heading "Offline Contingency" [level=4]
+    - paragraph: 30 two-way radios, physical scheduling boards, and printed emergency protocols
+    - heading "First-of-Kind Cultural Intelligence Technology" [level=3]
+    - paragraph: These platforms represent a breakthrough in cultural-aware business technology, developed specifically for Indonesia-Germany business dynamics. Experience the future of intelligent networking.
+    - link "Request Platform Demo":
+      - /url: /request-access?type=demo
+    - link "Download Technical Specs PDF":
+      - /url: /api/documents/public/download/technical-specs
+      - text: Download Technical Specs
+    - text: Financial Transparency
+    - heading "Open Book Financial Framework" [level=2]
+    - paragraph: Complete transparency in our financial model. See exactly how your sponsorship investment creates measurable value and supports the Indonesia-Germany business community.
+    - button "Revenue Model"
+    - button "Cost Structure"
+    - button "Sponsor ROI"
+    - heading "Revenue Breakdown - 1.018.660 €" [level=3]
+    - img
+    - text: 1.018.660 € Total Revenue Sponsorships 790.000 € 78% Ticket Sales 104.660 € 10% Exhibitor Fees 66.000 € 6% Additional Revenue 58.000 € 6%
+    - heading "Categories" [level=4]
+    - text: Sponsorships 790.000 € 78% of revenue Ticket Sales 104.660 € 10% of revenue Exhibitor Fees 66.000 € 6% of revenue Additional Revenue 58.000 € 6% of revenue
+    - heading "Complete Financial Documentation" [level=3]
+    - paragraph: Access detailed financial projections, cost breakdowns, and sponsor benefit calculations. All figures are based on verified market data and conservative estimates.
+    - link "Download Financial Report":
+      - /url: /api/documents/public/download/financial-report
+    - link "View Sponsor Deck":
+      - /url: /api/documents/public/download/sponsor-deck
+    - text: Featured Speakers
+    - heading "Industry Leaders" [level=2]
+    - paragraph: Learn from and network with top executives, government officials, and cultural ambassadors
+    - heading "Featured Artists" [level=3]
+    - img "Dewa 19"
+    - link "Dewa 19":
+      - /url: /artists/dewa-19
+      - heading "Dewa 19" [level=3]
+    - paragraph: Pop Rock
+    - paragraph
+    - img "Tulus"
+    - link "Tulus":
+      - /url: /artists/tulus
+      - heading "Tulus" [level=3]
+    - paragraph: Premier Vocalist
+    - paragraph: Contemporary Indonesian Music
+    - img "Efek Rumah Kaca"
+    - link "Efek Rumah Kaca":
+      - /url: /artists/efek-rumah-kaca
+      - heading "Efek Rumah Kaca" [level=3]
+    - paragraph: Alternative Rock
+    - paragraph: Environmental Music Advocates
+    - img "The Panturas"
+    - link "The Panturas":
+      - /url: /artists/the-panturas
+      - heading "The Panturas" [level=3]
+    - paragraph: Indie Rock
+    - paragraph: Contemporary Youth Culture
+    - heading "Business Leaders & Speakers" [level=3]
+    - img "Gita Wirjawan"
+    - link "Gita Wirjawan":
+      - /url: /speakers/gita-wirjawan
+      - heading "Gita Wirjawan" [level=3]
+    - paragraph: Leadership Talk Moderator
+    - paragraph: Former Minister & Investment Expert
+    - img "Iyas Lawrence"
+    - link "Iyas Lawrence":
+      - /url: /speakers/iyas-lawrence
+      - heading "Iyas Lawrence" [level=3]
+    - paragraph: Innovation Leader
+    - paragraph: Sustainable Tech & AI
+    - img "Joko Anwar"
+    - link "Joko Anwar":
+      - /url: /speakers/joko-anwar
+      - heading "Joko Anwar" [level=3]
+    - paragraph: Film Director
+    - paragraph: Digital Storytelling Summit
+    - img "Rahayu Saraswati"
+    - link "Rahayu Saraswati":
+      - /url: /speakers/rahayu-saraswati
+      - heading "Rahayu Saraswati" [level=3]
+    - paragraph: Policy Expert
+    - paragraph: Creative Industry Diversity
+    - heading "More Announcements" [level=3]
+    - paragraph: Additional speakers and artists will be announced soon
+    - link "Stay Updated":
+      - /url: /request-access?type=updates
+    - link "Become a Speaker":
+      - /url: /request-access?type=speaker
+    - paragraph: Apply to speak at Nusantara Messe 2026
+    - text: Event Schedule
+    - heading "Event Program" [level=2]
+    - paragraph: Explore the exciting lineup of keynotes, workshops, and cultural events
+    - button "Day 1 Saturday Culture & Business"
+    - button "Day 2 Sunday Innovation & Creative Economy"
+    - button "🎤 Opening Ceremony 09:00 - 10:30 Indonesian Ambassador & Berlin Senator Halle CE - Main Stage":
+      - text: 🎤
+      - heading "Opening Ceremony" [level=3]
+      - text: 09:00 - 10:30
+      - img
+      - text: Indonesian Ambassador & Berlin Senator Halle CE - Main Stage
+    - button "🤝 B2B Matchmaking & Exhibition 10:30 - 18:00 Halle CE - Exhibition Hall":
+      - text: 🤝
+      - heading "B2B Matchmaking & Exhibition" [level=3]
+      - text: 10:30 - 18:00 Halle CE - Exhibition Hall
+    - button "🎭 Cultural Workshops (Rotating Sessions) 11:30 - 15:30 Workshop Spaces":
+      - text: 🎭
+      - heading "Cultural Workshops (Rotating Sessions)" [level=3]
+      - text: 11:30 - 15:30 Workshop Spaces
+    - button "👥 Business Summits 13:00 - 17:00 Cultural Business Experts & Diaspora Leaders Summit Room (150 pax)":
+      - text: 👥
+      - heading "Business Summits" [level=3]
+      - text: 13:00 - 17:00
+      - img
+      - text: Cultural Business Experts & Diaspora Leaders Summit Room (150 pax)
+    - button "🎤 Danantara Investment Talkshow 17:30 - 18:30 Indonesian Investment Officials & Diaspora Entrepreneurs Halle CE - Main Stage":
+      - text: 🎤
+      - heading "Danantara Investment Talkshow" [level=3]
+      - text: 17:30 - 18:30
+      - img
+      - text: Indonesian Investment Officials & Diaspora Entrepreneurs Halle CE - Main Stage
+    - button "🎭 The Panturas Concert 19:00 - 20:00 The Panturas Halle CE - Main Stage":
+      - text: 🎭
+      - heading "The Panturas Concert" [level=3]
+      - text: 19:00 - 20:00
+      - img
+      - text: The Panturas Halle CE - Main Stage
+    - button "🎭 Tulus Concert 20:30 - 22:00 Tulus Halle CE - Main Stage":
+      - text: 🎭
+      - heading "Tulus Concert" [level=3]
+      - text: 20:30 - 22:00
+      - img
+      - text: Tulus Halle CE - Main Stage
+    - button "🎭 Techno Night Day 1 23:00 - 07:00 Club Berlin":
+      - text: 🎭
+      - heading "Techno Night Day 1" [level=3]
+      - text: 23:00 - 07:00 Club Berlin
+    - link "Download Full Schedule":
+      - /url: /api/documents/public/download/schedule
+    - paragraph: PDF, iCal, and Google Calendar options available
+    - text: Sponsorship Opportunities
+    - heading "Sponsorship Tiers" [level=2]
+    - paragraph: Join industry leaders and gain exclusive access to Indonesia-Germany business opportunities
+    - text: Premier Tier
+    - heading "Diamond" [level=3]
+    - text: €500,000,000 Investment 3 Available 3 Total Main stage logo Keynote mention Premium booth VIP lounge access
+    - link "Secure Sponsorship":
+      - /url: /request-access?type=sponsor
+    - heading "Gold" [level=3]
+    - text: €250,000,000 Investment 5 Available 5 Total Secondary stage logo Large booth Newsletter mention
+    - link "Secure Sponsorship":
+      - /url: /request-access?type=sponsor
+    - heading "Silver" [level=3]
+    - text: €100,000,000 Investment 8 Available 8 Total Website logo Booth Social shout-out
+    - link "Secure Sponsorship":
+      - /url: /request-access?type=sponsor
+    - heading "Become a Sponsor" [level=3]
+    - paragraph: Join industry leaders and gain exclusive access to our international audience of business professionals and cultural enthusiasts.
+    - link "Download Sponsorship Kit":
+      - /url: /api/documents/public/download/sponsorship-kit
+    - paragraph:
+      - text: Contact us at
+      - link "sponsors@nusantaramesse2026.com":
+        - /url: mailto:sponsors@nusantaramesse2026.com
+      - text: for more information
+    - text: Title Sponsorship 1 Available Closes Feb 28, 2026 Platinum Partners 2 Available Early Bird Until Mar 31 Event Registration 75% Sold Price increases Apr 1 Limited Partnership Slots
+    - heading "Join Europe's Premier Indonesian Business Gateway" [level=2]
+    - paragraph: Secure your position in the fastest-growing Asian trade corridor. Conservative financial projections show immediate ROI with long-term strategic value in Indonesia's €7.32 Billion German market presence.
+    - text: Event Dates August 7-8, 2026 2 Days in Berlin Venue Arena Berlin Premium Location Attendees 1,800+ Professionals Quality Network Investment From €15,000 Multiple Tiers €548,000 Revenue Conservative Projections 8.3% Net Margin 285% Max ROI
+    - link "Secure Partnership Now":
+      - /url: /partnership-application
+    - link "Request Documentation":
+      - /url: tel:+4915739396157
+    - link "Download Proposal":
+      - /url: /calendar/event.ics
+    - paragraph: Government-backed initiative • Secure investment • Proven ROI
+    - heading "Partnership Benefits" [level=3]
+    - list:
+      - listitem: 8.3% net margin with conservative projections
+      - listitem: €1.2M qualified business pipeline generation
+      - listitem: Access to €7.32 Billion Germany-Indonesia trade corridor
+      - listitem: First-mover advantage in AI-powered cultural events
+      - listitem: 30,000+ Indonesian professionals in German market
+      - listitem: Government-backed cultural diplomacy initiative
+    - heading "Multiple Ways to Connect" [level=4]
+    - heading "Investment Inquiry" [level=5]
+    - paragraph: Direct line to investment team
+    - paragraph: +49 1573 9396157
+    - button "Schedule Executive Call"
+    - heading "Partnership Discussion" [level=5]
+    - paragraph: Comprehensive partnership proposals
+    - paragraph: partnerships@nusantaramesse.com
+    - button "Email Partnership Team"
+    - heading "Documentation Request" [level=5]
+    - paragraph: Instant access to business documents
+    - paragraph: +49 1573 9396157
+    - button "WhatsApp Business"
+    - heading "Ready to Join Indonesia's European Success Story?" [level=4]
+    - link "Schedule Call":
+      - /url: tel:+4915739396157
+    - link "View Calendar":
+      - /url: /calendar/event.ics
+    - paragraph: Limited partnership slots available • First-come, first-served basis
+    - button "!"
+- region "Notifications alt+T"
+- alert
+```

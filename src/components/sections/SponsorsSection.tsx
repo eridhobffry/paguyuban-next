@@ -9,6 +9,20 @@ import {
   PUBLIC_DOWNLOAD_KEY,
 } from "@/lib/documents/constants";
 import { trackCtaClick, trackDownloadClick } from "@/lib/analytics/client";
+import { useSponsorsPublic } from "@/hooks/useSponsors";
+import type { PublicSponsorTierDto, PublicSponsorDto } from "@/types/people";
+
+interface StaticSponsor {
+  name: string;
+  logo: string;
+  url: string;
+}
+
+interface StaticSponsorTier {
+  name: string;
+  icon: React.ReactNode;
+  sponsors: StaticSponsor[];
+}
 
 const sponsorTiers = [
   {
@@ -166,6 +180,17 @@ const sponsorshipTiers = [
 const SHOW_LOGOS = false;
 
 const SponsorsSection = () => {
+  const {
+    sponsorTiers: dynamicSponsorTiers,
+    sponsors: dynamicSponsors,
+    loading,
+    error,
+  } = useSponsorsPublic();
+
+  // Use dynamic data if available and feature flag is enabled, otherwise fallback to static
+  const useDynamicData =
+    process.env.NEXT_PUBLIC_FEATURE_SPONSORS === "1" && !loading && !error;
+
   return (
     <section id="sponsors" className="relative py-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/90 -z-10"></div>
@@ -210,75 +235,80 @@ const SponsorsSection = () => {
 
         {/* Sponsorship Tiers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {sponsorshipTiers.map((tier, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-3xl p-8 border border-white/10 relative ${
-                index === 0 ? "ring-2 ring-amber-500/30" : ""
-              }`}
-            >
-              {index === 0 && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-amber-900 px-4 py-1 rounded-full text-sm font-bold">
-                    Premier Tier
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {tier.name}
-                </h3>
-                <div className="text-3xl font-bold text-green-400 mb-1">
-                  €{tier.price.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-400 mb-4">Investment</div>
-
-                <div className="flex justify-center items-center space-x-4 mb-4">
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <div className="text-cyan-400 font-bold">
-                      {tier.available - tier.sold}
-                    </div>
-                    <div className="text-xs text-gray-400">Available</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg px-3 py-2">
-                    <div className="text-purple-400 font-bold">
-                      {tier.available}
-                    </div>
-                    <div className="text-xs text-gray-400">Total</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                {tier.features.map((feature, featureIndex) => (
-                  <div key={featureIndex} className="flex items-start">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mr-3 mt-2 flex-shrink-0"></div>
-                    <span className="text-gray-300 text-sm">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <Link
-                href="/request-access?type=sponsor"
-                onClick={() =>
-                  trackCtaClick({
-                    section: "sponsors",
-                    cta: "Secure Sponsorship",
-                    href: "/request-access?type=sponsor",
-                    type: "sponsor",
-                  })
-                }
-                className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
+          {(useDynamicData ? dynamicSponsorTiers : sponsorshipTiers).map(
+            (tier, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-3xl p-8 border border-white/10 relative ${
+                  index === 0 ? "ring-2 ring-amber-500/30" : ""
+                }`}
               >
-                Secure Sponsorship
-              </Link>
-            </motion.div>
-          ))}
+                {index === 0 && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-amber-900 px-4 py-1 rounded-full text-sm font-bold">
+                      Premier Tier
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {tier.name}
+                  </h3>
+                  <div className="text-3xl font-bold text-green-400 mb-1">
+                    €{tier.price?.toLocaleString() ?? "TBD"}
+                  </div>
+                  <div className="text-sm text-gray-400 mb-4">Investment</div>
+
+                  {tier.available !== undefined && (
+                    <div className="flex justify-center items-center space-x-4 mb-4">
+                      <div className="bg-white/5 rounded-lg px-3 py-2">
+                        <div className="text-cyan-400 font-bold">
+                          {(tier.available ?? 0) - (tier.sold ?? 0)}
+                        </div>
+                        <div className="text-xs text-gray-400">Available</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg px-3 py-2">
+                        <div className="text-purple-400 font-bold">
+                          {tier.available ?? 0}
+                        </div>
+                        <div className="text-xs text-gray-400">Total</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  {Array.isArray(tier.features) &&
+                    tier.features.map((feature, featureIndex) => (
+                      <div key={featureIndex} className="flex items-start">
+                        <div className="w-2 h-2 bg-green-400 rounded-full mr-3 mt-2 flex-shrink-0"></div>
+                        <span className="text-gray-300 text-sm">{feature}</span>
+                      </div>
+                    ))}
+                </div>
+
+                <Link
+                  href="/request-access?type=sponsor"
+                  onClick={() =>
+                    trackCtaClick({
+                      section: "sponsors",
+                      cta: "Secure Sponsorship",
+                      href: "/request-access?type=sponsor",
+                      type: "sponsor",
+                    })
+                  }
+                  className={`block text-center w-full py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r ${tier.color} hover:opacity-90 text-white`}
+                >
+                  Secure Sponsorship
+                </Link>
+              </motion.div>
+            )
+          )}
         </div>
 
         {SHOW_LOGOS && (
@@ -308,7 +338,19 @@ const SponsorsSection = () => {
                 >
                   <div className="flex items-center mb-6">
                     <div className="mr-3 p-2 bg-white/5 rounded-lg">
-                      {tier.icon}
+                      {tierIndex === 0 ? (
+                        <Star className="w-6 h-6 text-amber-400" />
+                      ) : tierIndex === 1 ? (
+                        <Zap className="w-6 h-6 text-yellow-400" />
+                      ) : tierIndex === 2 ? (
+                        <Award className="w-6 h-6 text-gray-300" />
+                      ) : tierIndex === 3 ? (
+                        <Heart className="w-6 h-6 text-pink-400" />
+                      ) : tierIndex === 4 ? (
+                        <Globe className="w-6 h-6 text-cyan-400" />
+                      ) : (
+                        <Star className="w-6 h-6 text-amber-400" />
+                      )}
                     </div>
                     <h3 className="text-xl font-bold text-white">
                       {tier.name}
@@ -316,28 +358,30 @@ const SponsorsSection = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-4">
-                    {tier.sponsors.map((sponsor, sponsorIndex) => (
-                      <motion.a
-                        key={sponsorIndex}
-                        href={sponsor.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative group"
-                        whileHover={{ y: -5 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className="relative w-32 h-20 md:w-40 md:h-24 flex items-center justify-center p-4 bg-white/5 rounded-xl border border-white/5 group-hover:border-cyan-500/30 transition-colors">
-                          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <Image
-                            src={sponsor.logo}
-                            alt={sponsor.name}
-                            width={160}
-                            height={80}
-                            className="object-contain max-h-full w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
-                          />
-                        </div>
-                      </motion.a>
-                    ))}
+                    {sponsorTiers[tierIndex]?.sponsors?.map(
+                      (sponsor: StaticSponsor, sponsorIndex: number) => (
+                        <motion.a
+                          key={sponsorIndex}
+                          href={sponsor.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative group"
+                          whileHover={{ y: -5 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="relative w-32 h-20 md:w-40 md:h-24 flex items-center justify-center p-4 bg-white/5 rounded-xl border border-white/5 group-hover:border-cyan-500/30 transition-colors">
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <Image
+                              src={sponsor.logo}
+                              alt={sponsor.name}
+                              width={160}
+                              height={80}
+                              className="object-contain max-h-full w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
+                            />
+                          </div>
+                        </motion.a>
+                      )
+                    )}
                   </div>
                 </motion.div>
               ))}
