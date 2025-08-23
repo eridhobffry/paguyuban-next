@@ -18,7 +18,7 @@ import {
 // Zod schema for smart entry request
 const smartEntrySchema = z.object({
   description: z.string().min(1, "Description is required"),
-  currentKnowledge: z.record(z.unknown()).default({}),
+  currentKnowledge: z.record(z.string(), z.any()).default({}),
 });
 
 // POST /api/admin/knowledge/smart-entry - AI-powered smart knowledge entry

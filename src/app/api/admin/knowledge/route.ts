@@ -10,17 +10,17 @@ import { dynamicKnowledgeBuilder } from "@/lib/knowledge/builder";
 
 // Zod schema for knowledge validation
 const knowledgeSchema = z.object({
-  overlay: z.record(z.unknown()).default({}),
+  overlay: z.record(z.string(), z.any()).default({}),
   isActive: z.boolean().default(true),
 });
 
 const updateKnowledgeSchema = z.object({
-  overlay: z.record(z.unknown()).default({}),
+  overlay: z.record(z.string(), z.any()).default({}),
   isActive: z.boolean().default(true),
 });
 
 // GET /api/admin/knowledge - Get active knowledge overlay
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // const session = await getServerSession(authOptions);
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating knowledge:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid data format", details: error.errors },
+        { error: "Invalid data format", details: error.issues },
         { status: 400 }
       );
     }
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
     console.error("Error updating knowledge:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid data format", details: error.errors },
+        { error: "Invalid data format", details: error.issues },
         { status: 400 }
       );
     }
@@ -166,7 +166,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE /api/admin/knowledge - Clear knowledge overlay
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     // TODO: Add proper authentication check
 

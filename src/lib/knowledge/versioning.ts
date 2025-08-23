@@ -87,23 +87,28 @@ export class KnowledgeVersioningService {
         .orderBy(desc(knowledge.createdAt));
 
       return backups
-        .filter((backup) => {
-          const overlay = backup.overlay as any;
+        .filter((backup: Record<string, unknown>) => {
+          const overlay = backup.overlay as Record<string, unknown>;
           return (
             overlay._backup &&
-            (!originalId || overlay._backup.originalId === originalId)
+            typeof overlay._backup === "object" &&
+            overlay._backup !== null &&
+            (!originalId ||
+              (overlay._backup as Record<string, unknown>).originalId ===
+                originalId)
           );
         })
-        .map((backup) => {
-          const overlay = backup.overlay as any;
+        .map((backup: Record<string, unknown>) => {
+          const overlay = backup.overlay as Record<string, unknown>;
           const { _backup, ...cleanOverlay } = overlay;
 
           return {
-            id: backup.id,
-            originalId: _backup.originalId,
+            id: backup.id as string,
+            originalId: (_backup as Record<string, unknown>)
+              .originalId as string,
             overlay: cleanOverlay,
-            backupReason: _backup.reason,
-            createdAt: backup.createdAt!,
+            backupReason: (_backup as Record<string, unknown>).reason as string,
+            createdAt: backup.createdAt as Date,
           };
         });
     } catch (error) {
@@ -128,7 +133,7 @@ export class KnowledgeVersioningService {
         throw new Error("Backup not found");
       }
 
-      const backupOverlay = backup[0].overlay as any;
+      const backupOverlay = backup[0].overlay as Record<string, unknown>;
       if (!backupOverlay._backup) {
         throw new Error("Invalid backup record");
       }
@@ -149,7 +154,7 @@ export class KnowledgeVersioningService {
             ...cleanOverlay,
             _restored: {
               fromBackupId: backupId,
-              originalId: _backup.originalId,
+              originalId: (_backup as Record<string, unknown>).originalId,
               restoredAt: new Date().toISOString(),
             },
           },
@@ -225,11 +230,11 @@ export class KnowledgeVersioningService {
 
       return versions
         .filter((version) => {
-          const overlay = version.overlay as any;
+          const overlay = version.overlay as Record<string, unknown>;
           return !overlay._backup; // Exclude backups from version history
         })
         .map((version) => {
-          const overlay = version.overlay as any;
+          const overlay = version.overlay as Record<string, unknown>;
           const { _version, _restored, ...cleanOverlay } = overlay;
 
           return {
@@ -238,7 +243,8 @@ export class KnowledgeVersioningService {
             isActive: version.isActive || false,
             version: 1, // TODO: Implement proper version numbering
             changeLog:
-              _version?.changeLog || _restored
+              (_version as Record<string, unknown>)?.changeLog ||
+              (_restored as Record<string, unknown>)
                 ? "Restored from backup"
                 : "Initial version",
             createdAt: version.createdAt!,

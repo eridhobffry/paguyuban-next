@@ -3,7 +3,7 @@
  * These tests verify the core functionality without complex UI rendering
  */
 
-import { Speaker, Artist, Sponsor } from "@/types/people";
+// No imports needed for this simple test file
 
 // Test data
 const mockKnowledgeData = {

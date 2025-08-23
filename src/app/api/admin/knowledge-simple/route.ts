@@ -6,17 +6,17 @@ import { eq, desc } from "drizzle-orm";
 
 // Zod schema for knowledge validation
 const knowledgeSchema = z.object({
-  overlay: z.record(z.unknown()).default({}),
+  overlay: z.record(z.string(), z.any()).default({}),
   isActive: z.boolean().default(true),
 });
 
 const updateKnowledgeSchema = z.object({
-  overlay: z.record(z.unknown()).default({}),
+  overlay: z.record(z.string(), z.any()).default({}),
   isActive: z.boolean().default(true),
 });
 
 // GET /api/admin/knowledge-simple - Get active knowledge overlay (no auth for testing)
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get the active knowledge overlay
     const activeKnowledge = await db
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating knowledge:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid data format", details: error.errors },
+        { error: "Invalid data format", details: error.issues },
         { status: 400 }
       );
     }
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest) {
     console.error("Error updating knowledge:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid data format", details: error.errors },
+        { error: "Invalid data format", details: error.issues },
         { status: 400 }
       );
     }

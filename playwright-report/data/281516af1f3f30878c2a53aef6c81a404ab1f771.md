@@ -1,0 +1,71 @@
+# Page snapshot
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- main:
+  - main:
+    - button "Open sidebar": Toggle Sidebar
+    - heading "Dashboard" [level=1]
+    - button "Toggle theme"
+    - button "View public site": View Site
+    - button "Log out": Logout
+    - heading "Sponsors" [level=1]
+    - paragraph: Manage sponsors & logos.
+    - combobox: "25"
+    - button "Refresh"
+    - button "Add Sponsor"
+    - table:
+      - rowgroup:
+        - row "Name ▲ Tier Website Slug Order":
+          - cell "Name ▲"
+          - cell "Tier"
+          - cell "Website"
+          - cell "Slug"
+          - cell "Order"
+      - rowgroup:
+        - row "E2E Test Sponsor - https://example.com/e2e e2e-sponsor 42 Delete":
+          - cell "E2E Test Sponsor"
+          - cell "-"
+          - cell "https://example.com/e2e":
+            - link "https://example.com/e2e":
+              - /url: https://example.com/e2e
+          - cell "e2e-sponsor"
+          - cell "42"
+          - cell "Delete":
+            - button "Delete"
+        - row "Local Dev Co - https://example.dev local-dev-co 3 Delete":
+          - cell "Local Dev Co"
+          - cell "-"
+          - cell "https://example.dev":
+            - link "https://example.dev":
+              - /url: https://example.dev
+          - cell "local-dev-co"
+          - cell "3"
+          - cell "Delete":
+            - button "Delete"
+        - row "Neon - https://neon.tech neon 2 Delete":
+          - cell "Neon"
+          - cell "-"
+          - cell "https://neon.tech":
+            - link "https://neon.tech":
+              - /url: https://neon.tech
+          - cell "neon"
+          - cell "2"
+          - cell "Delete":
+            - button "Delete"
+        - row "Vercel - https://vercel.com vercel 1 Delete":
+          - cell "Vercel"
+          - cell "-"
+          - cell "https://vercel.com":
+            - link "https://vercel.com":
+              - /url: https://vercel.com
+          - cell "vercel"
+          - cell "1"
+          - cell "Delete":
+            - button "Delete"
+    - text: 4 items
+    - region "Notifications alt+T"
+- region "Notifications alt+T"
+- alert
+```

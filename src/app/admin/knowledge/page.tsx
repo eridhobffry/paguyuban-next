@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw, Eye, Sparkles } from "lucide-react";
+import KnowledgeQuerySection from "@/components/sections/KnowledgeQuerySection";
 import { Speaker } from "@/types/people";
 import { Artist } from "@/types/people";
 import { Sponsor } from "@/types/people";
@@ -153,7 +154,7 @@ export default function KnowledgeAdminPage() {
   };
 
   // Query handler (placeholder)
-  const handleQuerySubmit = () => {
+  const _handleQuerySubmit = () => {
     toast({
       title: "Coming Soon",
       description:
@@ -315,44 +316,7 @@ export default function KnowledgeAdminPage() {
 
           {/* 💬 Query Tab */}
           <TabsContent value="admin-query" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span>💬 Query Knowledge</span>
-                </CardTitle>
-                <CardDescription>
-                  Ask questions about your knowledge base
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="query-input">Ask your knowledge base:</Label>
-                  <Textarea
-                    id="query-input"
-                    placeholder="Examples:
-• 'How many speakers do we have?'
-• 'What's our sponsorship status?'
-• 'Show me all artists'"
-                    className="min-h-[100px]"
-                  />
-                </div>
-
-                <Button className="w-full" onClick={handleQuerySubmit}>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Query Knowledge Base
-                </Button>
-
-                <Alert>
-                  <Sparkles className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Sample Results:</strong>
-                    <br />• You have {knowledge.speakers.length} speakers
-                    <br />• You have {knowledge.artists.length} artists
-                    <br />• You have {knowledge.sponsors.length} sponsors
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+            <KnowledgeQuerySection />
           </TabsContent>
 
           {/* 📊 Data Sources Tab */}
@@ -475,9 +439,10 @@ export default function KnowledgeAdminPage() {
                   <Sparkles className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Examples:</strong>
-                    <br />• "Add a new speaker: John Doe, AI expert from Google"
-                    <br />• "Update venue capacity to 2000 people"
-                    <br />• "Set Gold sponsor price to €45,000"
+                    <br />• &quot;Add a new speaker: John Doe, AI expert from
+                    Google&quot;
+                    <br />• &quot;Update venue capacity to 2000 people&quot;
+                    <br />• &quot;Set Gold sponsor price to €45,000&quot;
                   </AlertDescription>
                 </Alert>
               </CardContent>

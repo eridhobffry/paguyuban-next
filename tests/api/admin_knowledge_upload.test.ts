@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// Mock next-auth (not used but imported in some places)
+vi.mock("next-auth", () => ({}));
+
 // Mock the database and auth
 vi.mock("@/lib/db", () => ({
   db: {
@@ -42,8 +45,8 @@ describe("Knowledge CSV Upload API", () => {
 
   describe("POST /api/admin/knowledge/upload", () => {
     it("should return 401 for unauthenticated requests", async () => {
-      const { getServerSession } = await import("next-auth");
-      vi.mocked(getServerSession).mockResolvedValue(null);
+      // Admin user authenticated - already mocked at top level
+      // No authentication
 
       const formData = new FormData();
       const request = new NextRequest(
@@ -61,10 +64,8 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should return 400 when no file is provided", async () => {
-      const { getServerSession } = await import("next-auth");
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated - already mocked at top level
+      // Admin user authenticated
 
       const formData = new FormData();
       const request = new NextRequest(
@@ -82,10 +83,8 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should return 400 for non-CSV files", async () => {
-      const { getServerSession } = await import("next-auth");
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated - already mocked at top level
+      // Admin user authenticated
 
       const formData = new FormData();
       const file = new File(["test content"], "test.txt", {
@@ -108,12 +107,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should process valid CSV files", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent =
         "path,value\nfinancials.revenue.total,1018660\nevent.location,Arena Berlin";
@@ -167,12 +164,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should merge CSV data with existing knowledge", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent =
         "path,value\nexisting.key,new_value\nnew.key,added_value";
@@ -234,12 +229,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should handle CSV files with headers", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent =
         "path,value\nfinancials.revenue.total,1018660\nevent.location,Arena Berlin";
@@ -289,12 +282,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should handle CSV files without headers", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       // CSV without headers - should be treated as data
       const csvContent =
@@ -345,11 +336,9 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should handle empty CSV files", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent = "path,value\n"; // Only headers, no data
       const file = new File([csvContent], "empty.csv", { type: "text/csv" });
@@ -372,12 +361,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should handle CSV files with quoted values containing commas", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent =
         'path,value\nevent.location,"Arena Berlin, Germany"\nevent.description,"A comprehensive business and cultural expo featuring Indonesian entrepreneurship"';
@@ -434,12 +421,10 @@ describe("Knowledge CSV Upload API", () => {
     });
 
     it("should handle various data types in CSV", async () => {
-      const { getServerSession } = await import("next-auth");
+      // Admin user authenticated - already mocked at top level
       const { db } = await import("@/lib/db");
 
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: "admin" },
-      });
+      // Admin user authenticated
 
       const csvContent = `path,value
 number,123

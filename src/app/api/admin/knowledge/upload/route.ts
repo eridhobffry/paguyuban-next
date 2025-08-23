@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { knowledge } from "@/lib/db/schemas/knowledge";
 import { eq, desc } from "drizzle-orm";
@@ -158,7 +157,10 @@ export async function POST(request: NextRequest) {
       const [updatedKnowledge] = await db
         .update(knowledge)
         .set({
-          overlay: mergedOverlay,
+          overlay: mergedOverlay as Record<
+            string,
+            string | number | boolean | Record<string, unknown>
+          >,
           updatedAt: new Date(),
         })
         .where(eq(knowledge.id, currentKnowledge[0].id))
@@ -174,7 +176,10 @@ export async function POST(request: NextRequest) {
       const [newKnowledge] = await db
         .insert(knowledge)
         .values({
-          overlay: mergedOverlay,
+          overlay: mergedOverlay as Record<
+            string,
+            string | number | boolean | Record<string, unknown>
+          >,
           isActive: true,
         })
         .returning();

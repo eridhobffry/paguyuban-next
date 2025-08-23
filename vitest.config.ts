@@ -13,6 +13,13 @@ export default defineConfig({
       "tests/**/*.{test,spec}.ts",
       "tests/**/*.{test,spec}.tsx",
     ],
+    env: {
+      NODE_ENV: "test",
+      DATABASE_URL: "postgresql://test:test@localhost:5432/test",
+      JWT_SECRET: "test-jwt-secret-for-testing",
+      GEMINI_API_KEY: "test-gemini-api-key",
+      CI: "true",
+    },
   },
   resolve: {
     alias: {

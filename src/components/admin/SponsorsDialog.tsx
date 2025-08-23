@@ -1,10 +1,20 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Sponsor, SponsorTier } from "@/types/people";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 // Zod schema for sponsor form validation
 const sponsorSchema = z.object({
@@ -31,11 +41,19 @@ const sponsorSchema = z.object({
         .filter((tag) => tag.length > 0);
     }
     return val;
-  }, z.array(z.string().min(1, "Tag cannot be empty")).default([])),
+  }, z.array(z.string()).default([])),
   sortOrder: z.number().min(0, "Sort order must be 0 or greater").optional(),
 });
 
-type SponsorFormData = z.infer<typeof sponsorSchema>;
+type SponsorFormData = {
+  name: string;
+  url?: string;
+  slug?: string;
+  tierId?: string;
+  logoUrl?: string;
+  tags: string[];
+  sortOrder?: number;
+};
 
 export function SponsorDialog({
   open,
@@ -55,24 +73,22 @@ export function SponsorDialog({
   uploading: boolean;
 }) {
   const form = useForm<SponsorFormData>({
-    resolver: zodResolver(sponsorSchema),
+    resolver: zodResolver(sponsorSchema) as Resolver<SponsorFormData>,
     defaultValues: {
       name: "",
       url: "",
       slug: "",
       tierId: "",
       logoUrl: "",
-      tags: "",
+      tags: [],
       sortOrder: undefined,
     },
   });
 
   const {
-    register,
-    handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
     reset,
   } = form;
 
@@ -87,7 +103,7 @@ export function SponsorDialog({
         slug: data.slug || null,
         tierId: data.tierId || null,
         logoUrl: data.logoUrl || null,
-        tags: data.tags || [],
+        tags: Array.isArray(data.tags) ? data.tags : [],
         sortOrder: data.sortOrder || null,
       });
       onOpenChange(false);
@@ -117,7 +133,7 @@ export function SponsorDialog({
         slug: (sponsor.slug as string | null) ?? "",
         tierId: (sponsor.tierId as string | null) ?? "",
         logoUrl: (sponsor.logoUrl as string | null) ?? "",
-        tags: (sponsor.tags as string[] | null)?.join(", ") ?? "",
+        tags: (sponsor.tags as string[] | null) ?? [],
         sortOrder: (sponsor.sortOrder as number | null) ?? undefined,
       });
     } else if (open && !sponsor) {
@@ -127,7 +143,7 @@ export function SponsorDialog({
         slug: "",
         tierId: "",
         logoUrl: "",
-        tags: "",
+        tags: [],
         sortOrder: undefined,
       });
     }
@@ -151,157 +167,176 @@ export function SponsorDialog({
         <h2 className="text-lg font-semibold mb-3">
           {sponsor ? "Edit Sponsor" : "Add Sponsor"}
         </h2>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="grid gap-3">
-          <div className="grid gap-1">
-            <label className="text-sm">Name</label>
-            <input
-              type="text"
-              data-testid="sponsor-name"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("name")}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onFormSubmit)}
+            className="grid gap-3"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="sponsor-name"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && (
-              <p className="text-xs text-destructive" role="alert">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-1 md:grid-cols-2">
-            <div>
-              <label className="text-sm">Website</label>
-              <input
-                data-testid="sponsor-url"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("url")}
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input
+                        data-testid="sponsor-url"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.url && (
-                <p className="text-xs text-destructive" role="alert">
-                  {errors.url.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm">Slug</label>
-              <input
-                data-testid="sponsor-slug"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("slug")}
+              <FormField
+                control={form.control}
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Slug</FormLabel>
+                    <FormControl>
+                      <Input
+                        data-testid="sponsor-slug"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.slug && (
-                <p className="text-xs text-destructive" role="alert">
-                  {errors.slug.message}
-                </p>
-              )}
             </div>
-          </div>
-          <div className="grid gap-1 md:grid-cols-2">
-            <div>
-              <label className="text-sm">Tier</label>
-              <select
-                data-testid="sponsor-tier"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("tierId")}
+            <div className="grid gap-3 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="tierId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tier</FormLabel>
+                    <FormControl>
+                      <select
+                        data-testid="sponsor-tier"
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                      >
+                        <option value="">None</option>
+                        {tiers.map((tier) => (
+                          <option key={tier.id} value={tier.id as string}>
+                            {tier.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sortOrder"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sort Order</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        data-testid="sponsor-sort-order"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? Number(e.target.value) : undefined
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm">Upload Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                data-testid="logo-file"
+                onChange={handleFileUpload}
+              />
+              {uploading && (
+                <p className="text-xs text-muted-foreground">Uploading...</p>
+              )}
+              {watchedLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={watchedLogoUrl}
+                  alt="Logo"
+                  className="mt-2 h-16 w-16 object-contain"
+                />
+              ) : null}
+            </div>
+            <FormField
+              control={form.control}
+              name="logoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Logo URL</FormLabel>
+                  <FormControl>
+                    <Input data-testid="sponsor-logo-url" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags (comma separated)</FormLabel>
+                  <FormControl>
+                    <Input data-testid="sponsor-tags" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                onClick={() => onOpenChange(false)}
               >
-                <option value="">None</option>
-                {tiers.map((tier) => (
-                  <option key={tier.id} value={tier.id as string}>
-                    {tier.name}
-                  </option>
-                ))}
-              </select>
-              {errors.tierId && (
-                <p className="text-xs text-destructive" role="alert">
-                  {errors.tierId.message}
-                </p>
-              )}
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : "Save"}
+              </button>
             </div>
-            <div>
-              <label className="text-sm">Sort Order</label>
-              <input
-                type="number"
-                data-testid="sponsor-sort-order"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("sortOrder", { valueAsNumber: true })}
-              />
-              {errors.sortOrder && (
-                <p className="text-xs text-destructive" role="alert">
-                  {errors.sortOrder.message}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="grid gap-1">
-            <label className="text-sm">Upload Logo</label>
-            <input
-              type="file"
-              accept="image/*"
-              data-testid="logo-file"
-              onChange={handleFileUpload}
-            />
-            {uploading && (
-              <p className="text-xs text-muted-foreground">Uploading...</p>
-            )}
-            {watchedLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={watchedLogoUrl}
-                alt="Logo"
-                className="mt-2 h-16 w-16 object-contain"
-              />
-            ) : null}
-          </div>
-          <div className="grid gap-1">
-            <label className="text-sm">Logo URL</label>
-            <input
-              data-testid="sponsor-logo-url"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("logoUrl")}
-            />
-            {errors.logoUrl && (
-              <p className="text-xs text-destructive" role="alert">
-                {errors.logoUrl.message}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-1">
-            <label className="text-sm">Tags (comma separated)</label>
-            <input
-              data-testid="sponsor-tags"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("tags")}
-              value={watch("tags") || ""}
-              onChange={(e) => {
-                const value = e.target.value;
-                setValue("tags", value);
-              }}
-              onBlur={(e) => {
-                const value = e.target.value;
-                setValue("tags", value);
-              }}
-            />
-            {errors.tags && (
-              <p className="text-xs text-destructive" role="alert">
-                {errors.tags.message}
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </div>
     </div>
   );

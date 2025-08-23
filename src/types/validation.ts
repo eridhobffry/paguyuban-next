@@ -119,3 +119,37 @@ export const chatbotLogInsertBase = createInsertSchema(chatbotLogs);
 export const chatbotLogSelectBase = createSelectSchema(chatbotLogs);
 export const chatbotSummaryInsertBase = createInsertSchema(chatbotSummaries);
 export const chatbotSummarySelectBase = createSelectSchema(chatbotSummaries);
+
+// Form schemas for client-side validation
+export const loginFormSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
+export const requestAccessFormSchema = z
+  .object({
+    email: z.string().email({ message: "Please enter a valid email address" }),
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters long" }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Please confirm your password" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+// Data table form schemas
+export const dataTableTargetSchema = z.object({
+  target: z.string().min(1, { message: "Target is required" }),
+});
+
+export const dataTableLimitSchema = z.object({
+  limit: z.string().min(1, { message: "Limit is required" }),
+});
+
+export const dataTableReviewerSchema = z.object({
+  reviewer: z.string().min(1, { message: "Reviewer selection is required" }),
+});

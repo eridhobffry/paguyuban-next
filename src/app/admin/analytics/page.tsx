@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import KnowledgeAnalyticsSection from "@/components/sections/KnowledgeAnalyticsSection";
+import AnalyticsQuerySection from "@/components/sections/AnalyticsQuerySection";
 import {
   ChartContainer,
   ChartLegend,
@@ -221,9 +222,13 @@ export default function AdminAnalyticsPage() {
       </Card>
 
       <Tabs defaultValue="behavior" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="behavior">User Behavior Analytics</TabsTrigger>
           <TabsTrigger value="knowledge">Knowledge Insights</TabsTrigger>
+          <TabsTrigger value="ai-analytics" className="flex items-center gap-2">
+            <span className="text-sm">🤖</span>
+            AI Analytics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="behavior" className="space-y-6">
@@ -692,6 +697,25 @@ export default function AdminAnalyticsPage() {
 
         <TabsContent value="knowledge" className="space-y-6">
           <KnowledgeAnalyticsSection />
+        </TabsContent>
+
+        <TabsContent value="ai-analytics" className="space-y-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🤖</span>
+                  Advanced AI Query Assistant
+                </CardTitle>
+                <p className="text-muted-foreground">
+                  Ask intelligent questions about your knowledge base and
+                  analytics data using advanced AI-powered queries
+                </p>
+              </CardHeader>
+            </Card>
+
+            <AnalyticsQuerySection />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

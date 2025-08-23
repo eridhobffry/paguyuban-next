@@ -64,13 +64,13 @@ export class AIKnowledgeCompiler {
       });
 
       // Step 4: Parse AI response and apply recommendations
-      const compilationInstructions = this.parseAIResponse(aiResponse);
+      const aiCompilationInstructions = this.parseAIResponse(aiResponse);
 
       // Step 5: Execute compilation based on AI recommendations
       const result = this.executeCompilation(
         existingKnowledge,
         newKnowledge,
-        compilationInstructions,
+        aiCompilationInstructions,
         conflicts
       );
 
@@ -78,11 +78,15 @@ export class AIKnowledgeCompiler {
     } catch (error) {
       console.error("AI Knowledge Compilation failed:", error);
 
-      // Fallback to simple merge
+      // Fallback to simple merge - detect conflicts again in case of error
+      const fallbackConflicts = this.detectConflicts(
+        existingKnowledge,
+        newKnowledge
+      );
       return this.fallbackCompilation(
         existingKnowledge,
         newKnowledge,
-        conflicts
+        fallbackConflicts
       );
     }
   }
@@ -235,7 +239,11 @@ Provide intelligent, context-aware decisions that maintain data integrity while 
   /**
    * Parse AI response into actionable instructions
    */
-  private parseAIResponse(aiResponse: string | null): any {
+  private parseAIResponse(aiResponse: string | null): {
+    decisions: unknown[];
+    enhancements: unknown[];
+    summary: string;
+  } {
     if (!aiResponse) {
       return {
         decisions: [],
@@ -267,7 +275,11 @@ Provide intelligent, context-aware decisions that maintain data integrity while 
   private executeCompilation(
     existing: Record<string, unknown>,
     newData: Record<string, unknown>,
-    instructions: any,
+    instructions: {
+      decisions: unknown[];
+      enhancements: unknown[];
+      summary: string;
+    },
     conflicts: Array<{
       path: string;
       existingValue: unknown;
@@ -291,13 +303,22 @@ Provide intelligent, context-aware decisions that maintain data integrity while 
 
     // Apply AI decisions
     if (instructions.decisions && Array.isArray(instructions.decisions)) {
-      for (const decision of instructions.decisions) {
+      for (const decision of instructions.decisions as Array<{
+        path: string;
+        action: string;
+        reasoning: string;
+        finalValue: unknown;
+      }>) {
         const conflict = conflicts.find((c) => c.path === decision.path);
         if (conflict) {
           this.setDeepValue(compiled, decision.path, decision.finalValue);
           resolvedConflicts.push({
             ...conflict,
-            resolution: decision.action,
+            resolution: decision.action as
+              | "keep_existing"
+              | "use_new"
+              | "merge"
+              | "enhanced",
             reasoning: decision.reasoning,
           });
         }
@@ -309,7 +330,13 @@ Provide intelligent, context-aware decisions that maintain data integrity while 
 
     // Record enhancements
     if (instructions.enhancements && Array.isArray(instructions.enhancements)) {
-      appliedEnhancements.push(...instructions.enhancements);
+      appliedEnhancements.push(
+        ...(instructions.enhancements as Array<{
+          path: string;
+          type: "added" | "enriched" | "normalized" | "validated";
+          description: string;
+        }>)
+      );
     }
 
     return {

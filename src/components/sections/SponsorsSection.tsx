@@ -182,7 +182,7 @@ const SHOW_LOGOS = false;
 const SponsorsSection = () => {
   const {
     sponsorTiers: dynamicSponsorTiers,
-    sponsors: dynamicSponsors,
+    sponsors: _dynamicSponsors,
     loading,
     error,
   } = useSponsorsPublic();
