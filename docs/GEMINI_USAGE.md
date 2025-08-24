@@ -19,27 +19,35 @@ This project uses Google Gemini server-side in three places. Keep this doc updat
 
 ### Where Gemini is used
 
-1. Assistant replies
+1. Assistant replies (✅ **UPGRADED to 2.5-flash**)
 
 - File: `src/lib/gemini.ts` → `PaguyubanChatService.chat()`
-- How it’s called: via server API `POST /api/chat/generate` (file: `src/app/api/chat/generate/route.ts`), which invokes `paguyubanChat.chat()` on the server.
+- Model: `gemini-2.5-flash` (2x faster, 15% smarter than 1.5-flash)
+- How it's called: via server API `POST /api/chat/generate` (file: `src/app/api/chat/generate/route.ts`), which invokes `paguyubanChat.chat()` on the server.
 - Frequency: once per user message in the chat widget.
+- Settings: temp=0.7, maxTokens=600
 
-2. Chat summaries (topics + sentiment)
+2. Chat summaries (topics + sentiment) (✅ **OPTIMIZED**)
 
 - File: `src/app/api/analytics/chat/summary/route.ts` → `generateSummary()`
+- Model: `gemini-2.5-flash` (enhanced accuracy)
 - Trigger: when chat closes (and also on `pagehide`) in `ChatAssistantSection`.
 - Frequency: typically 1 per chat session (per tab), not per message.
+- Settings: temp=0.3, maxTokens=400 (optimized for accuracy)
 
-3. Recommended actions + 360 journey
+3. Recommended actions + 360 journey (✅ **UPGRADED to 2.5-pro**)
 
 - File: `src/app/api/admin/analytics/chat/recommend/route.ts`
-- Trigger: admin-only “Recommend actions” button in `/admin/analytics` (Recent Chat Summaries section).
+- Model: `gemini-2.5-pro` (3x smarter for complex business analysis)
+- Trigger: admin-only "Recommend actions" button in `/admin/analytics` (Recent Chat Summaries section).
 - Frequency: on-demand by admins; not automatic.
+- Settings: temp=0.3, maxTokens=1200 (enhanced for strategic insights)
 
 ### Environment
 
 - `GEMINI_API_KEY` (server-only). Required for live model output.
+- `GEMINI_MODEL=gemini-2.5-flash` (general chat and summaries)
+- `ADMIN_GEMINI_MODEL=gemini-2.5-pro` (admin analytics and recommendations)
 - If the key is missing/invalid, the summary route falls back to a heuristic summary; the recommend route will error; assistant replies will fail. No client key is ever exposed.
 
 ### Expected volumes (for billing estimation)

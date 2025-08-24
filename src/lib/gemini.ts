@@ -352,6 +352,10 @@ const INTENT_KEYWORDS: Record<string, string[]> = {
     "algorithm",
     "platform details",
     "matchmaking details",
+    "how does the ai",
+    "ai matchmaking",
+    "how does matchmaking work",
+    "how does it work",
   ],
   venue_details: ["capacity", "layout", "address", "getting there"],
 };
@@ -407,7 +411,18 @@ const TOPIC_KEYWORDS = {
     "sistem",
     "koneksi",
   ],
-  artists: ["concert", "performance", "music", "konser", "tulus", "dewa"],
+  artists: [
+    "concert",
+    "performance",
+    "music",
+    "konser",
+    "tulus",
+    "dewa",
+    "artists",
+    "artis",
+    "performer",
+    "musician",
+  ],
   business: [
     "b2b",
     "networking",
@@ -432,6 +447,20 @@ const TOPIC_KEYWORDS = {
     "break even",
     "margin",
     "profitability",
+  ],
+  attendance: [
+    "attend",
+    "attendees",
+    "attendance",
+    "people",
+    "visitors",
+    "participants",
+    "capacity",
+    "crowd",
+    "how many",
+    "jumlah",
+    "peserta",
+    "kapasitas",
   ],
 };
 
@@ -744,6 +773,16 @@ Key Metrics:
         en: this.buildFinancialContext(),
         id: this.buildFinancialContext(),
         de: this.buildFinancialContext(),
+      },
+      attendance: {
+        en: `We expect 1,800+ attendees onsite at Arena Berlin, plus 4,000-5,000 online viewers for a total hybrid audience of 5,800-6,800 participants. The event includes 1,440-1,680 business professionals for B2B networking, 25-30 exhibition booths, and dedicated spaces for cultural workshops and performances.`,
+        id: `Kami mengharapkan 1.800+ peserta di lokasi Arena Berlin, plus 4.000-5.000 penonton online untuk total audiens hybrid 5.800-6.800 peserta. Acara ini mencakup 1.440-1.680 profesional bisnis untuk networking B2B, 25-30 booth pameran, dan ruang khusus untuk workshop budaya dan pertunjukan.`,
+        de: `Wir erwarten 1.800+ Teilnehmer vor Ort in der Arena Berlin, plus 4.000-5.000 Online-Zuschauer für ein hybrides Gesamtpublikum von 5.800-6.800 Teilnehmern. Die Veranstaltung umfasst 1.440-1.680 Business-Professionals für B2B-Networking, 25-30 Ausstellungsstände und spezielle Bereiche für kulturelle Workshops und Performances.`,
+      },
+      artists: {
+        en: `Paguyuban Messe 2026 features performances by top Indonesian artists. Day 1 evening concerts include The Panturas (Indonesian indie rock) and Tulus (premier vocalist). Day 2 concludes with Efek Rumah Kaca (alternative rock) and the grand finale by Dewa 19 (Indonesian rock legends). All performances take place in the Main Hall with capacity for 1,800+ attendees.`,
+        id: `Paguyuban Messe 2026 menampilkan pertunjukan oleh artis Indonesia terkemuka. Konser malam Hari 1 meliputi The Panturas (rock indie Indonesia) dan Tulus (penyanyi utama). Hari 2 diakhiri dengan Efek Rumah Kaca (rock alternatif) dan grand finale oleh Dewa 19 (legenda rock Indonesia). Semua pertunjukan berlangsung di Main Hall dengan kapasitas 1.800+ peserta.`,
+        de: `Die Paguyuban Messe 2026 bietet Auftritte von Top-Indonesischen Künstlern. Die Abendkonzerte von Tag 1 umfassen The Panturas (indonesischer Indie-Rock) und Tulus (Hauptsänger). Tag 2 endet mit Efek Rumah Kaca (Alternative Rock) und dem großen Finale von Dewa 19 (indonesische Rock-Legenden). Alle Auftritte finden in der Main Hall mit Kapazität für 1.800+ Teilnehmer statt.`,
       },
       general: {
         en: `Paguyuban Messe 2026 is Indonesia's premier business and cultural expo in Europe, taking place August 7-8, 2026 at Arena Berlin. The event combines business networking with Indonesian cultural experiences, featuring AI-powered matchmaking, startup showcases, and performances by top Indonesian artists. We expect 1,800+ attendees and offer sponsorship opportunities from €15,000 to €120,000.`,

@@ -44,8 +44,8 @@ async function generateSummaryWithAI(
 ): Promise<SummaryData> {
   const prompt = buildAiPrompt(transcript);
   const aiJson = await generateContent<unknown>(prompt, {
-    temperature: 0.4,
-    maxOutputTokens: 300,
+    temperature: 0.3,
+    maxOutputTokens: 400,
     responseMimeType: "application/json",
   });
   const parsed = AiSummarySchema.safeParse(aiJson);

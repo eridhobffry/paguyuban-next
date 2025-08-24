@@ -4,7 +4,7 @@ import { verifyToken, isAdmin } from "@/lib/auth";
 import type { User } from "@/lib/sql";
 import { db } from "@/lib/db/drizzle";
 import { sql as dsql } from "drizzle-orm";
-import { generateContent } from "@/lib/ai/gemini-client";
+import { generateAdminAnalysis } from "@/lib/ai/gemini-admin";
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -199,10 +199,9 @@ TRANSCRIPT:\n${transcript
 
     let aiJson: unknown;
     try {
-      aiJson = await generateContent<object>(prompt, {
-        temperature: 0.4,
-        maxOutputTokens: 800,
-        responseMimeType: "application/json",
+      aiJson = await generateAdminAnalysis<object>(prompt, {
+        temperature: 0.3,
+        maxOutputTokens: 1200,
       });
     } catch {
       return json({ error: "gemini_502" }, 502);
@@ -287,7 +286,10 @@ TRANSCRIPT:\n${transcript
     }
 
     // Provide minimal actions if absent
-    if (!parsed.recommended_actions || parsed.recommended_actions.length === 0) {
+    if (
+      !parsed.recommended_actions ||
+      parsed.recommended_actions.length === 0
+    ) {
       parsed.recommended_actions = [
         {
           title: "Schedule sponsorship call",

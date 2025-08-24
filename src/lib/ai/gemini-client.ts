@@ -2,7 +2,7 @@
 // Usage: import { generateText, extractJsonObject, GEMINI_MODEL } from "@/lib/ai/gemini-client";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-exp";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 export const GEMINI_API_BASE =
   process.env.GEMINI_API_BASE ||
   "https://generativelanguage.googleapis.com/v1beta/models";
@@ -87,7 +87,9 @@ export async function generateContent<T = string>(
       }
     }
     console.error("Gemini API Error:", detail);
-    throw new Error(`Gemini API error ${res.status}${detail ? ": " + detail : ""}`);
+    throw new Error(
+      `Gemini API error ${res.status}${detail ? ": " + detail : ""}`
+    );
   }
 
   const data = await res.json();
