@@ -59,11 +59,7 @@ export default function UploadControls({
   }
 
   return (
-    <Button
-      onClick={onManualCreate}
-      disabled={isLoading}
-      className="w-full"
-    >
+    <Button onClick={onManualCreate} disabled={isLoading} className="w-full">
       {isLoading ? "Creating..." : "Create Document"}
     </Button>
   );

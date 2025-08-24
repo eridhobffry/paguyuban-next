@@ -2,23 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { documentTypes } from "@/types/admin";
 import type { DocumentRow } from "@/types/documents";
 import { useMediaUpload } from "@/hooks/useUpload";
-import { Eye, Upload } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import {
+  EditDocumentModalShell,
+  DocumentForm,
+  MetadataFields,
+  PreviewPane,
+  FooterActions,
+} from "./edit-document-modal";
 
 interface EditDocumentModalProps {
   document: DocumentRow;
@@ -187,213 +184,86 @@ export function EditDocumentModal({
   };
 
   return (
-    <Card className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="p-0 mb-4">
-          <CardTitle>Edit Document</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 space-y-4">
-          <div>
-            <Label>Title</Label>
-            <Input
-              value={editingDoc.title}
-              onChange={(e) =>
-                setEditingDoc({
-                  ...editingDoc,
-                  title: e.target.value,
-                })
+    <EditDocumentModalShell>
+      <DocumentForm editingDoc={editingDoc} onDocumentChange={setEditingDoc} />
+
+      <MetadataFields
+        editingDoc={editingDoc}
+        onDocumentChange={setEditingDoc}
+      />
+
+      <div>
+        <Label>Highlights</Label>
+        <div className="flex gap-2 mt-2">
+          <Input
+            placeholder="Add a highlight and press Enter or Add"
+            value={newHighlight}
+            onChange={(e) => setNewHighlight(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddHighlight();
               }
-            />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              value={editingDoc.description}
-              onChange={(e) =>
-                setEditingDoc({
-                  ...editingDoc,
-                  description: e.target.value,
-                })
-              }
-              rows={3}
-            />
-          </div>
-          <div>
-            <Label>Preview</Label>
-            <Textarea
-              value={editingDoc.preview}
-              onChange={(e) =>
-                setEditingDoc({
-                  ...editingDoc,
-                  preview: e.target.value,
-                })
-              }
-              rows={2}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Type</Label>
-              <Select
-                value={editingDoc.type}
-                onValueChange={(value) =>
-                  setEditingDoc({ ...editingDoc, type: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {documentTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Slug (stable key)</Label>
-              <Input
-                value={editingDoc.slug ?? ""}
-                onChange={(e) =>
-                  setEditingDoc({ ...editingDoc, slug: e.target.value })
-                }
-                placeholder="e.g. sponsorship-kit"
-              />
-            </div>
-            <div>
-              <Label>Pages</Label>
-              <Input
-                value={editingDoc.pages}
-                onChange={(e) =>
-                  setEditingDoc({
-                    ...editingDoc,
-                    pages: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div>
-            <Label>Highlights</Label>
-            <div className="flex gap-2 mt-2">
-              <Input
-                placeholder="Add a highlight and press Enter or Add"
-                value={newHighlight}
-                onChange={(e) => setNewHighlight(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddHighlight();
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddHighlight}
-              >
-                Add
-              </Button>
-            </div>
-            {Array.isArray(editingDoc.marketingHighlights) &&
-              editingDoc.marketingHighlights.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {editingDoc.marketingHighlights.map((h, i) => (
-                    <Badge
-                      key={`${h}-${i}`}
-                      variant="secondary"
-                      className="flex items-center gap-2"
-                    >
-                      <span>{h}</span>
-                      <button
-                        type="button"
-                        className="text-xs opacity-70 hover:opacity-100"
-                        onClick={() => handleRemoveHighlight(i)}
-                        aria-label={`Remove ${h}`}
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={editingDoc.restricted}
-              onChange={(e) =>
-                setEditingDoc({
-                  ...editingDoc,
-                  restricted: e.target.checked,
-                })
-              }
-              className="w-4 h-4"
-            />
-            <Label>Restricted Access</Label>
-          </div>
-          <div className="flex flex-col gap-3 pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Label>File</Label>
-                {editingDoc.fileUrl && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      window.open(
-                        editingDoc.fileUrl!,
-                        "_blank",
-                        "noopener,noreferrer"
-                      )
-                    }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={handleAddHighlight}>
+            Add
+          </Button>
+        </div>
+        {Array.isArray(editingDoc.marketingHighlights) &&
+          editingDoc.marketingHighlights.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {editingDoc.marketingHighlights.map((h, i) => (
+                <Badge
+                  key={`${h}-${i}`}
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                >
+                  <span>{h}</span>
+                  <button
+                    type="button"
+                    className="text-xs opacity-70 hover:opacity-100"
+                    onClick={() => handleRemoveHighlight(i)}
+                    aria-label={`Remove ${h}`}
                   >
-                    <Eye className="w-4 h-4 mr-1" /> View
-                  </Button>
-                )}
-              </div>
-              <div>
-                <input
-                  id="replace-file-input"
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handleReplaceFile(file);
-                  }}
-                  accept=".pdf,.doc,.docx,.txt"
-                />
-                <Label htmlFor="replace-file-input">
-                  <Button variant="secondary" size="sm" disabled={uploading}>
-                    <Upload className="w-4 h-4 mr-1" />
-                    {uploading ? "Uploading..." : "Replace File"}
-                  </Button>
-                </Label>
-              </div>
+                    ×
+                  </button>
+                </Badge>
+              ))}
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleAIRefine}>
-                AI Refine
-              </Button>
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleDocumentUpdate}
-                disabled={processing || uploading || !hasChanges}
-              >
-                {processing
-                  ? "Saving..."
-                  : hasChanges
-                  ? "Save Changes"
-                  : "No Changes"}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
+          )}
       </div>
-    </Card>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          checked={editingDoc.restricted}
+          onChange={(e) =>
+            setEditingDoc({
+              ...editingDoc,
+              restricted: e.target.checked,
+            })
+          }
+          className="w-4 h-4"
+        />
+        <Label>Restricted Access</Label>
+      </div>
+
+      <PreviewPane
+        editingDoc={editingDoc}
+        onDocumentChange={setEditingDoc}
+        onFileReplace={handleReplaceFile}
+        isUploading={uploading}
+      />
+
+      <FooterActions
+        onAIRefine={handleAIRefine}
+        onCancel={handleCancel}
+        onSave={handleDocumentUpdate}
+        hasChanges={hasChanges}
+        isProcessing={processing}
+        isUploading={uploading}
+      />
+    </EditDocumentModalShell>
   );
 }

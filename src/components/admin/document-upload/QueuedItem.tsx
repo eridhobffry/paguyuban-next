@@ -33,7 +33,9 @@ export default function QueuedItem({
   const getStatusIcon = () => {
     switch (status) {
       case "uploading":
-        return <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />;
+        return (
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        );
       case "completed":
         return <FileText className="w-4 h-4 text-green-500" />;
       case "error":

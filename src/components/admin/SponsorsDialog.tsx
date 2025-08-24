@@ -180,6 +180,7 @@ export function SponsorDialog({
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
+                      type="text"
                       data-testid="sponsor-name"
                       {...field}
                       value={field.value ?? ""}
@@ -198,6 +199,7 @@ export function SponsorDialog({
                     <FormLabel>Website</FormLabel>
                     <FormControl>
                       <Input
+                        type="text"
                         data-testid="sponsor-url"
                         {...field}
                         value={field.value ?? ""}
@@ -215,6 +217,7 @@ export function SponsorDialog({
                     <FormLabel>Slug</FormLabel>
                     <FormControl>
                       <Input
+                        type="text"
                         data-testid="sponsor-slug"
                         {...field}
                         value={field.value ?? ""}
@@ -313,7 +316,33 @@ export function SponsorDialog({
                 <FormItem>
                   <FormLabel>Tags (comma separated)</FormLabel>
                   <FormControl>
-                    <Input data-testid="sponsor-tags" {...field} />
+                    <Input
+                      type="text"
+                      data-testid="sponsor-tags"
+                      {...field}
+                      value={
+                        Array.isArray(field.value)
+                          ? field.value.join(", ")
+                          : field.value ?? ""
+                      }
+                      onChange={(e) => {
+                        // Just update the field value as string for display
+                        field.onChange(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          field.onChange([]);
+                        } else {
+                          field.onChange(
+                            value
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter((tag) => tag.length > 0)
+                          );
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
