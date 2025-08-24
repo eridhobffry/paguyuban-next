@@ -14,8 +14,17 @@ vi.mock("next-auth", () => ({
 
 vi.mock("@/lib/auth", () => ({
   getServerSession: vi.fn(),
-  verifyToken: vi.fn(),
-  isAdminFromToken: vi.fn(),
+  verifyToken: vi.fn(), // Will be configured per test
+  isAdminFromToken: vi.fn(), // Will be configured per test
+  createToken: vi.fn(), // Will be configured per test
+  isAdmin: vi.fn(), // Will be configured per test
+}));
+
+// Mock JWT utilities
+vi.mock("@/lib/jwt", () => ({
+  verifyTokenMiddleware: vi.fn(), // Will be configured per test
+  isAdminFromToken: vi.fn(), // Will be configured per test
+  isSuperAdminFromToken: vi.fn(), // Will be configured per test
 }));
 
 // Mock AI services
