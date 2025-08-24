@@ -1,6 +1,7 @@
 // Enhanced Gemini API Integration for Paguyuban Messe 2026 Chat Assistant
-import { generateText } from "@/lib/ai/gemini-client";
-import { loadKnowledgeOverlay, deepMerge } from "@/lib/knowledge/loader";
+import { generateText, GEMINI_API_KEY } from "@/lib/ai/gemini-client";
+import { deepMerge } from "@/lib/knowledge/loader";
+import { dynamicKnowledgeBuilder } from "@/lib/knowledge/builder";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -337,13 +338,7 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
 // Intent keywords to support finer-grained understanding beyond broad topics
 // Priority matters: put more specific/decisive intents first
 const INTENT_KEYWORDS: Record<string, string[]> = {
-  sponsorship_cost: [
-    "price",
-    "cost",
-    "how much",
-    "investment",
-    "tier price",
-  ],
+  sponsorship_cost: ["price", "cost", "how much", "investment", "tier price"],
   sponsorship_interest: [
     "benefits",
     "package",
@@ -424,6 +419,20 @@ const TOPIC_KEYWORDS = {
   ],
   registration: ["register", "sign up", "ticket", "daftar", "how to join"],
   contact: ["contact", "email", "phone", "kontak", "hubungi"],
+  financial: [
+    "financial",
+    "revenue",
+    "cost",
+    "profit",
+    "expense",
+    "budget",
+    "money",
+    "income",
+    "loss",
+    "break even",
+    "margin",
+    "profitability",
+  ],
 };
 
 const ASSISTANT_PERSONALITIES: { [key: string]: AssistantPersonality } = {
@@ -468,7 +477,8 @@ export class PaguyubanChatService {
   private conversationHistory: ChatMessage[] = [];
   private sessionStartTime: Date;
   // Runtime knowledge overlay, defaults to static constant and may be enriched from JSON/CSV
-  private knowledge: typeof PAGUYUBAN_MESSE_KNOWLEDGE = PAGUYUBAN_MESSE_KNOWLEDGE;
+  private knowledge: typeof PAGUYUBAN_MESSE_KNOWLEDGE =
+    PAGUYUBAN_MESSE_KNOWLEDGE;
   private userProfile: {
     interests: string[];
     language: string;
@@ -480,15 +490,22 @@ export class PaguyubanChatService {
 
   constructor() {
     this.sessionStartTime = new Date();
-    // Best-effort async knowledge overlay (JSON/CSV). Non-blocking.
+
+    // Load dynamic knowledge including financial data
     void (async () => {
       try {
-        const overlay = await loadKnowledgeOverlay();
-        if (overlay) {
-          this.knowledge = deepMerge(PAGUYUBAN_MESSE_KNOWLEDGE, overlay);
+        const dynamicKnowledge = await dynamicKnowledgeBuilder.buildKnowledge();
+        if (dynamicKnowledge) {
+          // Merge with static knowledge, preserving dynamic data
+          this.knowledge = deepMerge(
+            PAGUYUBAN_MESSE_KNOWLEDGE,
+            dynamicKnowledge
+          );
         }
       } catch (e) {
-        console.warn("Knowledge overlay load failed:", e);
+        console.warn("Dynamic knowledge load failed:", e);
+        // Fallback to static knowledge
+        this.knowledge = PAGUYUBAN_MESSE_KNOWLEDGE;
       }
     })();
   }
@@ -585,26 +602,20 @@ export class PaguyubanChatService {
 
   // Build comprehensive context based on topic
   private buildTopicContext(topic: string): string {
+    const k = this.knowledge;
     const contexts: { [key: string]: string } = {
-      dates: `Event Dates: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.dates}
-Day 1: ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day1.title}
-Day 2: ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day2.title}
+      dates: `Event Dates: ${k.event.dates}
+Day 1: ${k.program.day1.title}
+Day 2: ${k.program.day2.title}
 Duration: 2 days of intensive business networking and cultural celebration`,
 
-      location: `Venue: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.location}
-Main Hall: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.venue.mainHall}
-Beach Club: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.venue.beachClub}
-Club Berlin: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.venue.clubBerlin}
-Capacity: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.venue.capacity}`,
+      location: `Venue: ${k.event.location}
+Main Hall: ${k.event.venue.mainHall}
+Beach Club: ${k.event.venue.beachClub}
+Club Berlin: ${k.event.venue.clubBerlin}
+Capacity: ${k.event.venue.capacity}`,
 
-      pricing: `Ticket Prices:
-- Day 1: Standard €45, Student €32
-- Day 2: Standard €40, Student €28  
-- 2-Day Pass: Standard €70, Student €49
-- VIP Package: €120
-- Techno Night: €20/night
-
-Total Revenue Target: ${PAGUYUBAN_MESSE_KNOWLEDGE.financials.revenue.total}`,
+      pricing: this.buildFinancialContext(),
 
       sponsorship: `Sponsorship Tiers:
 - Title Sponsor: €120,000 (1 available) - Naming rights, 50 AI matches, 20 VIP passes
@@ -617,10 +628,10 @@ ROI: €200,000-€650,000 business pipeline over 12-18 months
 Sponsorship represents 77.6% of total revenue (€790,000)`,
 
       program: `Day 1 Highlights:
-${PAGUYUBAN_MESSE_KNOWLEDGE.program.day1.highlights.join("\n- ")}
+${k.program.day1.highlights.join("\n- ")}
 
 Day 2 Highlights:
-${PAGUYUBAN_MESSE_KNOWLEDGE.program.day2.highlights.join("\n- ")}`,
+${k.program.day2.highlights.join("\n- ")}`,
 
       technology: `AI-Powered Features:
 - PaguyubanConnect: €20,000 investment in AI matchmaking platform
@@ -637,14 +648,65 @@ ${PAGUYUBAN_MESSE_KNOWLEDGE.program.day2.highlights.join("\n- ")}`,
 - 3,240 facilitated business connections target
 - Business pipeline: €200,000-€650,000`,
 
-      general: `${PAGUYUBAN_MESSE_KNOWLEDGE.event.name}
-Dates: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.dates}
-Location: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.location}
-Attendance: ${PAGUYUBAN_MESSE_KNOWLEDGE.event.attendance.total}
+      financial: this.buildFinancialContext(),
+
+      general: `${k.event.name}
+Dates: ${k.event.dates}
+Location: ${k.event.location}
+Attendance: ${k.event.attendance.total}
 Vision: Bringing Indonesian entrepreneurship, culture and technology onto the European stage`,
     };
 
     return contexts[topic] || contexts.general;
+  }
+
+  private buildFinancialContext(): string {
+    const knowledge = this.knowledge as Record<string, unknown>;
+    if (!knowledge?.financial) {
+      return "Financial data not available";
+    }
+
+    const f = knowledge.financial as {
+      totals: {
+        totalRevenue: number;
+        totalCosts: number;
+        net: number;
+        revenueCount: number;
+        costCount: number;
+      };
+      revenues?: Array<{ category: string; amount: number }>;
+      costs?: Array<{ category: string; amount: number }>;
+    };
+    const totals = f.totals;
+
+    const revenueBreakdown =
+      f.revenues
+        ?.map((r) => `${r.category}: €${r.amount.toLocaleString()}`)
+        .join("\n- ") || "No revenue data";
+    const costBreakdown =
+      f.costs
+        ?.map((c) => `${c.category}: €${c.amount.toLocaleString()}`)
+        .join("\n- ") || "No cost data";
+
+    return `Current Financial Status:
+Total Revenue: €${totals.totalRevenue.toLocaleString()}
+Total Costs: €${totals.totalCosts.toLocaleString()}
+Net Profit: €${totals.net.toLocaleString()}
+
+Revenue Breakdown:
+- ${revenueBreakdown}
+
+Cost Breakdown:
+- ${costBreakdown}
+
+Key Metrics:
+- Revenue Sources: ${totals.revenueCount}
+- Cost Categories: ${totals.costCount}
+- Profit Margin: ${
+      totals.totalRevenue > 0
+        ? ((totals.net / totals.totalRevenue) * 100).toFixed(1)
+        : 0
+    }%`;
   }
 
   // Generate response with fallback handling
@@ -658,24 +720,51 @@ Vision: Bringing Indonesian entrepreneurship, culture and technology onto the Eu
         id: `Paguyuban Messe 2026 berlangsung pada 7-8 Agustus 2026 di Arena Berlin. Hari 1 fokus pada Budaya & Bisnis dengan upacara pembukaan, B2B matchmaking, workshop budaya, dan konser malam. Hari 2 menekankan Inovasi & Ekonomi Kreatif dengan showcase startup, summit kreatif, dan grand finale bersama Dewa 19.`,
         de: `Die Paguyuban Messe 2026 findet am 7.-8. August 2026 in der Arena Berlin statt. Tag 1 konzentriert sich auf Kultur & Business, Tag 2 auf Innovation & Kreativwirtschaft.`,
       },
+      pricing: {
+        en: `We offer five sponsorship tiers from €15,000 (Bronze) to €120,000 (Title Sponsor). Title sponsors receive naming rights, 50 AI-facilitated introductions, 20 VIP passes, and speaking opportunities. With 77.6% of our €1M+ revenue from sponsorship, partners can expect €200,000-€650,000 in business pipeline over 12-18 months. Each tier includes AI matchmaking, brand visibility to 5-8M impressions, and access to 1,440+ business professionals.`,
+        id: `Kami menawarkan lima tingkat sponsorship dari €15.000 (Bronze) hingga €120.000 (Title Sponsor). Title sponsor mendapatkan hak penamaan, 50 perkenalan AI, 20 VIP pass, dan kesempatan berbicara. Dengan 77,6% dari €1M+ pendapatan dari sponsorship, mitra dapat mengharapkan €200.000-€650.000 pipeline bisnis dalam 12-18 bulan.`,
+        de: `Wir bieten fünf Sponsoring-Stufen von 15.000 € (Bronze) bis 120.000 € (Title Sponsor). Title-Sponsoren erhalten Namensrechte, 50 KI-vermittelte Kontakte, 20 VIP-Pässe und Vortragsplätze. Mit einer erwarteten Business-Pipeline von 200.000-650.000 €.`,
+      },
       sponsorship: {
         en: `We offer five sponsorship tiers from €15,000 (Bronze) to €120,000 (Title Sponsor). Title sponsors receive naming rights, 50 AI-facilitated introductions, 20 VIP passes, and speaking opportunities. With 77.6% of our €1M+ revenue from sponsorship, partners can expect €200,000-€650,000 in business pipeline over 12-18 months. Each tier includes AI matchmaking, brand visibility to 5-8M impressions, and access to 1,440+ business professionals.`,
         id: `Kami menawarkan lima tingkat sponsorship dari €15.000 (Bronze) hingga €120.000 (Title Sponsor). Title sponsor mendapatkan hak penamaan, 50 perkenalan AI, 20 VIP pass, dan kesempatan berbicara. Dengan 77,6% dari €1M+ pendapatan dari sponsorship, mitra dapat mengharapkan €200.000-€650.000 pipeline bisnis dalam 12-18 bulan.`,
         de: `Wir bieten fünf Sponsoring-Stufen von 15.000 € (Bronze) bis 120.000 € (Title Sponsor). Title-Sponsoren erhalten Namensrechte, 50 KI-vermittelte Kontakte, 20 VIP-Pässe und Vortragsplätze. Mit einer erwarteten Business-Pipeline von 200.000-650.000 €.`,
+      },
+      program: {
+        en: `Day 1 (August 7) focuses on Culture & Business with opening ceremony, B2B matchmaking, cultural workshops (Batik, Sagu, Cakalele, Tifa), business summits, investment talkshow, and evening concerts featuring The Panturas and Tulus. Day 2 (August 8) emphasizes Innovation & Creative Economy with startup showcases, creative summits, VVIP networking, leadership talks, and grand finale with Efek Rumah Kaca and Dewa 19.`,
+        id: `Hari 1 (7 Agustus) fokus pada Budaya & Bisnis dengan upacara pembukaan, B2B matchmaking, workshop budaya (Batik, Sagu, Cakalele, Tifa), summit bisnis, talkshow investasi, dan konser malam dengan The Panturas dan Tulus. Hari 2 (8 Agustus) menekankan Inovasi & Ekonomi Kreatif dengan showcase startup, summit kreatif, networking VVIP, diskusi kepemimpinan, dan grand finale dengan Efek Rumah Kaca dan Dewa 19.`,
+        de: `Tag 1 (7. August) konzentriert sich auf Kultur & Business, Tag 2 (8. August) auf Innovation & Kreativwirtschaft mit Startup-Showcases, kreativen Summits und dem großen Finale.`,
+      },
+      location: {
+        en: `Paguyuban Messe 2026 takes place at Arena Berlin, featuring three main areas: the Main Hall (6,500m² for exhibitions, stage, and dining), Beach Club (waterfront VVIP networking area), and Club Berlin (evening entertainment space). The venue can accommodate 1,800 seated attendees plus standing areas.`,
+        id: `Paguyuban Messe 2026 berlangsung di Arena Berlin dengan tiga area utama: Main Hall (6.500m² untuk pameran, panggung, dan makan), Beach Club (area networking VVIP tepi air), dan Club Berlin (ruang hiburan malam). Venue dapat menampung 1.800 peserta duduk plus area berdiri.`,
+        de: `Die Paguyuban Messe 2026 findet in der Arena Berlin statt mit drei Hauptbereichen: Main Hall (6.500m² für Ausstellungen, Bühne und Gastronomie), Beach Club (VVIP-Netzwerkbereich am Wasser) und Club Berlin (Abendunterhaltungsbereich).`,
+      },
+      financial: {
+        en: this.buildFinancialContext(),
+        id: this.buildFinancialContext(),
+        de: this.buildFinancialContext(),
+      },
+      general: {
+        en: `Paguyuban Messe 2026 is Indonesia's premier business and cultural expo in Europe, taking place August 7-8, 2026 at Arena Berlin. The event combines business networking with Indonesian cultural experiences, featuring AI-powered matchmaking, startup showcases, and performances by top Indonesian artists. We expect 1,800+ attendees and offer sponsorship opportunities from €15,000 to €120,000.`,
+        id: `Paguyuban Messe 2026 adalah pameran bisnis dan budaya Indonesia terkemuka di Eropa, berlangsung 7-8 Agustus 2026 di Arena Berlin. Acara ini menggabungkan networking bisnis dengan pengalaman budaya Indonesia, menampilkan matchmaking berbasis AI, showcase startup, dan pertunjukan oleh artis Indonesia terkemuka. Kami mengharapkan 1.800+ peserta dan menawarkan kesempatan sponsorship dari €15.000 hingga €120.000.`,
+        de: `Die Paguyuban Messe 2026 ist Indonesiens führende Business- und Kulturmesse in Europa, die vom 7.-8. August 2026 in der Arena Berlin stattfindet. Die Veranstaltung kombiniert Business-Networking mit indonesischen Kulturerlebnissen.`,
       },
     };
 
     return (
       responses[topic as keyof typeof responses]?.[language] ||
       responses[topic as keyof typeof responses]?.en ||
-      ""
+      responses.general[language] ||
+      responses.general.en
     );
   }
 
   // Main chat method with enhanced context awareness
   async chat(
     message: string,
-    assistantType: "ucup" | "rima" = "ucup"
+    assistantType: "ucup" | "rima" = "ucup",
+    options?: { mode?: "auto" | "local" }
   ): Promise<string> {
     try {
       const { topic, intent } = this.detectIntent(message);
@@ -732,48 +821,10 @@ DETECTED TOPIC: ${topic}
 
 Respond as ${selectedPersonality.name} with accurate, specific information. Include relevant numbers, dates, and concrete benefits. Keep response focused and actionable.`;
 
-      // Call Gemini API via centralized client
-      let text = await generateText(prompt, {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 600,
-        stopSequences: [],
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-          },
-        ],
-      });
+      const shouldUseLocal = options?.mode === "local" || !GEMINI_API_KEY;
 
-      // If the model requested concrete data via [get:...] patterns, resolve and re-ask for a final answer
-      if (text && text.includes("[get:")) {
-        const resolvedText = this.resolveFunctionCall(text);
-        const secondPrompt = `Here is the data you requested: ${resolvedText}. Now, please provide the final, user-facing answer. Be precise and concise.`;
-        text = await generateText(secondPrompt, {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 400,
-          stopSequences: [],
-        });
-      }
-
-      if (!text) {
-        // Use smart fallback response
+      // If running in local mode or API key is not set, return knowledge-based fallback immediately
+      if (shouldUseLocal) {
         const fallback = this.generateSmartResponse(topic, language);
         if (fallback) {
           this.conversationHistory.push({
@@ -784,6 +835,80 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
           });
           return fallback;
         }
+      }
+
+      // Call Gemini API via centralized client with error handling
+      let text: string;
+      try {
+        text = await generateText(prompt, {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 600,
+          stopSequences: [],
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE",
+            },
+          ],
+        });
+      } catch (apiError) {
+        console.warn(
+          "Gemini API failed, falling back to local knowledge:",
+          apiError
+        );
+
+        // Use smart fallback response
+        const fallback = this.generateSmartResponse(topic, language);
+        if (fallback) {
+          this.conversationHistory.push({
+            role: "assistant",
+            content: fallback,
+            timestamp: new Date(),
+            metadata: { topic, confidence: 0.7 }, // Slightly lower confidence for fallback
+          });
+          return fallback;
+        }
+
+        // Final fallback if smart response generation fails
+        return assistantType === "ucup"
+          ? "I apologize for the technical issue. Please contact us at nusantaraexpoofficial@gmail.com or call +49 1573 9396157 for immediate assistance with Paguyuban Messe 2026."
+          : "Apologies for the inconvenience. For immediate information about Paguyuban Messe 2026, please reach out to nusantaraexpoofficial@gmail.com. Our team will assist you promptly.";
+      }
+
+      // If the model requested concrete data via [get:...] patterns, resolve and re-ask for a final answer
+      if (text && text.includes("[get:")) {
+        const resolvedText = this.resolveFunctionCall(text);
+        const secondPrompt = `Here is the data you requested: ${resolvedText}. Now, please provide the final, user-facing answer. Be precise and concise.`;
+        try {
+          text = await generateText(secondPrompt, {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 400,
+            stopSequences: [],
+          });
+        } catch (secondApiError) {
+          console.warn("Second Gemini API call failed:", secondApiError);
+          // Fall back to the resolved text directly
+          text = resolvedText;
+        }
+      }
+
+      if (!text) {
         throw new Error("No response from API");
       }
 
@@ -806,16 +931,10 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
     } catch (error) {
       console.error("Chat Error:", error);
 
-      // Intelligent fallback based on topic
-      const topic = this.detectTopic(message);
-      const language = this.detectLanguage(message);
-      const fallbackResponse = this.generateSmartResponse(topic, language);
+      // This catch block should only handle unexpected errors, not API failures
+      // API failures are handled above in the try-catch around the generateText call
 
-      if (fallbackResponse) {
-        return fallbackResponse;
-      }
-
-      // Final fallback
+      // Final fallback for unexpected errors
       return assistantType === "ucup"
         ? "I apologize for the technical issue. Please contact us at nusantaraexpoofficial@gmail.com or call +49 1573 9396157 for immediate assistance with Paguyuban Messe 2026."
         : "Apologies for the inconvenience. For immediate information about Paguyuban Messe 2026, please reach out to nusantaraexpoofficial@gmail.com. Our team will assist you promptly.";

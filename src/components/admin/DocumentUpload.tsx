@@ -37,6 +37,7 @@ import {
 import { DocumentFormData, documentTypes, iconOptions } from "@/types/admin";
 import { useMediaUpload } from "@/hooks/useUpload";
 import { DocumentRow } from "@/types/documents";
+import { UploadDropzone, UploadControls, ErrorBanner } from "./document-upload";
 
 interface DocumentUploadProps {
   onRefresh: () => Promise<void>;
@@ -58,6 +59,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
     "file"
   );
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [documentForm, setDocumentForm] = useState<DocumentFormData>({
     title: "",
     description: "",
@@ -159,7 +161,7 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
     } catch (error) {
       console.error("Upload error:", error);
       await discardTemp();
-      alert("Failed to upload document");
+      setError("Failed to upload document");
     } finally {
       setUploadLoading(false);
     }
@@ -184,13 +186,14 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
           bc.close();
           window.dispatchEvent(new Event("documents-updated"));
         } catch {}
+        setError(null);
         alert("Document analyzed from URL successfully!");
       } else {
-        alert("Failed to analyze document from URL");
+        setError("Failed to analyze document from URL");
       }
     } catch (error) {
       console.error("URL upload error:", error);
-      alert("Failed to analyze document from URL");
+      setError("Failed to analyze document from URL");
     } finally {
       setUploadLoading(false);
     }
@@ -220,13 +223,14 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
           external_url: "",
           restricted: true,
         });
+        setError(null);
         alert("Document created successfully!");
       } else {
-        alert("Failed to create document");
+        setError("Failed to create document");
       }
     } catch (error) {
       console.error("Manual create error:", error);
-      alert("Failed to create document");
+      setError("Failed to create document");
     } finally {
       setUploadLoading(false);
     }
@@ -245,6 +249,8 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <ErrorBanner error={error} onDismiss={() => setError(null)} />
+
         <Tabs
           value={uploadMode}
           onValueChange={(value) =>
@@ -267,61 +273,19 @@ export function DocumentUpload({ onRefresh }: DocumentUploadProps) {
           </TabsList>
 
           <TabsContent value="file" className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <input
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file);
-                }}
-                className="hidden"
-                id="file-upload"
-                accept=".pdf,.doc,.docx,.txt"
-              />
-              <Label htmlFor="file-upload" className="cursor-pointer">
-                <div className="space-y-2">
-                  <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                  <p className="text-lg font-medium">Upload Document</p>
-                  <p className="text-sm text-gray-500">
-                    PDF, DOC, DOCX, or TXT files supported
-                  </p>
-                  <p className="text-xs text-blue-600">
-                    Uploads use secure Blob storage; metadata can be edited
-                    after
-                  </p>
-                </div>
-              </Label>
-            </div>
+            <UploadDropzone
+              onFileSelect={handleFileUpload}
+              isLoading={uploadLoading || uploading}
+            />
           </TabsContent>
 
           <TabsContent value="url" className="space-y-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="url-input">Document URL</Label>
-                <Input
-                  id="url-input"
-                  placeholder="https://docs.google.com/document/d/..."
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      const url = (e.target as HTMLInputElement).value;
-                      if (url) handleUrlUpload(url);
-                    }
-                  }}
-                />
-              </div>
-              <Button
-                onClick={() => {
-                  const input = document.getElementById(
-                    "url-input"
-                  ) as HTMLInputElement;
-                  if (input?.value) handleUrlUpload(input.value);
-                }}
-                disabled={uploadLoading || uploading}
-                className="w-full"
-              >
-                {uploadLoading ? "Analyzing..." : "Analyze URL with AI"}
-              </Button>
-            </div>
+            <UploadControls
+              onUrlUpload={handleUrlUpload}
+              onManualCreate={handleManualCreate}
+              isLoading={uploadLoading || uploading}
+              mode="url"
+            />
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-4">

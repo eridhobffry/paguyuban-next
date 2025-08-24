@@ -41,7 +41,9 @@ export default function AdminDashboard() {
     summary: string;
     sentiment: string | null;
   } | null>(null);
-  const [currentProspect, setCurrentProspect] = useState<ReturnType<typeof extractProspectFromSummary> | null>(null);
+  const [currentProspect, setCurrentProspect] = useState<ReturnType<
+    typeof extractProspectFromSummary
+  > | null>(null);
 
   async function handleRecommend(item: {
     sessionId: string;
@@ -115,6 +117,32 @@ export default function AdminDashboard() {
           onUserRefresh={fetchUsers}
           setUsers={setUsers}
         />
+        <Card variant="glass">
+          <div className="mb-4">
+            <h2 className="text-lg font-medium">Knowledge Management</h2>
+            <p className="text-sm text-muted-foreground">
+              Manage AI knowledge base with intelligent compilation and version
+              control.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/admin/knowledge"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+              >
+                Manage Knowledge
+              </a>
+              <a
+                href="/admin/knowledge#ai-compile"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2"
+              >
+                AI Compilation
+              </a>
+            </div>
+          </div>
+        </Card>
+
         <Card variant="glass">
           <div className="mb-4">
             <h2 className="text-lg font-medium">Document Management</h2>

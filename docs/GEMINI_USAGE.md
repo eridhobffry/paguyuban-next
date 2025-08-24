@@ -2,6 +2,21 @@
 
 This project uses Google Gemini server-side in three places. Keep this doc updated for usage/billing awareness.
 
+## Recent Accomplishments (Sprint 2)
+
+### ✅ Admin Test Coverage Expansion
+
+- **Admin Zod Tests**: Completed 42 comprehensive schema validation tests
+- **Admin Route Tests**: Completed 25 security and functionality tests for admin endpoints
+- **Test Status Analysis**: Identified 65 failing tests across multiple areas
+- **Current Coverage**: 141 passing | 65 failing (206 total tests)
+
+### 🔄 Ongoing Work
+
+- **Admin Form Validation Tests**: In progress - React Hook Form integration testing
+- **QA Coverage Expansion**: Creating additional manual test cases to increase coverage by 10%
+- **Knowledge System Issues**: 8 failing tests identified in overlay integration and loader functionality
+
 ### Where Gemini is used
 
 1. Assistant replies
@@ -57,7 +72,7 @@ To ensure structured AI outputs are reliable, we validate model responses with Z
 
 Two patterns are supported:
 
-1) Using the helper to extract JSON directly
+1. Using the helper to extract JSON directly
 
 ```ts
 import { AiSummarySchema, type SummaryData } from "@/lib/ai/schemas";
@@ -76,7 +91,7 @@ if (!result.ok) {
 // result.data is typed as SummaryData and validated by Zod
 ```
 
-2) Manual validation after a text generation call
+2. Manual validation after a text generation call
 
 ```ts
 import { AiSummarySchema } from "@/lib/ai/schemas";

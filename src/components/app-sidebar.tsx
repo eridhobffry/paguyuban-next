@@ -77,6 +77,11 @@ const data = {
       icon: IconFolder,
     },
     {
+      title: "Knowledge",
+      url: "/admin/knowledge",
+      icon: IconFileAi,
+    },
+    {
       title: "Users",
       url: "/admin/user",
       icon: IconUsers,
