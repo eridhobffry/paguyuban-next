@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { trackCtaClick } from "@/lib/analytics/client";
 
 const keyStats = [
@@ -128,6 +129,20 @@ const HeroSection = () => {
       />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <div className="relative">
+            <Image
+              src="/images/paguyuban_logo_white.png"
+              alt="Paguyuban Messe 2026"
+              width={2047}
+              height={2227}
+              className="h-16 w-auto sm:h-20 object-contain"
+              priority
+            />
+          </div>
+        </div>
+
         {/* Trust Indicators Bar */}
         <div className="flex flex-wrap justify-center gap-4 mb-8 opacity-90">
           {trustIndicators.map((indicator, index) => (
