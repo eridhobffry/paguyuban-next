@@ -430,10 +430,10 @@ const SponsorsSection = () => {
           <p className="mt-6 text-sm text-gray-500">
             Contact us at{" "}
             <a
-              href="mailto:sponsors@nusantaramesse2026.com"
+              href="mailto:paguyubanexpo@gmail.com"
               className="text-cyan-400 hover:underline"
             >
-              sponsors@nusantaramesse2026.com
+              paguyubanexpo@gmail.com
             </a>{" "}
             for more information
           </p>

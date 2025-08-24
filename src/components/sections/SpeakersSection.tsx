@@ -290,7 +290,7 @@ const SpeakersSection = () => {
             Become a Speaker
           </Link>
           <p className="mt-4 text-sm text-gray-500">
-            Apply to speak at Nusantara Messe 2026
+            Apply to speak at Paguyuban Messe 2026
           </p>
         </motion.div>
       </div>

@@ -8,9 +8,9 @@ export const SITE = {
     whatsapp: "+49 1573 9396157",
   },
   socials: {
-    twitter: "https://twitter.com/nusantara_messe",
-    linkedin: "https://linkedin.com/company/nusantara-messe",
-    instagram: "https://instagram.com/nusantara_messe",
+    twitter: "https://twitter.com/paguyuban_messe",
+    linkedin: "https://linkedin.com/company/paguyuban-messe",
+    instagram: "https://instagram.com/paguyuban_messe",
   },
   event: {
     startDate: "2026-08-05",

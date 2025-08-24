@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/drizzle";
-import { financialRevenueItems, financialCostItems } from "@/lib/db/schema";
+import {
+  financialRevenueItems,
+  financialCostItems,
+} from "@/lib/db/schemas/financial";
 
 export async function GET() {
   try {
@@ -27,6 +30,19 @@ export async function GET() {
         .from(financialCostItems)
         .orderBy(financialCostItems.sortOrder),
     ]);
+
+    console.log("Financial API Debug:");
+    console.log("Revenues count:", revenues.length);
+    console.log("Costs count:", costs.length);
+    console.log("Revenues array:", revenues);
+    console.log("Costs array:", costs);
+    console.log("Database query successful, checking if tables exist...");
+
+    // Also test a simple count query
+    const revenueCount = await db.$count(financialRevenueItems);
+    const costCount = await db.$count(financialCostItems);
+    console.log("Revenue table count:", revenueCount);
+    console.log("Cost table count:", costCount);
 
     return NextResponse.json(
       { revenues, costs },
