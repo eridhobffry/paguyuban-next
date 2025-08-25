@@ -27,6 +27,10 @@ export type GenerationOptions = {
 
 type Part = { text: string };
 type Content = { parts: Part[] };
+type GeminiCandidatePart = { text?: string };
+type GeminiCandidateContent = { parts?: GeminiCandidatePart[] };
+type GeminiCandidate = { content?: GeminiCandidateContent; finishReason?: string; index?: number };
+type GeminiResponse = { candidates?: GeminiCandidate[] };
 type GenerationConfig = {
   temperature?: number;
   topK?: number;
@@ -67,44 +71,103 @@ export async function generateContent<T = string>(
   if (Object.keys(cfg).length > 0) body.generationConfig = cfg;
   if (options.safetySettings) body.safetySettings = options.safetySettings;
 
-  const res = await fetch(`${endpoint}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // Exponential backoff retry for 429 / 5xx
+  const maxRetries = 3;
+  const baseDelayMs = 500;
+  let data: GeminiResponse | null = null;
+  let lastStatus = 0;
 
-  if (!res.ok) {
-    // Attempt to include detailed error from API if present
-    let detail = "";
-    try {
-      const errJson = await res.json();
-      detail = errJson?.error?.message || JSON.stringify(errJson);
-    } catch {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(`${endpoint}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    lastStatus = res.status;
+    if (!res.ok) {
+      // Read error details
+      let detail = "";
       try {
-        detail = await res.text();
+        const errJson = await res.json();
+        detail = errJson?.error?.message || JSON.stringify(errJson);
       } catch {
-        detail = "";
+        try {
+          detail = await res.text();
+        } catch {
+          detail = "";
+        }
       }
+
+      const err = new Error(
+        `Gemini API error ${res.status}${detail ? ": " + detail : ""}`
+      );
+
+      // Retry on 429 or 5xx
+      if (res.status === 429 || res.status >= 500) {
+        if (attempt < maxRetries) {
+          const jitter = Math.floor(Math.random() * 200);
+          const delay = baseDelayMs * Math.pow(2, attempt) + jitter;
+          console.warn(
+            `Gemini API ${res.status} — retrying in ${delay}ms (attempt ${
+              attempt + 1
+            }/${maxRetries})`
+          );
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+      }
+
+      // Non-retryable or out of retries
+      console.error("Gemini API Error:", detail);
+      throw err;
     }
-    console.error("Gemini API Error:", detail);
-    throw new Error(
-      `Gemini API error ${res.status}${detail ? ": " + detail : ""}`
-    );
+
+    // Success: parse JSON and break
+    data = (await res.json()) as GeminiResponse;
+    break;
   }
 
-  const data = await res.json();
-  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // Debug logging for API response structure
+  console.log("Gemini API Response:", {
+    status: lastStatus || 200,
+    hasCandidates: !!data?.candidates,
+    candidatesCount: data?.candidates?.length || 0,
+    hasContent: !!data?.candidates?.[0]?.content,
+    hasParts: !!data?.candidates?.[0]?.content?.parts,
+    partsCount: data?.candidates?.[0]?.content?.parts?.length || 0,
+  });
+
+  // Log full response for debugging
+  console.log("Full Gemini API Response:", JSON.stringify(data, null, 2));
+
+  // Join all text parts to avoid truncation (JSON may be split across parts)
+  const parts = (data?.candidates?.[0]?.content?.parts || []) as GeminiCandidatePart[];
+  const joinedText: string = parts
+    .map((p) => (typeof p?.text === "string" ? p.text : ""))
+    .join("");
 
   if (options.responseMimeType === "application/json") {
     try {
-      return JSON.parse(text) as T;
+      // Strip common Markdown code fences if present
+      let jsonText = joinedText.trim();
+      if (jsonText.startsWith("```")) {
+        jsonText = jsonText
+          .replace(/^```[a-zA-Z]*\n?/, "")
+          .replace(/\n?```\s*$/, "")
+          .trim();
+      }
+      return JSON.parse(jsonText) as T;
     } catch {
-      console.error("Failed to parse JSON from Gemini:", text);
+      // Fallback: try extracting the first JSON object from the text
+      const extracted = extractJsonObject<T>(joinedText);
+      if (extracted !== null) return extracted;
+      console.error("Failed to parse JSON from Gemini:", joinedText);
       throw new Error("Invalid JSON response from Gemini model");
     }
   }
 
-  return text as unknown as T;
+  return joinedText as unknown as T;
 }
 
 // Backwards-compatible helper for plain text generations

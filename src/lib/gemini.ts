@@ -338,15 +338,43 @@ const PAGUYUBAN_MESSE_KNOWLEDGE = {
 // Intent keywords to support finer-grained understanding beyond broad topics
 // Priority matters: put more specific/decisive intents first
 const INTENT_KEYWORDS: Record<string, string[]> = {
-  sponsorship_cost: ["price", "cost", "how much", "investment", "tier price"],
+  sponsorship_cost: [
+    "price",
+    "cost",
+    "how much",
+    "investment",
+    "tier price",
+    // Indonesian
+    "harga",
+    "biaya",
+    "investasi",
+  ],
   sponsorship_interest: [
     "benefits",
     "package",
     "offer",
     "provide for sponsor",
     "what do sponsors get",
+    // Indonesian
+    "sponsorship",
+    "sponsor",
+    "peluang",
+    "kemitraan",
+    "manfaat",
+    "paket",
+    "tingkatan",
   ],
-  roi_query: ["roi", "return", "pipeline", "value", "lead generation"],
+  roi_query: [
+    "roi",
+    "return",
+    "pipeline",
+    "value",
+    "lead generation",
+    // Indonesian
+    "pengembalian",
+    "imbal hasil",
+    "pengembalian investasi",
+  ],
   tech_details: [
     "how does ai work",
     "algorithm",
@@ -356,8 +384,23 @@ const INTENT_KEYWORDS: Record<string, string[]> = {
     "ai matchmaking",
     "how does matchmaking work",
     "how does it work",
+    // Indonesian
+    "algoritma",
+    "cara kerja ai",
+    "matchmaking",
+    "platform",
   ],
-  venue_details: ["capacity", "layout", "address", "getting there"],
+  venue_details: [
+    "capacity",
+    "layout",
+    "address",
+    "getting there",
+    // Indonesian
+    "kapasitas",
+    "tata letak",
+    "alamat",
+    "lokasi",
+  ],
 };
 
 // Topic Detection for Better Responses
@@ -372,10 +415,23 @@ const TOPIC_KEYWORDS = {
     "berlin",
     "arena",
   ],
+  // Put sponsorship before pricing to avoid pricing capturing generic 'sponsor' mentions
+  sponsorship: [
+    "sponsor",
+    "sponsorship",
+    "partnership",
+    "benefits",
+    "roi",
+    "package",
+    // Indonesian
+    "kemitraan",
+    "manfaat",
+    "paket",
+  ],
   pricing: [
     "price",
     "cost",
-    "sponsor",
+    // removed 'sponsor' to avoid overshadowing sponsorship topic
     "harga",
     "biaya",
     "berapa",
@@ -386,6 +442,13 @@ const TOPIC_KEYWORDS = {
     "untung",
     "keuntungan",
     "profit",
+    // Map VIP/exclusive access phrases to pricing-related responses
+    "vip",
+    "exclusive",
+    "eksklusif",
+    "akses",
+    "access",
+    "pass",
   ],
   program: [
     "program",
@@ -396,7 +459,6 @@ const TOPIC_KEYWORDS = {
     "concert",
     "workshop",
   ],
-  sponsorship: ["sponsor", "partnership", "benefits", "roi", "package"],
   technology: [
     "ai",
     "technology",
@@ -557,8 +619,19 @@ export class PaguyubanChatService {
     const lowerMessage = message.toLowerCase();
     for (const [intent, keywords] of Object.entries(INTENT_KEYWORDS)) {
       if (keywords.some((keyword) => lowerMessage.includes(keyword))) {
-        const topic = intent.split("_")[0] || "general";
-        return { topic, intent };
+        const base = intent.split("_")[0] || "general";
+        // Map intent base to a canonical topic used by buildTopicContext()
+        const CANONICAL_TOPIC_MAP: Record<string, string> = {
+          roi: "pricing",
+          tech: "technology",
+          venue: "location",
+          sponsorship: "sponsorship",
+          pricing: "pricing",
+          financial: "financial",
+        };
+        const mappedTopic =
+          CANONICAL_TOPIC_MAP[base] || this.detectTopic(message);
+        return { topic: mappedTopic, intent };
       }
     }
     const topic = this.detectTopic(message);
@@ -575,6 +648,11 @@ export class PaguyubanChatService {
       "harga",
       "bisnis",
       "konser",
+      // Common Indonesian phrases to improve detection
+      "saya",
+      "tertarik",
+      "akses",
+      "eksklusif",
     ];
     const germanWords = [
       "wann",
@@ -741,8 +819,61 @@ Key Metrics:
   // Generate response with fallback handling
   private generateSmartResponse(
     topic: string,
-    language: "en" | "id" | "de"
+    language: "en" | "id" | "de",
+    intent?: string
   ): string {
+    // ROI-specific smart fallback when intent explicitly requests ROI
+    if (intent === "roi_query") {
+      if (language === "id") {
+        return (
+          "Perkiraan ROI Sponsorship (Contoh & Panduan Singkat)\n" +
+          "\n" +
+          "1) Masukan yang kami butuhkan agar personal: \n" +
+          "- Tier/biaya sponsorship yang Anda minati (mis. Gold €40.000)\n" +
+          "- Nilai deal rata-rata (ACV) dan tingkat konversi historis Anda (MQL→SQL→Closed)\n" +
+          "- Siklus penjualan (mis. 3-6 bulan) dan target pasar utama\n" +
+          "\n" +
+          "2) Kerangka perhitungan cepat: \n" +
+          "- Pipeline konservatif Paguyuban: €200.000–€650.000 dalam 12–18 bulan (berdasarkan eksposur + AI matchmaking)\n" +
+          "- ROI = (Pipeline × Rasio Close × Margin – Biaya Sponsorship) / Biaya Sponsorship\n" +
+          "\n" +
+          "3) Contoh ilustratif: Gold €40.000, pipeline €300.000, close rate 20%, margin 60% →\n" +
+          "   Profit ≈ (€300.000 × 0,20 × 0,60) – €40.000 = €-4.000 (break-even dekat)\n" +
+          "   Dengan pipeline €450.000 dan asumsi sama → Profit ≈ €14.000 (ROI ≈ 35%)\n" +
+          "\n" +
+          "4) Cara memaksimalkan ROI di acara: \n" +
+          "- Gunakan 20 VIP pass untuk temu investor/klien kunci\n" +
+          "- Manfaatkan 50 perkenalan AI untuk meeting terjadwal (pra dan pasca acara)\n" +
+          "- Aktivasi panggung/booth dengan CTA jelas (scan-to-lead, demo cepat, offer terbatas)\n" +
+          "\n" +
+          "Balas dengan: tier yang Anda minati, ACV, dan konversi historis, supaya saya hitungkan ROI Anda secara presisi."
+        );
+      }
+      // default to English
+      return (
+        "Sponsorship ROI Estimate (Quick Guide)\n" +
+        "\n" +
+        "1) Inputs I need to personalize: \n" +
+        "- Your target tier/budget (e.g., Gold €40,000)\n" +
+        "- Your average deal size (ACV) and historical conversion rates (MQL→SQL→Closed)\n" +
+        "- Sales cycle (e.g., 3–6 months) and target segments\n" +
+        "\n" +
+        "2) Quick calc framework: \n" +
+        "- Conservative event-driven pipeline: €200k–€650k over 12–18 months\n" +
+        "- ROI = (Pipeline × Close Rate × Margin – Sponsorship Cost) / Sponsorship Cost\n" +
+        "\n" +
+        "3) Illustrative example: Gold €40k, pipeline €300k, close 20%, margin 60% →\n" +
+        "   Profit ≈ (€300k × 0.20 × 0.60) – €40k = €-4k (near break-even)\n" +
+        "   With €450k pipeline at same assumptions → Profit ≈ €14k (ROI ≈ 35%)\n" +
+        "\n" +
+        "4) How to maximize ROI at the event: \n" +
+        "- Use 20 VIP passes for targeted investor/customer meetings\n" +
+        "- Leverage 50 AI introductions for pre/post-event meetings\n" +
+        "- On-stage/booth activation with clear CTA (scan-to-lead, fast demo, limited-time offer)\n" +
+        "\n" +
+        "Reply with your tier, ACV, and historical conversions — I’ll compute a tailored ROI projection."
+      );
+    }
     const responses = {
       dates: {
         en: `Paguyuban Messe 2026 takes place on August 7-8, 2026 at Arena Berlin. Day 1 focuses on Culture & Business with opening ceremony, B2B matchmaking, cultural workshops, and evening concerts. Day 2 emphasizes Innovation & Creative Economy with startup showcases, creative summits, and the grand finale with Dewa 19.`,
@@ -864,15 +995,18 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
 
       // If running in local mode or API key is not set, return knowledge-based fallback immediately
       if (shouldUseLocal) {
-        const fallback = this.generateSmartResponse(topic, language);
+        const fallback = this.generateSmartResponse(topic, language, intent);
         if (fallback) {
+          const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test";
+          const suffix = isDev ? ` [source:local | intent:${intent} | topic:${topic}]` : "";
+          const out = fallback + suffix;
           this.conversationHistory.push({
             role: "assistant",
-            content: fallback,
+            content: out,
             timestamp: new Date(),
             metadata: { topic, confidence: 0.8 },
           });
-          return fallback;
+          return out;
         }
       }
 
@@ -911,15 +1045,18 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
         );
 
         // Use smart fallback response
-        const fallback = this.generateSmartResponse(topic, language);
+        const fallback = this.generateSmartResponse(topic, language, intent);
         if (fallback) {
+          const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test";
+          const suffix = isDev ? ` [source:local | intent:${intent} | topic:${topic}]` : "";
+          const out = fallback + suffix;
           this.conversationHistory.push({
             role: "assistant",
-            content: fallback,
+            content: out,
             timestamp: new Date(),
             metadata: { topic, confidence: 0.7 }, // Slightly lower confidence for fallback
           });
-          return fallback;
+          return out;
         }
 
         // Final fallback if smart response generation fails
@@ -947,18 +1084,36 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
         }
       }
 
-      if (!text) {
-        throw new Error("No response from API");
+      if (!text || !text.trim()) {
+        console.error(
+          "Empty response from Gemini API. Check API key and quota."
+        );
+        // Fall back to a smart local response instead of generic apology
+        const fallback = this.generateSmartResponse(topic, language, intent);
+        if (fallback) {
+          // Do not append machine-like suffixes; store intent/topic in metadata only
+          this.conversationHistory.push({
+            role: "assistant",
+            content: fallback,
+            timestamp: new Date(),
+            metadata: { topic, intent, confidence: 0.75 },
+          });
+          return fallback;
+        }
+        // As a last resort, return the concise contact message
+        return assistantType === "ucup"
+          ? "I apologize for the technical issue. Please contact us at nusantaraexpoofficial@gmail.com or call +49 1573 9396157 for immediate assistance with Paguyuban Messe 2026."
+          : "Apologies for the inconvenience. For immediate information about Paguyuban Messe 2026, please reach out to nusantaraexpoofficial@gmail.com. Our team will assist you promptly.";
       }
 
       const assistantResponse = text;
 
-      // Add to history with metadata
+      // Add to history with metadata (no visible debug suffix)
       this.conversationHistory.push({
         role: "assistant",
         content: assistantResponse,
         timestamp: new Date(),
-        metadata: { topic, confidence: 1.0 },
+        metadata: { topic, intent, confidence: 1.0 },
       });
 
       // Maintain history size
