@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUser, createToken } from "@/lib/auth";
+import { ensureUsersSingleTableModel } from "@/lib/sql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Ensure database is properly set up before authentication
+    await ensureUsersSingleTableModel();
 
     const user = await authenticateUser(email, password);
     if (!user) {

@@ -4,7 +4,6 @@ import { verifyTokenMiddleware, isAdminFromToken } from "./lib/jwt";
 
 // Public routes that don't require authentication
 const publicRoutes = [
-  "/",
   "/login",
   "/request-access",
   "/api/auth/login",
@@ -38,7 +37,7 @@ export function middleware(request: NextRequest) {
   // Check admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
     if (!isAdminFromToken(decoded)) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 

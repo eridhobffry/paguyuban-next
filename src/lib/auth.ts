@@ -1,6 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { getUserByEmail, createUser, type User } from "./sql";
+import {
+  getUserByEmail,
+  createUser,
+  type User,
+  ensureUsersSingleTableModel,
+} from "./sql";
 import { SUPER_ADMIN_EMAIL } from "./constants";
 
 const JWT_SECRET =
@@ -62,6 +67,9 @@ export async function initializeAdmin(): Promise<void> {
   const adminPassword = "Aabbcc1!";
 
   try {
+    // Ensure database is properly set up before creating admin
+    await ensureUsersSingleTableModel();
+
     const existingAdmin = await getUserByEmail(adminEmail);
     if (!existingAdmin) {
       const hashedPassword = await hashPassword(adminPassword);

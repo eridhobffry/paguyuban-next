@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
-import { upsertPendingUser } from "@/lib/sql";
+import { upsertPendingUser, ensureUsersSingleTableModel } from "@/lib/sql";
 import { notifyAdminNewAccessRequest } from "@/lib/email";
 export const runtime = "nodejs";
 
@@ -16,6 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(password);
+
+    // Ensure database is properly set up before inserting user
+    await ensureUsersSingleTableModel();
+
     await upsertPendingUser(email, hashedPassword);
     // Best-effort notify admin about a new pending request
     try {

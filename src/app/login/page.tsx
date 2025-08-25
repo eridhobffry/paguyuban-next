@@ -56,7 +56,7 @@ export default function LoginPage() {
       if (response.ok) {
         // Small delay to ensure cookie is set, then redirect
         setTimeout(() => {
-          window.location.href = "/";
+          window.location.href = "/dashboard";
         }, 100);
       } else {
         setError(data.error || "Login failed");
