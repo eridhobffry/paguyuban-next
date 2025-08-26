@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = QuerySchema.parse({
-      intent: searchParams.get("intent"),
-      include: searchParams.get("include"),
+      intent: searchParams.get("intent") || undefined,
+      include: searchParams.get("include") || undefined,
     });
 
     const includeItems = query.include

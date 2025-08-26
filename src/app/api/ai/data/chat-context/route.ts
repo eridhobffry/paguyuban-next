@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = QuerySchema.parse({
-      sessionId: searchParams.get("sessionId"),
-      intent: searchParams.get("intent"),
+      sessionId: searchParams.get("sessionId") || undefined,
+      intent: searchParams.get("intent") || undefined,
       limit: parseInt(searchParams.get("limit") || "20"),
     });
 
