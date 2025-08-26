@@ -48,6 +48,7 @@ cookies.txt
 /ai/__pycache__/
 /ai/*.pyc
 /ai/.env
+/ai/hf_space/
 __pycache__/
 *.pyc
 *.pyo
