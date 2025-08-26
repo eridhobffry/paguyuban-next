@@ -909,6 +909,28 @@ Output: {
 
 **Objective**: Transform static AI into dynamic, data-driven agents within security constraints
 
+**🗄️ Database Structure Analysis:**
+
+```sql
+-- Core Business Data (API-mediated access only)
+chatbot_logs: session_id, role, message, user_id, tokens, created_at
+partnership_applications: name, email, company, interest, budget, message, created_at
+sponsors: name, tier_id, logo_url, url, tags, sort_order, updated_at
+sponsor_tiers: pricing structure and availability
+artists: event performer information
+speakers: event speaker information
+knowledge: current static knowledge base
+
+-- Analytics & User Behavior Data (CRITICAL for AI Intelligence!)
+analytics_events: session_id, user_id, type, section, route, metadata(jsonb), created_at
+user_query_preferences: user_id, language, theme, preferred_metrics(jsonb), auto_save_queries, created_at
+query_performance: response_time, token_count, success, user_rating, user_feedback, error_message, created_at
+
+-- Financial Data (Business Intelligence)
+financial_revenue_items: amount, category, notes, evidence_url, sort_order, created_at
+financial_cost_items: amount, category, notes, evidence_url, sort_order, created_at
+```
+
 **Security-First Architecture:**
 
 ```python
@@ -917,18 +939,18 @@ Output: {
 
 # ✅ YES: API-mediated data access
 class DataDrivenAgent(BaseAgent):
-    def process_query(self, query: str):
+    def process_query(self, query: str, language: str, session_id: str = None):
         # 1. NLP Intent Analysis (not keyword matching)
-        intent = self.nlp_analyzer.analyze_intent(query)
+        intent = self.nlp_analyzer.analyze_intent(query, language)
 
         # 2. Agentic Decision (what data do I need?)
-        data_requirements = self.decide_data_needs(intent, query)
+        data_requirements = self.decide_data_needs(intent, query, session_id)
 
         # 3. Request Data via API (Next.js controls access)
         context_data = await self.api_client.fetch_data(data_requirements)
 
         # 4. Learning & Adaptation
-        self.learning_system.update_patterns(query, intent, context_data)
+        self.learning_system.update_patterns(query, intent, context_data, session_id)
 
         # 5. Generate Response
         return self.generate_response(query, intent, context_data)
@@ -937,37 +959,213 @@ class DataDrivenAgent(BaseAgent):
 **API Data Routes (Next.js Security Layer):**
 
 ```typescript
-// /api/ai/data/chat-logs
-GET /api/ai/data/chat-logs?sessionId=123&intent=prospect_analysis
-// Returns: { logs: [...], prospects: [...], events: [...] }
+// 1. Chat Context for Prospect Analysis
+GET /api/ai/data/chat-context?sessionId=123&intent=prospect_analysis
+// Returns: { logs: ChatLog[], prospect: ProspectData, sentiment: string }
 
-// /api/ai/data/event-context
-GET /api/ai/data/event-context?query_intent=pricing
-// Returns: { pricing: [...], sponsors: [...], capacity: [...] }
+// 2. Event & Pricing Data
+GET /api/ai/data/event-context?intent=pricing&include=sponsors,tiers
+// Returns: { sponsors: Sponsor[], tiers: Tier[], availability: {} }
 
-// /api/ai/data/learning
+// 3. Analytics & User Behavior Data
+GET /api/ai/data/analytics-context?sessionId=123&userId=user123&intent=personalization
+// Returns: { events: AnalyticsEvent[], preferences: UserPreferences, behavior: {} }
+
+// 4. Financial Context for Business Discussions
+GET /api/ai/data/financial-context?intent=pricing_analysis&include=revenue,costs
+// Returns: { revenue: FinancialItem[], costs: FinancialItem[], projections: {} }
+
+// 5. Learning Data Collection
 POST /api/ai/data/learning
-// Body: { query: "...", intent: "...", outcome: "success" }
+// Body: { session_id, query, intent, response_quality, user_feedback }
+
+// 6. Knowledge Context
+GET /api/ai/data/knowledge-context?topic=event_details&language=en
+// Returns: { knowledge: Knowledge[], documents: Document[] }
 ```
 
 **Agentic Decision Flow:**
 
 ```python
-def decide_data_needs(intent: str, query: str) -> DataRequirements:
+def decide_data_needs(intent: str, query: str, session_id: str) -> DataRequirements:
     """AI decides what data it needs (not direct access)"""
     if intent == "prospect_analysis":
         return {
-            "chat_logs": True,
-            "prospect_data": True,
-            "partnership_history": True,
-            "sentiment_context": True
+            "chat_logs": {"session_id": session_id, "limit": 20},
+            "prospect_data": {"session_id": session_id},
+            "sentiment_analysis": True,
+            "follow_up_history": True
         }
     elif intent == "event_pricing":
         return {
-            "sponsorship_tiers": True,
-            "current_sponsors": True,
-            "availability": True
+            "sponsor_tiers": {"active_only": True},
+            "current_sponsors": {"count_only": True},
+            "pricing_availability": True
         }
+    elif intent == "multilingual_support":
+        return {
+            "knowledge": {"language": detect_language(query)},
+            "user_preferences": {"session_id": session_id}
+        }
+    elif intent == "sponsor_information":
+        return {
+            "sponsors": {"active_only": True, "include_logos": True},
+            "sponsor_tiers": {"with_availability": True}
+        }
+    elif intent == "event_details":
+        return {
+            "artists": {"upcoming_only": True},
+            "speakers": {"confirmed_only": True},
+            "event_schedule": True
+        }
+    elif intent == "personalized_response":
+        return {
+            "user_analytics": {"session_id": session_id, "recent_events": True},
+            "user_preferences": {"session_id": session_id},
+            "query_history": {"limit": 10}
+        }
+    elif intent == "business_analysis":
+        return {
+            "financial_revenue": {"current_year": True},
+            "sponsor_analytics": {"conversion_rates": True},
+            "prospect_data": {"session_id": session_id},
+            "market_context": True
+        }
+    elif intent == "performance_optimization":
+        return {
+            "query_performance": {"recent": True},
+            "user_behavior": {"session_id": session_id},
+            "system_analytics": {"response_times": True}
+        }
+```
+
+### **🛠️ Phase 2.25 Implementation Roadmap**
+
+**Week 1-2: Data-Driven Agent Architecture**
+
+**Step 1: Create API Data Routes (Security Layer)**
+
+```typescript
+// Create /src/app/api/ai/data/ directory structure
+├── chat-context/        # Chat logs + prospect data
+├── event-context/       # Sponsors, tiers, artists
+├── analytics-context/   # User behavior & preferences
+├── financial-context/   # Revenue, costs, business data
+├── knowledge-context/   # Dynamic knowledge access
+└── learning/           # Learning data collection
+```
+
+**Step 2: Implement Data Access Logic**
+
+```typescript
+// /api/ai/data/chat-context/route.ts
+export async function GET(request: Request) {
+  const { sessionId, intent } = request.query;
+
+  // Fetch from database with security controls
+  const chatLogs = await db
+    .select()
+    .from(chatbot_logs)
+    .where(eq(chatbot_logs.session_id, sessionId))
+    .orderBy(desc(chatbot_logs.created_at))
+    .limit(20);
+
+  const prospect = await db
+    .select()
+    .from(partnership_applications)
+    .where(eq(partnership_applications.session_id, sessionId))
+    .limit(1);
+
+  return Response.json({ logs: chatLogs, prospect });
+}
+```
+
+**Step 3: Update Python AI Agents**
+
+```python
+# Update EventChatAgent to use API data
+class DataDrivenEventChatAgent(BaseAgent):
+    async def get_event_context(self, intent: str) -> dict:
+        """Fetch real-time event data via API"""
+        response = await self.api_client.get("/api/ai/data/event-context", {
+            "intent": intent,
+            "include": "sponsors,artists,tiers"
+        })
+        return response.json()
+
+    async def process_query(self, query: str, language: str, session_id: str):
+        # Get real data instead of static knowledge
+        event_data = await self.get_event_context("general")
+
+        # Use real sponsor data for pricing questions
+        if "pricing" in query.lower():
+            pricing_data = await self.get_event_context("pricing")
+
+        return self.generate_response(query, event_data, pricing_data)
+```
+
+**Step 4: Implement Learning System**
+
+```python
+class LearningSystem:
+    def __init__(self, api_client):
+        self.api_client = api_client
+        self.patterns = {}
+
+    async def update_patterns(self, query, intent, context_data, session_id):
+        """Learn from interactions"""
+        pattern = {
+            "query": query,
+            "intent": intent,
+            "data_used": list(context_data.keys()),
+            "success": True,  # Could be determined by user feedback
+            "timestamp": datetime.now()
+        }
+
+        # Store learning data via API
+        await self.api_client.post("/api/ai/data/learning", {
+            "session_id": session_id,
+            "pattern": pattern
+        })
+```
+
+**Step 5: NLP Intent Analysis Integration**
+
+```python
+class IntentAnalyzer:
+    def __init__(self):
+        # Use proper NLP instead of keyword matching
+        self.nlp_model = "microsoft/DialoGPT-medium"  # Or similar
+
+    def analyze_intent(self, query: str, language: str) -> str:
+        """Real NLP intent classification"""
+        if language == "id":
+            return self.classify_indonesian(query)
+        elif language == "de":
+            return self.classify_german(query)
+        else:
+            return self.classify_english(query)
+
+    def classify_english(self, query: str) -> str:
+        query_lower = query.lower()
+
+        # Event-related intents
+        if any(word in query_lower for word in ["when", "date", "time"]):
+            return "event_timing"
+        elif any(word in query_lower for word in ["where", "location", "venue"]):
+            return "event_location"
+        elif any(word in query_lower for word in ["price", "cost", "sponsor", "tier"]):
+            return "event_pricing"
+        elif any(word in query_lower for word in ["artist", "performer", "music"]):
+            return "event_artists"
+
+        # Business-related intents
+        elif any(word in query_lower for word in ["partnership", "sponsor", "collaborate"]):
+            return "business_partnership"
+        elif any(word in query_lower for word in ["budget", "investment", "roi"]):
+            return "business_budget"
+
+        return "general_inquiry"
 ```
 
 ### **Phase 2.5: Complete Integration (Priority #2)**
