@@ -895,17 +895,320 @@ Output: {
 
 **Next Steps:**
 
-1. ✅ **Integration**: Update Next.js to use live API
-2. 🔄 **Optimization**: Performance monitoring & caching
-3. 🚀 **Phase 3**: Knowledge compilation system
-4. 📊 **Analytics**: Monitor usage & conversion rates
+1. 🚀 **Phase 2.25**: Data-Driven Agent Architecture (Critical Foundation)
+2. ✅ **Integration**: Update Next.js to use live API
+3. 🔄 **Optimization**: Performance monitoring & caching
+4. 🚀 **Phase 3**: Knowledge compilation system
+5. 📊 **Analytics**: Monitor usage & conversion rates
 
 ---
 
-**Document Version**: 2.1 (Deployment Complete)
+## 🚀 **COMPREHENSIVE NEXT STEPS PLAN**
+
+### **Phase 2.25: Data-Driven Agent Architecture (Priority #1 - FOUNDATION)**
+
+**Objective**: Transform static AI into dynamic, data-driven agents within security constraints
+
+**Security-First Architecture:**
+
+```python
+# ❌ NO: Direct database access
+# agent.query_database("SELECT * FROM users")
+
+# ✅ YES: API-mediated data access
+class DataDrivenAgent(BaseAgent):
+    def process_query(self, query: str):
+        # 1. NLP Intent Analysis (not keyword matching)
+        intent = self.nlp_analyzer.analyze_intent(query)
+
+        # 2. Agentic Decision (what data do I need?)
+        data_requirements = self.decide_data_needs(intent, query)
+
+        # 3. Request Data via API (Next.js controls access)
+        context_data = await self.api_client.fetch_data(data_requirements)
+
+        # 4. Learning & Adaptation
+        self.learning_system.update_patterns(query, intent, context_data)
+
+        # 5. Generate Response
+        return self.generate_response(query, intent, context_data)
+```
+
+**API Data Routes (Next.js Security Layer):**
+
+```typescript
+// /api/ai/data/chat-logs
+GET /api/ai/data/chat-logs?sessionId=123&intent=prospect_analysis
+// Returns: { logs: [...], prospects: [...], events: [...] }
+
+// /api/ai/data/event-context
+GET /api/ai/data/event-context?query_intent=pricing
+// Returns: { pricing: [...], sponsors: [...], capacity: [...] }
+
+// /api/ai/data/learning
+POST /api/ai/data/learning
+// Body: { query: "...", intent: "...", outcome: "success" }
+```
+
+**Agentic Decision Flow:**
+
+```python
+def decide_data_needs(intent: str, query: str) -> DataRequirements:
+    """AI decides what data it needs (not direct access)"""
+    if intent == "prospect_analysis":
+        return {
+            "chat_logs": True,
+            "prospect_data": True,
+            "partnership_history": True,
+            "sentiment_context": True
+        }
+    elif intent == "event_pricing":
+        return {
+            "sponsorship_tiers": True,
+            "current_sponsors": True,
+            "availability": True
+        }
+```
+
+### **Phase 2.5: Complete Integration (Priority #2)**
+
+**Objective**: Fully integrate the deployed AI service while maintaining Gemini fallback
+
+**Integration Mapping:**
+
+```typescript
+// Current → New AI Service Mapping
+{
+  "/api/chat/generate": {
+    current: "EventChatAgent ✅ + Gemini fallback",
+    target: "EventChatAgent → ConversationalAgent → Gemini fallback",
+    status: "Partially complete, needs conversational agent integration"
+  },
+  "/api/admin/analytics/chat/recommend": {
+    current: "Gemini admin analysis",
+    target: "ProspectAnalyzer + enhanced data",
+    status: "Needs full migration"
+  },
+  "/api/analytics/chat/summary": {
+    current: "Gemini chat summaries",
+    target: "Qwen2.5 multilingual summaries",
+    status: "Needs migration"
+  },
+  "/api/knowledge/query": {
+    current: "Gemini knowledge queries",
+    target: "Knowledge Compiler agent",
+    status: "Needs Phase 3 implementation"
+  }
+}
+```
+
+**Feature Flag Strategy:**
+
+```typescript
+// src/lib/ai/config.ts
+export const AI_CONFIG = {
+  provider: process.env.AI_PROVIDER || "hybrid",
+  features: {
+    chat: process.env.FEATURE_AI_CHAT === "1",
+    recommendations: process.env.FEATURE_AI_RECOMMEND === "1",
+    summaries: process.env.FEATURE_AI_SUMMARIES === "1",
+    knowledge: process.env.FEATURE_AI_KNOWLEDGE === "1",
+    documents: process.env.FEATURE_AI_DOCS === "1",
+  },
+  fallbacks: {
+    gemini: process.env.FALLBACK_GEMINI === "1",
+    local: process.env.FALLBACK_LOCAL === "1",
+  },
+};
+```
+
+### **Phase 3: Knowledge Compiler Agent (Priority #2)**
+
+**Architecture Design:**
+
+```python
+class KnowledgeCompiler(BaseAgent):
+    def __init__(self):
+        self.knowledge_base = PAGUYUBAN_KNOWLEDGE
+        self.conflict_detector = ConflictDetector()
+        self.quality_validator = QualityValidator()
+
+    def compile_knowledge(self, existing: Dict, new: Dict) -> Dict:
+        """Intelligent knowledge merging with conflict resolution"""
+        conflicts = self.conflict_detector.detect(existing, new)
+        resolved = self.resolve_conflicts(conflicts)
+        validated = self.quality_validator.validate(resolved)
+        return validated
+
+    def detect_conflicts(self, existing: Dict, new: Dict) -> List[Conflict]:
+        """Find contradictions and inconsistencies"""
+        conflicts = []
+        for key in set(existing.keys()) & set(new.keys()):
+            if self.is_conflicting(existing[key], new[key]):
+                conflicts.append(Conflict(key, existing[key], new[key]))
+        return conflicts
+```
+
+**API Integration:**
+
+```typescript
+// Next.js API route
+POST /api/knowledge/compile
+{
+  existing: {...},
+  new: {...},
+  source: "admin_update",
+  validate: true
+}
+
+// Returns:
+{
+  compiled: {...},
+  conflicts: [...],
+  quality_score: 0.95,
+  recommendations: [...]
+}
+```
+
+### **Performance & Monitoring (Priority #3)**
+
+**Caching Strategy:**
+
+```typescript
+// Redis-based caching for AI responses
+const CACHE_CONFIG = {
+  event_queries: { ttl: 3600, prefix: "event:" },
+  recommendations: { ttl: 1800, prefix: "rec:" },
+  summaries: { ttl: 7200, prefix: "summary:" },
+  knowledge: { ttl: 86400, prefix: "knowledge:" },
+};
+```
+
+**Monitoring Dashboard:**
+
+```typescript
+// Key metrics to track
+const METRICS = {
+  response_time: "AI response time < 2s",
+  accuracy: "Query accuracy > 95%",
+  fallback_rate: "Gemini fallback < 10%",
+  cost_reduction: "80%+ vs Gemini",
+  user_satisfaction: "Rating > 4.5/5",
+};
+```
+
+### **Testing Strategy (Priority #4)**
+
+**Integration Test Coverage:**
+
+```typescript
+// Critical test scenarios
+const TEST_SCENARIOS = [
+  "EventChatAgent handles Indonesian queries",
+  "ProspectAnalyzer provides actionable recommendations",
+  "Knowledge Compiler resolves conflicts correctly",
+  "Fallback to Gemini works when AI service fails",
+  "Performance remains < 2s under load",
+  "Multilingual support (Indonesian/English/German)",
+];
+```
+
+### **Production Deployment (Priority #5)**
+
+**Deployment Strategy:**
+
+```bash
+# Environment variables for production
+AI_SERVICE_URL=https://bffry-paguyuban-ai.hf.space
+AI_PROVIDER=hybrid
+FEATURE_AI_CHAT=1
+FEATURE_AI_RECOMMEND=1
+FEATURE_AI_SUMMARIES=1
+FEATURE_AI_KNOWLEDGE=0  # Phase 3 not ready yet
+FALLBACK_GEMINI=1
+FALLBACK_LOCAL=1
+```
+
+**Rollback Plan:**
+
+```typescript
+// Health check endpoint
+GET /api/health/ai
+{
+  services: {
+    event_chat: "healthy",
+    prospect_analyzer: "healthy",
+    knowledge_compiler: "pending"
+  },
+  fallback: "available"
+}
+```
+
+---
+
+## 📊 **IMPLEMENTATION TIMELINE**
+
+### **Week 1-2: Phase 2.25 - Data-Driven Agent Architecture**
+
+- [ ] Design API-mediated data access routes in Next.js
+- [ ] Implement NLP intent analysis (replace keyword matching)
+- [ ] Build agentic decision-making for data requirements
+- [ ] Create learning system for user interaction patterns
+- [ ] Update Python agents to use API data fetching
+- [ ] Test security constraints (no direct DB access)
+
+### **Week 3: Complete Integration**
+
+- [ ] Update environment configuration for production AI service
+- [ ] Implement ProspectAnalyzer integration with real data
+- [ ] Test chat summaries migration with Qwen2.5
+- [ ] Deploy feature flags for gradual rollout
+
+### **Week 4: Phase 3 Development**
+
+- [ ] Design Knowledge Compiler architecture
+- [ ] Implement conflict detection for dynamic knowledge
+- [ ] Build automated knowledge merging with data-driven context
+- [ ] Create quality validation for AI-generated content
+
+### **Week 5: Performance & Testing**
+
+- [ ] Implement caching layer for AI responses
+- [ ] Set up monitoring dashboards with security metrics
+- [ ] Comprehensive integration testing with data flows
+- [ ] Performance optimization with real database loads
+
+### **Week 6: Production & Analytics**
+
+- [ ] Production deployment with security audit
+- [ ] Analytics setup for AI usage patterns
+- [ ] Conversion rate tracking with data-driven insights
+- [ ] Learning system performance monitoring
+
+---
+
+## 🎯 **SUCCESS METRICS**
+
+- ✅ **Security**: Zero direct database access, API-mediated only
+- ✅ **Data-Driven**: AI makes intelligent decisions about data needs
+- ✅ **Learning**: System adapts from user interactions and outcomes
+- ✅ **Integration**: All Gemini calls migrated with fallbacks
+- ✅ **Performance**: < 2s response time, 95%+ accuracy
+- ✅ **Cost**: 80%+ reduction vs Gemini API
+- ✅ **User Experience**: Improved multilingual support with NLP
+- ✅ **Business Impact**: Higher lead conversion with real data insights
+- ✅ **Reliability**: < 10% fallback rate, secure data flows
+
+---
+
+**Ready to proceed with Phase 2.25: Data-Driven Agent Architecture**
+
+---
+
+**Document Version**: 2.2 (Data-Driven Foundation)
 **Last Updated**: August 2025
-**Status**: ✅ **LIVE & PRODUCTION READY**
+**Status**: 🎯 **READY FOR TRUE AI TRANSFORMATION**
 
-**🚀 AI Migration Successfully Completed!**
+**🔐 Security-First, Data-Driven AI Evolution:**
 
-The hybrid approach with HuggingFace deployment has proven highly effective, providing enterprise-grade AI capabilities with significant cost reduction and enhanced security.
+The foundation is set with secure, API-mediated architecture. Phase 2.25 will transform static keyword-based responses into intelligent, learning agents that make data-driven decisions while maintaining enterprise security standards.
