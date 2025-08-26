@@ -1,0 +1,42 @@
+# Exclude Python AI service folder
+/ai
+ai/
+
+# Exclude Docker files
+Dockerfile*
+docker-compose*
+
+# Exclude development and testing files
+**/*.test.*
+**/*.spec.*
+**/tests/
+**/test-results/
+**/playwright-report/
+**/__tests__/
+
+# Exclude documentation and planning files
+**/*.md
+!README.md
+docs/
+scripts/
+e2e/
+
+# Exclude data files
+cookies.txt
+drizzle/
+
+# Exclude Python-specific files
+**/*.py
+**/*.pyc
+__pycache__/
+*.pyc
+
+# Exclude logs
+logs/
+*.log
+
+# Keep only necessary files for Next.js deployment
+.next/
+node_modules/
+.git/
+.github/
