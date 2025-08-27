@@ -3,12 +3,15 @@ Paguyuban Messe AI Service - Data-Driven Agent Architecture
 Simplified FastAPI server for Phase 2.25 data-driven agents
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
 from contextlib import asynccontextmanager
 import json
-from typing import Dict, Any, List
+import jwt
+import os
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 # Simplified configuration
@@ -18,10 +21,66 @@ class SimpleSettings:
     debug = True
 
 settings = SimpleSettings()
+_startup_time = datetime.now()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# JWT Authentication setup
+security = HTTPBearer()
+
+def get_ai_service_secret() -> str:
+    """Get AI service JWT secret from environment"""
+    secret = os.getenv('AI_SERVICE_JWT_SECRET')
+    
+    if not secret:
+        if os.getenv('NODE_ENV') == 'production':
+            raise RuntimeError('AI_SERVICE_JWT_SECRET must be configured in production')
+        
+        # Development fallback
+        logger.warning('Using development AI service JWT secret. Configure AI_SERVICE_JWT_SECRET for production.')
+        return 'dev-secret-ai-service-auth-never-use-in-production'
+    
+    return secret
+
+def verify_ai_service_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    """Verify JWT token from Next.js service"""
+    try:
+        token = credentials.credentials
+        secret = get_ai_service_secret()
+        
+        payload = jwt.decode(
+            token,
+            secret,
+            algorithms=['HS256'],
+            issuer='paguyuban-next',
+            audience='paguyuban-ai',
+            options={
+                'verify_exp': True,
+                'verify_nbf': True,
+                'verify_iat': True,
+            }
+        )
+        
+        return payload
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Token verification error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token verification failed"
+        )
 
 # Data-Driven Agent Architecture
 class DataDrivenAgent:
@@ -196,17 +255,63 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Enhanced health check endpoint with dependency validation"""
+    now = datetime.now()
+    uptime_seconds = (now - _startup_time).total_seconds()
+    
+    # Check internal dependencies
+    dependencies = {}
+    all_healthy = True
+    
+    try:
+        # Validate agent initialization
+        dependencies["data_agent"] = data_agent is not None
+        dependencies["intent_patterns"] = len(data_agent.intent_patterns) > 0
+        
+        # Check configuration
+        dependencies["config_loaded"] = hasattr(settings, 'service_name')
+        dependencies["app_loaded"] = True
+        
+        # Validate core functionality with a test query
+        try:
+            test_intent = data_agent.analyze_intent("test query", "en")
+            dependencies["intent_analysis"] = test_intent is not None
+        except Exception:
+            dependencies["intent_analysis"] = False
+            all_healthy = False
+            
+        # Future: Add external dependency checks here
+        # dependencies["redis"] = await check_redis_connection()
+        # dependencies["vector_db"] = await check_vector_db_connection()
+        
+    except Exception as e:
+        logger.error(f"Health check dependency validation failed: {e}")
+        all_healthy = False
+        dependencies["validation_error"] = str(e)
+    
+    # Determine overall status
+    status = "healthy" if all_healthy and all(dependencies.values()) else "degraded"
+    
     return {
-        "status": "healthy",
+        "status": status,
         "service": settings.service_name,
         "version": settings.version,
         "architecture": "Data-Driven Agent v2.25",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": now.isoformat(),
+        "uptime": uptime_seconds,
+        "dependencies": dependencies,
+        "endpoints": {
+            "chat_generate": "/api/chat/generate",
+            "event_chat": "/api/event/chat", 
+            "chat_summary": "/api/analytics/chat/summary"
+        }
     }
 
 @app.post("/api/chat/generate")
-async def generate_chat_response(request: Dict[str, Any]):
+async def generate_chat_response(
+    request: Dict[str, Any], 
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+):
     """Generate data-driven chat response"""
     try:
         query = request.get("query", "")
@@ -237,7 +342,10 @@ async def generate_chat_response(request: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=f"Chat generation failed: {str(e)}")
 
 @app.post("/api/event/chat")
-async def event_chat_response(request: Dict[str, Any]):
+async def event_chat_response(
+    request: Dict[str, Any], 
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+):
     """Generate event-specific response using data-driven agent"""
     try:
         query = request.get("query", "")
@@ -266,7 +374,10 @@ async def event_chat_response(request: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=f"Event chat failed: {str(e)}")
 
 @app.post("/api/analytics/chat/summary")
-async def generate_chat_summary(request: Dict[str, Any]):
+async def generate_chat_summary(
+    request: Dict[str, Any], 
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+):
     """Generate simplified chat summary"""
     try:
         transcript = request.get("transcript", "")
