@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { secureFetch } from "@/lib/ai/secure-fetch";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -20,18 +21,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  // Simple per-IP rate limit: 10 requests/minute
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const allowed = rateLimitAllow(`chat:${ip}`, 10, 60_000);
+  if (!allowed.ok) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(allowed.retryAfterMs / 1000)),
+        },
+      }
+    );
+  }
+
   try {
     // First, try the EventChatAgent for event-specific questions
     try {
-      const eventResponse = await fetch(`${AI_SERVICE_URL}/api/event/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: body.message,
-        }),
-      });
+      const eventResponse = await secureFetch(
+        `${AI_SERVICE_URL.replace(/\/$/, "")}/api/event/chat`,
+        {
+          method: "POST",
+          body: JSON.stringify({ query: body.message }),
+          totalBudgetMs: 1200,
+          timeoutMs: 800,
+        }
+      );
 
       if (eventResponse.ok) {
         const eventData = await eventResponse.json();
@@ -47,19 +64,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Fallback to general conversational agent
-    const response = await fetch(`${AI_SERVICE_URL}/api/chat/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: body.message,
-        context: {
-          assistant_type: body.assistantType,
-          mode: body.mode || "auto",
-        },
-      }),
-    });
+    const response = await secureFetch(
+      `${AI_SERVICE_URL.replace(/\/$/, "")}/api/chat/generate`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          query: body.message,
+          context: {
+            assistant_type: body.assistantType,
+            mode: body.mode || "auto",
+          },
+        }),
+        totalBudgetMs: 1200,
+        timeoutMs: 800,
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`AI service responded with status: ${response.status}`);
@@ -86,4 +105,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "chat_failed" }, { status: 500 });
     }
   }
+}
+
+// Lightweight in-memory rate limiter (best-effort, single-instance)
+const buckets = new Map<string, number[]>();
+function rateLimitAllow(key: string, max: number, windowMs: number) {
+  const now = Date.now();
+  const arr = buckets.get(key) || [];
+  // drop old
+  while (arr.length && now - arr[0] > windowMs) arr.shift();
+  if (arr.length >= max) {
+    const retryAfterMs = windowMs - (now - arr[0]!);
+    return { ok: false as const, retryAfterMs };
+  }
+  arr.push(now);
+  buckets.set(key, arr);
+  return { ok: true as const };
 }
