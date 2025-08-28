@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
 import { chatbotLogs, partnership_applications } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { getCached } from "@/lib/cache";
 
 const QuerySchema = z.object({
   sessionId: z.string().uuid().nullable().optional(),
@@ -19,21 +20,26 @@ export async function GET(request: NextRequest) {
       limit: parseInt(searchParams.get("limit") || "20"),
     });
 
-    // Fetch chat logs for the session
-    const chatLogs = await db
-      .select({
-        id: chatbotLogs.id,
-        session_id: chatbotLogs.sessionId,
-        role: chatbotLogs.role,
-        message: chatbotLogs.message,
-        user_id: chatbotLogs.userId,
-        tokens: chatbotLogs.tokens,
-        created_at: chatbotLogs.createdAt,
-      })
-      .from(chatbotLogs)
-      .where(eq(chatbotLogs.sessionId, query.sessionId))
-      .orderBy(desc(chatbotLogs.createdAt))
-      .limit(query.limit);
+    // Fetch chat logs for the session (10s cache)
+    const chatLogs = await getCached(
+      `chat-context:${query.sessionId}:${query.limit}`,
+      10_000,
+      async () =>
+        db
+          .select({
+            id: chatbotLogs.id,
+            session_id: chatbotLogs.sessionId,
+            role: chatbotLogs.role,
+            message: chatbotLogs.message,
+            user_id: chatbotLogs.userId,
+            tokens: chatbotLogs.tokens,
+            created_at: chatbotLogs.createdAt,
+          })
+          .from(chatbotLogs)
+          .where(eq(chatbotLogs.sessionId, query.sessionId))
+          .orderBy(desc(chatbotLogs.createdAt))
+          .limit(query.limit)
+    );
 
     // For now, prospect data will be null since partnership_applications
     // doesn't have a direct session_id relationship

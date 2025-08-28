@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { secureFetch } from "@/lib/ai/secure-fetch";
+import { db } from "@/lib/db/drizzle";
+import { queryPerformance } from "@/lib/db/schemas/queries";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -47,6 +49,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           body: JSON.stringify({ query: body.message }),
           totalBudgetMs: 1200,
           timeoutMs: 800,
+          breakerKey: "ai",
+          dedupWindowMs: 10_000,
         }
       );
 
@@ -77,6 +81,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }),
         totalBudgetMs: 1200,
         timeoutMs: 800,
+        breakerKey: "ai",
+        dedupWindowMs: 10_000,
       }
     );
 
@@ -92,6 +98,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     console.error("/api/chat/generate error", error);
+    // DLQ logging best-effort
+    try {
+      await db.insert(queryPerformance).values({
+        queryType: "chat",
+        responseTime: 0,
+        success: false,
+        errorMessage: String(error instanceof Error ? error.message : error),
+      });
+    } catch {}
+
+    // Graceful fallback to static FAQs
+    try {
+      const faq = await buildFaqFallback(req);
+      if (faq) {
+        return NextResponse.json({ reply: faq, agent: "faq", fallback: true });
+      }
+    } catch {}
 
     // Fallback to local knowledge if AI service is unavailable
     try {
@@ -99,7 +122,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const reply = await paguyubanChat.chat(body.message, body.assistantType, {
         mode: "local",
       });
-      return NextResponse.json({ reply, fallback: true });
+      return NextResponse.json({
+        reply,
+        agent: "gemini_local",
+        fallback: true,
+      });
     } catch (fallbackError) {
       console.error("Fallback also failed:", fallbackError);
       return NextResponse.json({ error: "chat_failed" }, { status: 500 });
@@ -121,4 +148,28 @@ function rateLimitAllow(key: string, max: number, windowMs: number) {
   arr.push(now);
   buckets.set(key, arr);
   return { ok: true as const };
+}
+
+async function buildFaqFallback(req: NextRequest): Promise<string | null> {
+  try {
+    const base = req.nextUrl.origin;
+    const res = await fetch(`${base}/api/admin/knowledge/static`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as any;
+    const k = data?.knowledge?.event;
+    if (!k) return null;
+    const lines = [
+      `Here’s key info about Paguyuban Messe:`,
+      `• Name: ${k.name}`,
+      `• Dates: ${k.dates}`,
+      `• Location: ${k.location}`,
+      `• Venue: ${k.venue?.mainHall}`,
+      `For sponsorship packages, see Sponsors in Admin or contact nusantaraexpoofficial@gmail.com.`,
+    ];
+    return lines.join("\n");
+  } catch {
+    return null;
+  }
 }

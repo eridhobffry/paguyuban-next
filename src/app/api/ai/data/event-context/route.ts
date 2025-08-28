@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
 import { sponsors, sponsorTiers, artists, speakers } from "@/lib/db/schema";
 import { eq, desc, asc } from "drizzle-orm";
+import { getCached } from "@/lib/cache";
 
 const QuerySchema = z.object({
   intent: z.string().nullable().optional(),
@@ -30,20 +31,24 @@ export async function GET(request: NextRequest) {
 
     // Fetch sponsors if requested
     if (includeItems.includes("sponsors")) {
-      const sponsorsData = await db
-        .select({
-          id: sponsors.id,
-          name: sponsors.name,
-          logoUrl: sponsors.logoUrl,
-          url: sponsors.url,
-          tags: sponsors.tags,
-          sortOrder: sponsors.sortOrder,
-          updatedAt: sponsors.updatedAt,
-        })
-        .from(sponsors)
-        .orderBy(asc(sponsors.sortOrder))
-        .limit(50);
-
+      const sponsorsData = await getCached(
+        `event-context:sponsors`,
+        5 * 60_000, // 5m cache for sponsors list
+        async () =>
+          db
+            .select({
+              id: sponsors.id,
+              name: sponsors.name,
+              logoUrl: sponsors.logoUrl,
+              url: sponsors.url,
+              tags: sponsors.tags,
+              sortOrder: sponsors.sortOrder,
+              updatedAt: sponsors.updatedAt,
+            })
+            .from(sponsors)
+            .orderBy(asc(sponsors.sortOrder))
+            .limit(50)
+      );
       response.sponsors = sponsorsData;
     }
 
@@ -113,7 +118,10 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json(response);
+    // Short cache for whole response (60s)
+    return NextResponse.json(response, {
+      headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=30" },
+    });
   } catch (error) {
     console.error("Error in event-context API:", error);
     return NextResponse.json(
