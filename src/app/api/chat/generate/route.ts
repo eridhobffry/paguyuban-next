@@ -3,6 +3,12 @@ import { z } from "zod";
 import { secureFetch } from "@/lib/ai/secure-fetch";
 import { db } from "@/lib/db/drizzle";
 import { queryPerformance } from "@/lib/db/schemas/queries";
+import {
+  sanitizeInput,
+  redactPII,
+  sanitizeOutput,
+} from "@/lib/security/sanitize";
+import { hasUserConsent, requiredConsentVersion } from "@/lib/security/consent";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -16,8 +22,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: any;
 
   try {
+    // Require consent header
+    if (!hasUserConsent(req.headers)) {
+      return NextResponse.json(
+        {
+          error: "consent_required",
+          requiredVersion: requiredConsentVersion(),
+          message:
+            "User consent is required before using AI features. Please present the consent modal and set the x-ai-consent header.",
+        },
+        { status: 403 }
+      );
+    }
+
     const json = await req.json();
-    body = BodySchema.parse(json);
+    const parsed = BodySchema.parse(json);
+    // Sanitize user input early
+    parsed.message = sanitizeInput(parsed.message);
+    body = parsed;
   } catch (validationError) {
     console.error("Validation error:", validationError);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -46,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         `${AI_SERVICE_URL.replace(/\/$/, "")}/api/event/chat`,
         {
           method: "POST",
-          body: JSON.stringify({ query: body.message }),
+          body: JSON.stringify({ query: redactPII(body.message) }),
           totalBudgetMs: 1200,
           timeoutMs: 800,
           breakerKey: "ai",
@@ -73,7 +95,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       {
         method: "POST",
         body: JSON.stringify({
-          query: body.message,
+          query: redactPII(body.message),
           context: {
             assistant_type: body.assistantType,
             mode: body.mode || "auto",
@@ -92,7 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const data = await response.json();
     return NextResponse.json({
-      reply: data.result,
+      reply: sanitizeOutput(String(data.result ?? "")),
       agent: "conversational",
       fallback: false,
     });

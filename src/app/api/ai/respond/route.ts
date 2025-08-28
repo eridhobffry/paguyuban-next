@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { secureFetch } from "@/lib/ai/secure-fetch";
+import { sanitizeInput, redactPII, sanitizeOutput } from "@/lib/security/sanitize";
+import { hasUserConsent, requiredConsentVersion } from "@/lib/security/consent";
+import { parseAiTextResponse } from "@/lib/ai/response-schema";
 
 const AIRespondSchema = z.object({
   query: z.string().min(1, "Query is required"),
@@ -16,6 +19,19 @@ export async function POST(request: NextRequest) {
   let parsedData: any = null;
 
   try {
+    // Require consent header
+    if (!hasUserConsent(request.headers)) {
+      return NextResponse.json(
+        {
+          error: "consent_required",
+          requiredVersion: requiredConsentVersion(),
+          message:
+            "User consent is required before using AI features. Please present the consent modal and set the x-ai-consent header.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const parsed = AIRespondSchema.safeParse(body);
 
@@ -42,6 +58,8 @@ export async function POST(request: NextRequest) {
       context,
       useIntentResolution,
     } = parsed.data;
+    
+    const sanitizedQuery = sanitizeInput(query);
 
     let finalIntent = providedIntent;
     let finalContext = context;
@@ -64,7 +82,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              query,
+              query: sanitizedQuery,
               language,
               sessionId,
               userId,
@@ -86,11 +104,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 2: Determine AI endpoint based on intent
-    const aiEndpoint = determineAIEndpoint(finalIntent);
+    const aiBase = (process.env.AI_SERVICE_URL || process.env.AI_API_URL || "http://localhost:8001").replace(/\/$/, "");
+    const aiEndpoint = aiBase + determineAIEndpoint(finalIntent);
 
     // Step 3: Prepare AI request payload with intelligent context selection
     const aiPayload = {
-      query,
+      query: redactPII(sanitizedQuery),
       language,
       session_id: sessionId,
       user_id: userId,
@@ -101,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Step 4: Call AI service with enhanced payload
     const aiResponse = await secureFetch(aiEndpoint, {
       method: "POST",
-      body: aiPayload,
+      body: JSON.stringify(aiPayload),
     });
 
     if (!aiResponse.ok) {
@@ -109,10 +128,11 @@ export async function POST(request: NextRequest) {
     }
 
     const aiData = await aiResponse.json();
+    const parsedText = parseAiTextResponse(aiData);
 
     // Step 5: Enhanced response with business intelligence
     const response = {
-      response: aiData.result || aiData.response,
+      response: sanitizeOutput(String(parsedText || "")),
       metadata: {
         ...metadata,
         ai_endpoint: aiEndpoint,
@@ -149,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     // Intelligent fallback response based on query analysis
     const fallbackResponse = generateFallbackResponse(
-      fallbackQuery,
+      sanitizeInput(fallbackQuery),
       fallbackLanguage
     );
 

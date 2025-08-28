@@ -5,6 +5,7 @@ import type { User } from "@/lib/sql";
 import { db } from "@/lib/db/drizzle";
 import { sql as dsql } from "drizzle-orm";
 import { generateAdminAnalysis } from "@/lib/ai/gemini-admin";
+import { sanitizeInput, redactPII, redactNames, sanitizeAndRedactProspect } from "@/lib/security/sanitize";
 
 function json(res: unknown, status = 200) {
   return NextResponse.json(res, {
@@ -160,7 +161,14 @@ export async function POST(request: NextRequest) {
     if (!decoded || !isAdmin(decoded))
       return json({ error: "Admin access required" }, 403);
 
-    const body = BodySchema.parse(await request.json());
+    const bodyRaw = BodySchema.parse(await request.json());
+    // Sanitize and redact user-provided fields
+    const body = {
+      ...bodyRaw,
+      summary: bodyRaw.summary ? sanitizeInput(bodyRaw.summary, 2000) : undefined,
+      sentiment: bodyRaw.sentiment ?? null,
+      prospect: bodyRaw.prospect ? (sanitizeAndRedactProspect(bodyRaw.prospect) as any) : null,
+    };
 
     let transcript: ChatRow[] = [];
     if (body.sessionId) {
@@ -171,7 +179,10 @@ export async function POST(request: NextRequest) {
         order by created_at asc
         limit 50
       `)) as unknown as { rows: ChatRow[] };
-      transcript = rows.rows || [];
+      transcript = (rows.rows || []).map((t) => ({
+        role: t.role,
+        message: redactPII(redactNames(sanitizeInput(t.message, 2000))),
+      }));
     }
 
     // Build prompt (JSON mode removes need for strict JSON admonitions)
@@ -189,7 +200,7 @@ SCHEMA:
 }
 
 DATA:
-SUMMARY: ${body.summary ?? "(none)"}
+SUMMARY: ${redactPII(redactNames(body.summary || "(none)"))}
 SENTIMENT: ${body.sentiment ?? "(unknown)"}
 PROSPECT (if any): ${JSON.stringify(body.prospect || {})}
 TRANSCRIPT:\n${transcript

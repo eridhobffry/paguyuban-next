@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { aiFetch, getAiConsent, setAiConsent } from "@/lib/client/ai";
 import { getCurrentAnalyticsSessionId } from "@/lib/analytics/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -135,9 +136,16 @@ const ChatAssistantSection = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
+  useEffect(() => {
+    try {
+      const v = getAiConsent();
+      if (!v) setShowConsent(true);
+    } catch {}
+  }, []);
   const [isClient, setIsClient] = useState(false);
   const [conversationPhase, setConversationPhase] = useState<
     "greeting" | "exploring" | "engaged" | "action"
@@ -210,8 +218,13 @@ const ChatAssistantSection = () => {
     setIsLoading(true);
 
     try {
-      // Server-side Gemini call via API route (avoids 403 and keeps key server-side)
-      const res = await fetch("/api/chat/generate", {
+      // Require consent before sending
+      if (!getAiConsent()) {
+        setShowConsent(true);
+        return;
+      }
+      // Server-side AI call via API route
+      const res = await aiFetch("/api/chat/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -376,6 +389,33 @@ const ChatAssistantSection = () => {
 
   return (
     <>
+      {showConsent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">AI Consent Required</h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-4">
+              To use the AI assistant, please consent to processing your prompts according to our privacy terms. You can revoke at any time.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-3 py-2 rounded border text-sm"
+                onClick={() => setShowConsent(false)}
+              >
+                Not now
+              </button>
+              <button
+                className="px-3 py-2 rounded bg-blue-600 text-white text-sm"
+                onClick={() => {
+                  setAiConsent("v1");
+                  setShowConsent(false);
+                }}
+              >
+                I Consent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Floating Chat Button */}
       <motion.button
         onClick={() => {

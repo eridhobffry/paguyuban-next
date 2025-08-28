@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { secureFetch } from "@/lib/ai/secure-fetch";
+import { sanitizeInput, redactPII } from "@/lib/security/sanitize";
 
 const ResolveIntentSchema = z.object({
   query: z.string().min(1, "Query is required"),
@@ -28,19 +29,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { query, language, sessionId, userId, context } = parsed.data;
+    // Sanitize input before any processing
+    const querySan = sanitizeInput(parsed.data.query);
+    const { language, sessionId, userId, context } = parsed.data;
+    const AI_BASE = (
+      process.env.AI_SERVICE_URL ||
+      process.env.AI_API_URL ||
+      "http://localhost:8001"
+    ).replace(/\/$/, "");
 
     // Advanced intent resolution using AI service
-    const intentResponse = await secureFetch("/api/ai/intent/analyze", {
-      method: "POST",
-      body: {
-        query,
-        language,
-        session_id: sessionId,
-        user_id: userId,
-        context,
-      },
-    });
+    const intentResponse = await secureFetch(
+      `${AI_BASE}/api/ai/intent/analyze`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          query: redactPII(querySan),
+          language,
+          session_id: sessionId,
+          user_id: userId,
+          context,
+        }),
+      }
+    );
 
     if (!intentResponse.ok) {
       throw new Error(`AI intent analysis failed: ${intentResponse.status}`);
@@ -51,10 +62,17 @@ export async function POST(request: NextRequest) {
     const confidence = intentData.confidence || 0.5;
 
     // Intelligent data source selection based on intent
-    const dataRequirements = determineDataRequirements(intent, query, sessionId, userId);
+    const dataRequirements = determineDataRequirements(
+      intent,
+      query,
+      sessionId,
+      userId
+    );
 
     // Fetch required context data in parallel
-    const contextPromises = dataRequirements.map(req => fetchContextData(req));
+    const contextPromises = dataRequirements.map((req) =>
+      fetchContextData(req)
+    );
     const contextResults = await Promise.allSettled(contextPromises);
 
     // Aggregate successful context data
@@ -74,7 +92,7 @@ export async function POST(request: NextRequest) {
       session_id: sessionId,
       user_id: userId,
       data_sources: Object.keys(aggregatedContext),
-      requirements: dataRequirements.map(req => req.type),
+      requirements: dataRequirements.map((req) => req.type),
       timestamp: new Date().toISOString(),
       agent_version: "Phase 4.0 - Intent Resolution",
     };
@@ -85,10 +103,10 @@ export async function POST(request: NextRequest) {
         confidence,
         context: aggregatedContext,
         metadata,
-        data_requirements: dataRequirements.map(req => ({
+        data_requirements: dataRequirements.map((req) => ({
           type: req.type,
           priority: req.priority,
-          fetched: aggregatedContext.hasOwnProperty(req.type)
+          fetched: aggregatedContext.hasOwnProperty(req.type),
         })),
       },
       {
@@ -138,14 +156,14 @@ function determineDataRequirements(
         requirements.push({
           type: "chat-context",
           priority: "high",
-          params: { sessionId, intent: "prospect_analysis" }
+          params: { sessionId, intent: "prospect_analysis" },
         });
       }
       if (userId) {
         requirements.push({
           type: "analytics-context",
           priority: "medium",
-          params: { userId, intent: "personalization" }
+          params: { userId, intent: "personalization" },
         });
       }
       break;
@@ -157,7 +175,7 @@ function determineDataRequirements(
       requirements.push({
         type: "event-context",
         priority: "high",
-        params: { intent: "event_details", include: "artists,speakers" }
+        params: { intent: "event_details", include: "artists,speakers" },
       });
       break;
 
@@ -167,7 +185,7 @@ function determineDataRequirements(
       requirements.push({
         type: "event-context",
         priority: "high",
-        params: { intent: "pricing", include: "sponsors,tiers" }
+        params: { intent: "pricing", include: "sponsors,tiers" },
       });
       break;
 
@@ -177,12 +195,12 @@ function determineDataRequirements(
         requirements.push({
           type: "analytics-context",
           priority: "high",
-          params: { 
-            userId, 
-            sessionId, 
+          params: {
+            userId,
+            sessionId,
             intent: "business_analysis",
-            timeRange: 30 
-          }
+            timeRange: 30,
+          },
         });
       }
       break;
@@ -192,27 +210,33 @@ function determineDataRequirements(
       requirements.push({
         type: "event-context",
         priority: "medium",
-        params: { intent: "general", include: "sponsors,tiers" }
+        params: { intent: "general", include: "sponsors,tiers" },
       });
       break;
   }
 
   // Query-based enhancement (NLP-driven context augmentation)
   const queryLower = query.toLowerCase();
-  
-  if (queryLower.includes("sponsor") && !requirements.some(r => r.type === "event-context")) {
+
+  if (
+    queryLower.includes("sponsor") &&
+    !requirements.some((r) => r.type === "event-context")
+  ) {
     requirements.push({
       type: "event-context",
       priority: "high",
-      params: { intent: "pricing", include: "sponsors,tiers" }
+      params: { intent: "pricing", include: "sponsors,tiers" },
     });
   }
 
-  if ((queryLower.includes("performance") || queryLower.includes("data")) && userId) {
+  if (
+    (queryLower.includes("performance") || queryLower.includes("data")) &&
+    userId
+  ) {
     requirements.push({
       type: "analytics-context",
       priority: "medium",
-      params: { userId, intent: "performance_analysis" }
+      params: { userId, intent: "performance_analysis" },
     });
   }
 
@@ -220,11 +244,18 @@ function determineDataRequirements(
 }
 
 async function fetchContextData(requirement: DataRequirement): Promise<any> {
-  const baseUrl = `/api/ai/data/${requirement.type.replace("-context", "-context")}`;
-  
+  const baseUrl = `/api/ai/data/${requirement.type.replace(
+    "-context",
+    "-context"
+  )}`;
+
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${baseUrl}?${new URLSearchParams(requirement.params || {}).toString()}`);
-    
+    const response = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+      }${baseUrl}?${new URLSearchParams(requirement.params || {}).toString()}`
+    );
+
     if (response.ok) {
       return await response.json();
     } else {
