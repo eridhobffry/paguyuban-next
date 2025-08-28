@@ -2,11 +2,80 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
 import {
-  analytics_events,
-  user_query_preferences,
-  query_performance,
-} from "@/lib/db/drizzle";
+  analyticsEvents,
+  userQueryPreferences,
+  queryPerformance,
+} from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
+
+// Types to avoid 'any'
+type EventRow = {
+  id: string;
+  type: string | null;
+  section: string | null;
+  route: string | null;
+  metadata: unknown;
+  created_at: string | Date;
+};
+
+type PerformanceRow = {
+  id: string;
+  query_type: string | null;
+  response_time: number | null;
+  token_count: number | null;
+  success: boolean | null;
+  user_rating: number | null;
+  user_feedback: string | null;
+  created_at: string | Date;
+};
+
+type SessionRow = {
+  id: string;
+  user_id: string | null;
+  started_at: string | Date;
+  ended_at: string | Date | null;
+  route_first: string | null;
+  referrer: string | null;
+  device: string | null;
+  country: string | null;
+  engagement_score: number | null;
+};
+
+type Preferences = {
+  language?: string | null;
+  theme?: string | null;
+  preferred_metrics?: string[] | null;
+  preferred_dimensions?: string[] | null;
+  auto_save_queries?: boolean | null;
+  updated_at?: string | Date | null;
+} | null;
+
+interface AnalyticsContextResponse {
+  metadata: {
+    session_id?: string | null;
+    user_id?: string | null;
+    intent?: string | null;
+    time_range_days: number;
+  };
+  preferences?: Preferences;
+  events?: EventRow[];
+  performance?: PerformanceRow[];
+  sessions?: SessionRow[];
+  behavior?: {
+    average_response_time: number;
+    success_rate: number;
+    average_rating: number | null;
+    total_queries: number;
+    preferred_query_types: { type: string; count: number }[];
+  };
+  personalization?: {
+    frequent_sections: { section: string; count: number }[];
+    common_routes: { route: string; count: number }[];
+    engagement_pattern: "high" | "medium" | "low";
+    language_preference: string;
+    theme_preference: string;
+  };
+}
 
 const QuerySchema = z.object({
   sessionId: z.string().uuid().optional(),
@@ -19,13 +88,13 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = QuerySchema.parse({
-      sessionId: searchParams.get("sessionId"),
-      userId: searchParams.get("userId"),
-      intent: searchParams.get("intent"),
+      sessionId: searchParams.get("sessionId") || undefined,
+      userId: searchParams.get("userId") || undefined,
+      intent: searchParams.get("intent") || undefined,
       timeRange: parseInt(searchParams.get("timeRange") || "7"),
     });
 
-    const response: any = {
+    const response: AnalyticsContextResponse = {
       metadata: {
         session_id: query.sessionId,
         user_id: query.userId,
@@ -42,77 +111,83 @@ export async function GET(request: NextRequest) {
     if (query.userId) {
       const preferences = await db
         .select({
-          language: user_query_preferences.language,
-          theme: user_query_preferences.theme,
-          preferred_metrics: user_query_preferences.preferred_metrics,
-          preferred_dimensions: user_query_preferences.preferred_dimensions,
-          auto_save_queries: user_query_preferences.auto_save_queries,
-          updated_at: user_query_preferences.updated_at,
+          language: userQueryPreferences.language,
+          theme: userQueryPreferences.theme,
+          preferred_metrics: userQueryPreferences.preferredMetrics,
+          preferred_dimensions: userQueryPreferences.preferredDimensions,
+          auto_save_queries: userQueryPreferences.autoSaveQueries,
+          updated_at: userQueryPreferences.updatedAt,
         })
-        .from(user_query_preferences)
-        .where(eq(user_query_preferences.user_id, query.userId))
+        .from(userQueryPreferences)
+        .where(eq(userQueryPreferences.userId, query.userId))
         .limit(1);
 
       response.preferences = preferences[0] || null;
     }
 
     // Fetch recent analytics events for the session/user
-    let analyticsQuery = db
+    const events: EventRow[] = await db
       .select({
-        id: analytics_events.id,
-        type: analytics_events.type,
-        section: analytics_events.section,
-        route: analytics_events.route,
-        metadata: analytics_events.metadata,
-        created_at: analytics_events.created_at,
+        id: analyticsEvents.id,
+        type: analyticsEvents.type,
+        section: analyticsEvents.section,
+        route: analyticsEvents.route,
+        metadata: analyticsEvents.metadata,
+        created_at: analyticsEvents.createdAt,
       })
-      .from(analytics_events)
-      .where(gte(analytics_events.created_at, dateThreshold))
-      .orderBy(desc(analytics_events.created_at))
+      .from(analyticsEvents)
+      .where(
+        query.sessionId
+          ? and(
+              gte(analyticsEvents.createdAt, dateThreshold),
+              eq(analyticsEvents.sessionId, query.sessionId)
+            )
+          : query.userId
+          ? and(
+              gte(analyticsEvents.createdAt, dateThreshold),
+              eq(analyticsEvents.userId, query.userId)
+            )
+          : gte(analyticsEvents.createdAt, dateThreshold)
+      )
+      .orderBy(desc(analyticsEvents.createdAt))
       .limit(100);
-
-    if (query.sessionId) {
-      analyticsQuery = analyticsQuery.where(
-        eq(analytics_events.session_id, query.sessionId)
-      );
-    } else if (query.userId) {
-      analyticsQuery = analyticsQuery.where(
-        eq(analytics_events.user_id, query.userId)
-      );
-    }
-
-    const events = await analyticsQuery;
     response.events = events;
 
     // Fetch query performance data for learning
     if (query.sessionId || query.userId) {
-      let performanceQuery = db
-        .select({
-          id: query_performance.id,
-          query_type: query_performance.query_type,
-          response_time: query_performance.response_time,
-          token_count: query_performance.token_count,
-          success: query_performance.success,
-          user_rating: query_performance.user_rating,
-          user_feedback: query_performance.user_feedback,
-          created_at: query_performance.created_at,
-        })
-        .from(query_performance)
-        .where(gte(query_performance.created_at, dateThreshold))
-        .orderBy(desc(query_performance.created_at))
-        .limit(50);
-
-      if (query.sessionId) {
-        performanceQuery = performanceQuery.where(
-          eq(query_performance.session_id, query.sessionId)
-        );
-      } else if (query.userId) {
-        performanceQuery = performanceQuery.where(
-          eq(query_performance.user_id, query.userId)
-        );
+      // Optional sessions fetch is currently feature-flagged off and no-op to keep implementation minimal.
+      // Set AI_INCLUDE_SESSIONS=1 in production and implement the actual fetch behind this flag.
+      const includeSessions = process.env.AI_INCLUDE_SESSIONS === "1";
+      if (includeSessions) {
+        // intentionally no-op for now
       }
 
-      const performanceData = await performanceQuery;
+      const performanceData: PerformanceRow[] = await db
+        .select({
+          id: queryPerformance.id,
+          query_type: queryPerformance.queryType,
+          response_time: queryPerformance.responseTime,
+          token_count: queryPerformance.tokenCount,
+          success: queryPerformance.success,
+          user_rating: queryPerformance.userRating,
+          user_feedback: queryPerformance.userFeedback,
+          created_at: queryPerformance.createdAt,
+        })
+        .from(queryPerformance)
+        .where(
+          query.sessionId
+            ? and(
+                gte(queryPerformance.createdAt, dateThreshold),
+                eq(queryPerformance.sessionId, query.sessionId)
+              )
+            : and(
+                gte(queryPerformance.createdAt, dateThreshold),
+                eq(queryPerformance.userId, query.userId as string)
+              )
+        )
+        .orderBy(desc(queryPerformance.createdAt))
+        .limit(50);
+
       response.performance = performanceData;
 
       // Calculate user behavior insights
@@ -126,7 +201,7 @@ export async function GET(request: NextRequest) {
         const avgRating =
           performanceData
             .filter((p) => p.user_rating)
-            .reduce((sum, p, _, arr) => sum + (p.user_rating || 0), 0) /
+            .reduce((sum, p) => sum + (p.user_rating || 0), 0) /
           Math.max(1, performanceData.filter((p) => p.user_rating).length);
 
         response.behavior = {
@@ -150,17 +225,23 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=30" },
+    });
   } catch (error) {
     console.error("Error in analytics-context API:", error);
     return NextResponse.json(
-      { error: "Failed to fetch analytics context" },
+      {
+        error: "Failed to fetch analytics context",
+        details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }
 }
 
-function getPreferredQueryTypes(performanceData: any[]) {
+function getPreferredQueryTypes(performanceData: PerformanceRow[]) {
   const typeCount: Record<string, number> = {};
   performanceData.forEach((p) => {
     const type = p.query_type || "unknown";
@@ -172,7 +253,7 @@ function getPreferredQueryTypes(performanceData: any[]) {
     .map(([type, count]) => ({ type, count }));
 }
 
-function getFrequentSections(events: any[]) {
+function getFrequentSections(events: EventRow[]) {
   const sectionCount: Record<string, number> = {};
   events.forEach((event) => {
     const section = event.section || "unknown";
@@ -184,7 +265,7 @@ function getFrequentSections(events: any[]) {
     .map(([section, count]) => ({ section, count }));
 }
 
-function getCommonRoutes(events: any[]) {
+function getCommonRoutes(events: EventRow[]) {
   const routeCount: Record<string, number> = {};
   events.forEach((event) => {
     const route = event.route || "unknown";
@@ -196,7 +277,7 @@ function getCommonRoutes(events: any[]) {
     .map(([route, count]) => ({ route, count }));
 }
 
-function analyzeEngagementPattern(events: any[]) {
+function analyzeEngagementPattern(events: EventRow[]) {
   if (events.length === 0) return "low";
 
   const recentEvents = events.slice(0, 20);
@@ -207,7 +288,7 @@ function analyzeEngagementPattern(events: any[]) {
   return "low";
 }
 
-function calculateAverageTimeGap(events: any[]) {
+function calculateAverageTimeGap(events: EventRow[]) {
   if (events.length < 2) return Infinity;
 
   let totalGap = 0;

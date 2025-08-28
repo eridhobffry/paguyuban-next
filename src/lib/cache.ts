@@ -1,6 +1,6 @@
 type CacheEntry<T> = { value: T; expiresAt: number };
 
-const store = new Map<string, CacheEntry<any>>();
+const store = new Map<string, CacheEntry<unknown>>();
 
 export async function getCached<T>(
   key: string,

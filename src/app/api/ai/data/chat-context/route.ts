@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db/drizzle";
-import { chatbotLogs, partnership_applications } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import {
+  chatbotLogs,
+  partnership_applications,
+  chatbotSummaries,
+} from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { getCached } from "@/lib/cache";
+import { extractProspectFromSummary } from "@/lib/prospect";
+import type { Prospect } from "@/lib/prospect";
 
 const QuerySchema = z.object({
-  sessionId: z.string().uuid().nullable().optional(),
+  sessionId: z.string().uuid(),
   intent: z.string().nullable().optional(),
   limit: z.number().min(1).max(50).default(20),
 });
@@ -14,11 +20,25 @@ const QuerySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = QuerySchema.parse({
+    const parsed = QuerySchema.safeParse({
       sessionId: searchParams.get("sessionId") || undefined,
       intent: searchParams.get("intent") || undefined,
       limit: parseInt(searchParams.get("limit") || "20"),
     });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid query parameters",
+          issues: parsed.error.issues.map((i) => ({
+            path: i.path.join("."),
+            message: i.message,
+          })),
+        },
+        { status: 400 }
+      );
+    }
+    const query = parsed.data;
 
     // Fetch chat logs for the session (10s cache)
     const chatLogs = await getCached(
@@ -41,10 +61,106 @@ export async function GET(request: NextRequest) {
           .limit(query.limit)
     );
 
-    // For now, prospect data will be null since partnership_applications
-    // doesn't have a direct session_id relationship
-    // This can be enhanced later when we have proper session tracking
-    const prospectData = null;
+    // Prospect data: best-effort mapping.
+    // 1) Heuristic A: try mapping via userId or sessionId to partnership_applications.source
+    // 2) Heuristic B: if any email appears in recent messages, look up latest partnership application by email.
+    // 3) Fallback: use chatbot summaries for this session and extract prospect details from the summary text.
+    let prospect: Prospect | null = null;
+
+    try {
+      type AppRow = {
+        name: string | null;
+        email: string | null;
+        company: string | null;
+        phone: string | null;
+        interest: string | null;
+        budget: string | null;
+        created_at: Date | null;
+      };
+
+      // Heuristic A: userId/sessionId -> partnership_applications.source
+      const sessionUserId = chatLogs.find((l) => l.user_id)?.user_id ?? null;
+      const sourceKey = sessionUserId || query.sessionId;
+      if (sourceKey) {
+        const viaSource: AppRow[] = await db
+          .select({
+            name: partnership_applications.name,
+            email: partnership_applications.email,
+            company: partnership_applications.company,
+            phone: partnership_applications.phone,
+            interest: partnership_applications.interest,
+            budget: partnership_applications.budget,
+            created_at: partnership_applications.created_at,
+          })
+          .from(partnership_applications)
+          .where(eq(partnership_applications.source, sourceKey))
+          .orderBy(desc(partnership_applications.created_at))
+          .limit(1);
+        if (viaSource[0]) {
+          prospect = {
+            name: viaSource[0].name ?? null,
+            email: viaSource[0].email ?? null,
+            phone: viaSource[0].phone ?? null,
+            company: viaSource[0].company ?? null,
+            interest: viaSource[0].interest ?? null,
+            budget: viaSource[0].budget ?? null,
+          };
+        }
+      }
+
+      // Heuristic B: email found in recent messages
+      if (!prospect) {
+        const combinedText = chatLogs.map((l) => l.message).join(" \n ");
+        const emailMatch = combinedText.match(
+          /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i
+        );
+
+        if (emailMatch) {
+          const appRows: AppRow[] = await db
+            .select({
+              name: partnership_applications.name,
+              email: partnership_applications.email,
+              company: partnership_applications.company,
+              phone: partnership_applications.phone,
+              interest: partnership_applications.interest,
+              budget: partnership_applications.budget,
+              created_at: partnership_applications.created_at,
+            })
+            .from(partnership_applications)
+            .where(eq(partnership_applications.email, emailMatch[0]))
+            .orderBy(desc(partnership_applications.created_at))
+            .limit(1);
+          if (appRows[0]) {
+            prospect = {
+              name: appRows[0].name ?? null,
+              email: appRows[0].email ?? null,
+              phone: appRows[0].phone ?? null,
+              company: appRows[0].company ?? null,
+              interest: appRows[0].interest ?? null,
+              budget: appRows[0].budget ?? null,
+            };
+          }
+        }
+      }
+
+      if (!prospect) {
+        const summaries = await db
+          .select({
+            summary: chatbotSummaries.summary,
+            created_at: chatbotSummaries.createdAt,
+          })
+          .from(chatbotSummaries)
+          .where(eq(chatbotSummaries.sessionId, query.sessionId))
+          .orderBy(desc(chatbotSummaries.createdAt))
+          .limit(1);
+        const summary = summaries[0]?.summary as string | undefined;
+        if (summary) {
+          prospect = extractProspectFromSummary(summary);
+        }
+      }
+    } catch {
+      // Non-fatal: keep prospect null on any error
+    }
 
     // Simple sentiment analysis from recent messages
     const recentMessages = chatLogs.slice(0, 10);
@@ -89,17 +205,20 @@ export async function GET(request: NextRequest) {
     if (positiveCount > negativeCount) sentiment = "positive";
     else if (negativeCount > positiveCount) sentiment = "negative";
 
-    return NextResponse.json({
-      logs: chatLogs.reverse(), // Reverse to chronological order
-      prospect: prospectData && prospectData[0] ? prospectData[0] : null,
-      sentiment,
-      metadata: {
-        total_logs: chatLogs.length,
-        user_messages: userMessages.length,
-        session_id: query.sessionId,
-        intent: query.intent,
+    return NextResponse.json(
+      {
+        logs: chatLogs.reverse(), // Reverse to chronological order
+        prospect,
+        sentiment,
+        metadata: {
+          total_logs: chatLogs.length,
+          user_messages: userMessages.length,
+          session_id: query.sessionId,
+          intent: query.intent,
+        },
       },
-    });
+      { headers: { "Cache-Control": "s-maxage=10, stale-while-revalidate=10" } }
+    );
   } catch (error) {
     console.error("Error in chat-context API:", error);
     return NextResponse.json(
