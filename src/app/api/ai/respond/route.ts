@@ -14,7 +14,7 @@ const AIRespondSchema = z.object({
 
 export async function POST(request: NextRequest) {
   let parsedData: any = null;
-  
+
   try {
     const body = await request.json();
     const parsed = AIRespondSchema.safeParse(body);
@@ -33,7 +33,15 @@ export async function POST(request: NextRequest) {
     }
 
     parsedData = parsed.data;
-    const { query, language, sessionId, userId, intent: providedIntent, context, useIntentResolution } = parsed.data;
+    const {
+      query,
+      language,
+      sessionId,
+      userId,
+      intent: providedIntent,
+      context,
+      useIntentResolution,
+    } = parsed.data;
 
     let finalIntent = providedIntent;
     let finalContext = context;
@@ -48,17 +56,22 @@ export async function POST(request: NextRequest) {
     // Step 1: Intent Resolution (if not provided or if enabled)
     if (!providedIntent || useIntentResolution) {
       try {
-        const intentResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/ai/intent/resolve`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query,
-            language,
-            sessionId,
-            userId,
-            context,
-          }),
-        });
+        const intentResponse = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+          }/api/ai/intent/resolve`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query,
+              language,
+              sessionId,
+              userId,
+              context,
+            }),
+          }
+        );
 
         if (intentResponse.ok) {
           const intentData = await intentResponse.json();
@@ -107,10 +120,14 @@ export async function POST(request: NextRequest) {
         confidence: aiData.metadata?.confidence || metadata.confidence,
         data_sources_used: Object.keys(finalContext),
         processing_time: Date.now() - new Date(metadata.timestamp).getTime(),
-        agent_architecture: "Phase 4.0 - Data-Driven Agent with Intent Resolution",
+        agent_architecture:
+          "Phase 4.0 - Data-Driven Agent with Intent Resolution",
       },
       context_summary: createContextSummary(finalContext),
-      recommendations: generateBusinessRecommendations(finalIntent, finalContext),
+      recommendations: generateBusinessRecommendations(
+        finalIntent,
+        finalContext
+      ),
     };
 
     // Step 6: Response optimization based on intent
@@ -123,17 +140,19 @@ export async function POST(request: NextRequest) {
         "X-AI-Version": "Phase-4.0",
       },
     });
-
   } catch (error) {
     console.error("Error in AI response generation:", error);
-    
+
     // Use parsed data if available, otherwise defaults
     const fallbackQuery = parsedData?.query || "";
     const fallbackLanguage = parsedData?.language || "en";
-    
+
     // Intelligent fallback response based on query analysis
-    const fallbackResponse = generateFallbackResponse(fallbackQuery, fallbackLanguage);
-    
+    const fallbackResponse = generateFallbackResponse(
+      fallbackQuery,
+      fallbackLanguage
+    );
+
     return NextResponse.json(
       {
         response: fallbackResponse,
@@ -158,20 +177,23 @@ function determineAIEndpoint(intent: string): string {
     case "business_partnership":
     case "business_budget":
       return "/api/chat/generate"; // Use advanced chat for business queries
-    
+
     case "event_details":
     case "event_timing":
     case "event_location":
     case "event_artists":
     case "event_pricing":
       return "/api/event/chat"; // Use event-specific agent
-    
+
     default:
       return "/api/chat/generate"; // Default to general chat
   }
 }
 
-function selectRelevantContext(context: Record<string, any>, intent: string): Record<string, any> {
+function selectRelevantContext(
+  context: Record<string, any>,
+  intent: string
+): Record<string, any> {
   const relevantContext: Record<string, any> = {};
 
   // Intelligent context filtering based on intent
@@ -180,10 +202,12 @@ function selectRelevantContext(context: Record<string, any>, intent: string): Re
       if (context["chat-context"]) {
         relevantContext.chat_logs = context["chat-context"].logs || [];
         relevantContext.prospect = context["chat-context"].prospect || null;
-        relevantContext.sentiment = context["chat-context"].sentiment || "neutral";
+        relevantContext.sentiment =
+          context["chat-context"].sentiment || "neutral";
       }
       if (context["analytics-context"]) {
-        relevantContext.user_behavior = context["analytics-context"].behavior || {};
+        relevantContext.user_behavior =
+          context["analytics-context"].behavior || {};
       }
       break;
 
@@ -202,8 +226,10 @@ function selectRelevantContext(context: Record<string, any>, intent: string): Re
       if (context["event-context"]) {
         relevantContext.sponsors = context["event-context"].sponsors || [];
         relevantContext.tiers = context["event-context"].tiers || [];
-        relevantContext.availability = context["event-context"].availability || {};
-        relevantContext.pricing_context = context["event-context"].pricing_context || {};
+        relevantContext.availability =
+          context["event-context"].availability || {};
+        relevantContext.pricing_context =
+          context["event-context"].pricing_context || {};
       }
       break;
 
@@ -211,7 +237,8 @@ function selectRelevantContext(context: Record<string, any>, intent: string): Re
     case "personalized_response":
       if (context["analytics-context"]) {
         relevantContext.behavior = context["analytics-context"].behavior || {};
-        relevantContext.personalization = context["analytics-context"].personalization || {};
+        relevantContext.personalization =
+          context["analytics-context"].personalization || {};
       }
       break;
 
@@ -229,12 +256,14 @@ function selectRelevantContext(context: Record<string, any>, intent: string): Re
   return relevantContext;
 }
 
-function createContextSummary(context: Record<string, any>): Record<string, any> {
+function createContextSummary(
+  context: Record<string, any>
+): Record<string, any> {
   const summary: Record<string, any> = {};
 
-  Object.keys(context).forEach(key => {
+  Object.keys(context).forEach((key) => {
     const data = context[key];
-    
+
     switch (key) {
       case "chat-context":
         summary.chat_summary = {
@@ -243,7 +272,7 @@ function createContextSummary(context: Record<string, any>): Record<string, any>
           has_prospect: !!data.prospect,
         };
         break;
-      
+
       case "event-context":
         summary.event_summary = {
           sponsors_count: data.sponsors?.length || 0,
@@ -251,7 +280,7 @@ function createContextSummary(context: Record<string, any>): Record<string, any>
           has_pricing_context: !!data.pricing_context,
         };
         break;
-      
+
       case "analytics-context":
         summary.analytics_summary = {
           has_behavior_data: !!data.behavior,
@@ -265,7 +294,10 @@ function createContextSummary(context: Record<string, any>): Record<string, any>
   return summary;
 }
 
-function generateBusinessRecommendations(intent: string, context: Record<string, any>): Array<{title: string, description: string, priority: string}> {
+function generateBusinessRecommendations(
+  intent: string,
+  context: Record<string, any>
+): Array<{ title: string; description: string; priority: string }> {
   const recommendations = [];
 
   // Intent-based business intelligence
@@ -275,15 +307,17 @@ function generateBusinessRecommendations(intent: string, context: Record<string,
       if (chatContext?.sentiment === "positive") {
         recommendations.push({
           title: "High Conversion Potential",
-          description: "Prospect showing positive sentiment - prioritize immediate follow-up",
-          priority: "high"
+          description:
+            "Prospect showing positive sentiment - prioritize immediate follow-up",
+          priority: "high",
         });
       }
       if (chatContext?.logs?.length > 5) {
         recommendations.push({
           title: "Engaged Prospect",
-          description: "Multiple messages indicate high engagement - schedule direct call",
-          priority: "high"
+          description:
+            "Multiple messages indicate high engagement - schedule direct call",
+          priority: "high",
         });
       }
       break;
@@ -291,14 +325,15 @@ function generateBusinessRecommendations(intent: string, context: Record<string,
     case "business_partnership":
       const eventContext = context["event-context"];
       if (eventContext?.availability) {
-        const availableTiers = Object.entries(eventContext.availability)
-          .filter(([_, count]) => count && count > 0);
-        
+        const availableTiers = Object.entries(eventContext.availability).filter(
+          ([_, count]) => count && count > 0
+        );
+
         if (availableTiers.length > 0) {
           recommendations.push({
             title: "Limited Availability Alert",
             description: `${availableTiers.length} sponsorship tiers still available - create urgency`,
-            priority: "medium"
+            priority: "medium",
           });
         }
       }
@@ -309,8 +344,9 @@ function generateBusinessRecommendations(intent: string, context: Record<string,
       if (analyticsContext?.personalization?.engagement_pattern === "high") {
         recommendations.push({
           title: "High-Value User",
-          description: "User shows high engagement pattern - offer premium support",
-          priority: "medium"
+          description:
+            "User shows high engagement pattern - offer premium support",
+          priority: "medium",
         });
       }
       break;
@@ -355,7 +391,7 @@ function optimizeResponseForIntent(response: any, intent: string): any {
 function generateFallbackResponse(query: string, language: string): string {
   // Intelligent fallback based on query keywords
   const queryLower = query.toLowerCase();
-  
+
   if (queryLower.includes("price") || queryLower.includes("sponsor")) {
     if (language === "id") {
       return "Terima kasih atas ketertarikan Anda pada Paguyuban Messe 2026. Kami memiliki berbagai paket sponsorship mulai dari €15,000. Silakan hubungi tim kami untuk informasi lengkap.";
@@ -366,7 +402,13 @@ function generateFallbackResponse(query: string, language: string): string {
     }
   }
 
-  if (queryLower.includes("when") || queryLower.includes("date") || queryLower.includes("kapan") || queryLower.includes("waktu") || queryLower.includes("wann")) {
+  if (
+    queryLower.includes("when") ||
+    queryLower.includes("date") ||
+    queryLower.includes("kapan") ||
+    queryLower.includes("waktu") ||
+    queryLower.includes("wann")
+  ) {
     if (language === "id") {
       return "Paguyuban Messe 2026 akan diadakan pada 7-8 Agustus 2026 di Arena Berlin. Kami sangat senang dapat berbagi acara budaya dan bisnis Indonesia-Jerman ini dengan Anda.";
     } else if (language === "de") {
