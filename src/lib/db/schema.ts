@@ -7,3 +7,4 @@ export * from "./schemas/partnership";
 export * from "./schemas/sponsors";
 export * from "./schemas/knowledge";
 export * from "./schemas/queries";
+export * from "./schemas/observability";
