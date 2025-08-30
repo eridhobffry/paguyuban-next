@@ -7,6 +7,8 @@ import {
   chatbotSummaries,
 } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { hasUserConsent } from "@/lib/security/consent";
+import { recordTelemetry, getOrCreateCorrelationId } from "@/lib/telemetry";
 import { getCached } from "@/lib/cache";
 import { extractProspectFromSummary } from "@/lib/prospect";
 import type { Prospect } from "@/lib/prospect";
@@ -18,6 +20,9 @@ const QuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const start = Date.now();
+  const path = new URL(request.url).pathname;
+  const correlationId = getOrCreateCorrelationId(request.headers);
   try {
     const { searchParams } = new URL(request.url);
     const parsed = QuerySchema.safeParse({
@@ -205,7 +210,7 @@ export async function GET(request: NextRequest) {
     if (positiveCount > negativeCount) sentiment = "positive";
     else if (negativeCount > positiveCount) sentiment = "negative";
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       {
         logs: chatLogs.reverse(), // Reverse to chronological order
         prospect,
@@ -219,8 +224,42 @@ export async function GET(request: NextRequest) {
       },
       { headers: { "Cache-Control": "s-maxage=10, stale-while-revalidate=10" } }
     );
+    if (hasUserConsent(request.headers)) {
+      queueMicrotask(() =>
+        recordTelemetry({
+          endpoint: path,
+          queryType: "data",
+          intent: query.intent ?? null,
+          sessionId: query.sessionId,
+          status: "success",
+          success: true,
+          responseTime: Date.now() - start,
+          correlationId,
+          metadata: {
+            total_logs: chatLogs.length,
+            user_messages: userMessages.length,
+          },
+        })
+      );
+    }
+    return res;
   } catch (error) {
     console.error("Error in chat-context API:", error);
+    if (hasUserConsent(request.headers)) {
+      queueMicrotask(() =>
+        recordTelemetry({
+          endpoint: path,
+          queryType: "data",
+          intent: null,
+          sessionId: null,
+          status: "failure",
+          success: false,
+          responseTime: Date.now() - start,
+          correlationId,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
     return NextResponse.json(
       {
         error: "Failed to fetch chat context",

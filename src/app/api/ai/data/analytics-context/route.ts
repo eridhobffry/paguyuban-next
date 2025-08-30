@@ -7,6 +7,7 @@ import {
   queryPerformance,
 } from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
+import { withTelemetry } from "@/lib/telemetry";
 
 // Types to avoid 'any'
 type EventRow = {
@@ -85,76 +86,85 @@ const QuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const query = QuerySchema.parse({
-      sessionId: searchParams.get("sessionId") || undefined,
-      userId: searchParams.get("userId") || undefined,
-      intent: searchParams.get("intent") || undefined,
-      timeRange: parseInt(searchParams.get("timeRange") || "7"),
-    });
+  const path = new URL(request.url).pathname;
+  const { searchParams } = new URL(request.url);
+  const query = QuerySchema.parse({
+    sessionId: searchParams.get("sessionId") || undefined,
+    userId: searchParams.get("userId") || undefined,
+    intent: searchParams.get("intent") || undefined,
+    timeRange: parseInt(searchParams.get("timeRange") || "7"),
+  });
+  return withTelemetry(
+    {
+      endpoint: path,
+      intent: query.intent ?? null,
+      queryType: "data",
+      sessionId: query.sessionId ?? null,
+      userId: query.userId ?? null,
+      headers: request.headers,
+    },
+    async () => {
+      const response: AnalyticsContextResponse = {
+        metadata: {
+          session_id: query.sessionId,
+          user_id: query.userId,
+          intent: query.intent,
+          time_range_days: query.timeRange,
+        },
+      };
 
-    const response: AnalyticsContextResponse = {
-      metadata: {
-        session_id: query.sessionId,
-        user_id: query.userId,
-        intent: query.intent,
-        time_range_days: query.timeRange,
-      },
-    };
+      // Calculate date threshold
+      const dateThreshold = new Date();
+      dateThreshold.setDate(dateThreshold.getDate() - query.timeRange);
 
-    // Calculate date threshold
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - query.timeRange);
+      // Fetch user preferences if userId provided
+      if (query.userId) {
+        const preferences = await db
+          .select({
+            language: userQueryPreferences.language,
+            theme: userQueryPreferences.theme,
+            preferred_metrics: userQueryPreferences.preferredMetrics,
+            preferred_dimensions: userQueryPreferences.preferredDimensions,
+            auto_save_queries: userQueryPreferences.autoSaveQueries,
+            updated_at: userQueryPreferences.updatedAt,
+          })
+          .from(userQueryPreferences)
+          .where(eq(userQueryPreferences.userId, query.userId))
+          .limit(1);
 
-    // Fetch user preferences if userId provided
-    if (query.userId) {
-      const preferences = await db
+        response.preferences = preferences[0] || null;
+      }
+
+      // Fetch recent analytics events for the session/user
+      const events: EventRow[] = await db
         .select({
-          language: userQueryPreferences.language,
-          theme: userQueryPreferences.theme,
-          preferred_metrics: userQueryPreferences.preferredMetrics,
-          preferred_dimensions: userQueryPreferences.preferredDimensions,
-          auto_save_queries: userQueryPreferences.autoSaveQueries,
-          updated_at: userQueryPreferences.updatedAt,
+          id: analyticsEvents.id,
+          type: analyticsEvents.type,
+          section: analyticsEvents.section,
+          route: analyticsEvents.route,
+          metadata: analyticsEvents.metadata,
+          created_at: analyticsEvents.createdAt,
         })
-        .from(userQueryPreferences)
-        .where(eq(userQueryPreferences.userId, query.userId))
-        .limit(1);
+        .from(analyticsEvents)
+        .where(
+          query.sessionId
+            ? and(
+                gte(analyticsEvents.createdAt, dateThreshold),
+                eq(analyticsEvents.sessionId, query.sessionId)
+              )
+            : query.userId
+            ? and(
+                gte(analyticsEvents.createdAt, dateThreshold),
+                eq(analyticsEvents.userId, query.userId)
+              )
+            : gte(analyticsEvents.createdAt, dateThreshold)
+        )
+        .orderBy(desc(analyticsEvents.createdAt))
+        .limit(100);
+      response.events = events;
 
-      response.preferences = preferences[0] || null;
-    }
-
-    // Fetch recent analytics events for the session/user
-    const events: EventRow[] = await db
-      .select({
-        id: analyticsEvents.id,
-        type: analyticsEvents.type,
-        section: analyticsEvents.section,
-        route: analyticsEvents.route,
-        metadata: analyticsEvents.metadata,
-        created_at: analyticsEvents.createdAt,
-      })
-      .from(analyticsEvents)
-      .where(
-        query.sessionId
-          ? and(
-              gte(analyticsEvents.createdAt, dateThreshold),
-              eq(analyticsEvents.sessionId, query.sessionId)
-            )
-          : query.userId
-          ? and(
-              gte(analyticsEvents.createdAt, dateThreshold),
-              eq(analyticsEvents.userId, query.userId)
-            )
-          : gte(analyticsEvents.createdAt, dateThreshold)
-      )
-      .orderBy(desc(analyticsEvents.createdAt))
-      .limit(100);
-    response.events = events;
-
-    // Fetch query performance data for learning
-    if (query.sessionId || query.userId) {
+      // Fetch query performance data for learning
+      if (query.sessionId || query.userId) {
       // Optional sessions fetch is currently feature-flagged off and no-op to keep implementation minimal.
       // Set AI_INCLUDE_SESSIONS=1 in production and implement the actual fetch behind this flag.
       const includeSessions = process.env.AI_INCLUDE_SESSIONS === "1";
@@ -162,36 +172,36 @@ export async function GET(request: NextRequest) {
         // intentionally no-op for now
       }
 
-      const performanceData: PerformanceRow[] = await db
-        .select({
-          id: queryPerformance.id,
-          query_type: queryPerformance.queryType,
-          response_time: queryPerformance.responseTime,
-          token_count: queryPerformance.tokenCount,
-          success: queryPerformance.success,
-          user_rating: queryPerformance.userRating,
-          user_feedback: queryPerformance.userFeedback,
-          created_at: queryPerformance.createdAt,
-        })
-        .from(queryPerformance)
-        .where(
-          query.sessionId
-            ? and(
-                gte(queryPerformance.createdAt, dateThreshold),
-                eq(queryPerformance.sessionId, query.sessionId)
-              )
-            : and(
-                gte(queryPerformance.createdAt, dateThreshold),
-                eq(queryPerformance.userId, query.userId as string)
-              )
-        )
-        .orderBy(desc(queryPerformance.createdAt))
-        .limit(50);
+        const performanceData: PerformanceRow[] = await db
+          .select({
+            id: queryPerformance.id,
+            query_type: queryPerformance.queryType,
+            response_time: queryPerformance.responseTime,
+            token_count: queryPerformance.tokenCount,
+            success: queryPerformance.success,
+            user_rating: queryPerformance.userRating,
+            user_feedback: queryPerformance.userFeedback,
+            created_at: queryPerformance.createdAt,
+          })
+          .from(queryPerformance)
+          .where(
+            query.sessionId
+              ? and(
+                  gte(queryPerformance.createdAt, dateThreshold),
+                  eq(queryPerformance.sessionId, query.sessionId)
+                )
+              : and(
+                  gte(queryPerformance.createdAt, dateThreshold),
+                  eq(queryPerformance.userId, query.userId as string)
+                )
+          )
+          .orderBy(desc(queryPerformance.createdAt))
+          .limit(50);
 
-      response.performance = performanceData;
+        response.performance = performanceData;
 
-      // Calculate user behavior insights
-      if (performanceData.length > 0) {
+        // Calculate user behavior insights
+        if (performanceData.length > 0) {
         const avgResponseTime =
           performanceData.reduce((sum, p) => sum + (p.response_time || 0), 0) /
           performanceData.length;
@@ -204,31 +214,32 @@ export async function GET(request: NextRequest) {
             .reduce((sum, p) => sum + (p.user_rating || 0), 0) /
           Math.max(1, performanceData.filter((p) => p.user_rating).length);
 
-        response.behavior = {
-          average_response_time: Math.round(avgResponseTime),
-          success_rate: Math.round(successRate * 100) / 100,
-          average_rating: avgRating ? Math.round(avgRating * 10) / 10 : null,
-          total_queries: performanceData.length,
-          preferred_query_types: getPreferredQueryTypes(performanceData),
+          response.behavior = {
+            average_response_time: Math.round(avgResponseTime),
+            success_rate: Math.round(successRate * 100) / 100,
+            average_rating: avgRating ? Math.round(avgRating * 10) / 10 : null,
+            total_queries: performanceData.length,
+            preferred_query_types: getPreferredQueryTypes(performanceData),
+          };
+        }
+      }
+
+      // Add personalization insights
+      if (query.intent === "personalization" && response.events && response.events.length > 0) {
+        response.personalization = {
+          frequent_sections: getFrequentSections(response.events),
+          common_routes: getCommonRoutes(response.events),
+          engagement_pattern: analyzeEngagementPattern(response.events),
+          language_preference: response.preferences?.language || "en",
+          theme_preference: response.preferences?.theme || "light",
         };
       }
-    }
 
-    // Add personalization insights
-    if (query.intent === "personalization" && response.events.length > 0) {
-      response.personalization = {
-        frequent_sections: getFrequentSections(response.events),
-        common_routes: getCommonRoutes(response.events),
-        engagement_pattern: analyzeEngagementPattern(response.events),
-        language_preference: response.preferences?.language || "en",
-        theme_preference: response.preferences?.theme || "light",
-      };
+      return NextResponse.json(response, {
+        headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=30" },
+      });
     }
-
-    return NextResponse.json(response, {
-      headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=30" },
-    });
-  } catch (error) {
+  ).catch((error) => {
     console.error("Error in analytics-context API:", error);
     return NextResponse.json(
       {
@@ -238,7 +249,7 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-  }
+  });
 }
 
 function getPreferredQueryTypes(performanceData: PerformanceRow[]) {

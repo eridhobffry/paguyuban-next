@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { secureFetch } from "@/lib/ai/secure-fetch";
-import { sanitizeInput, redactPII, sanitizeOutput } from "@/lib/security/sanitize";
+import {
+  sanitizeInput,
+  redactPII,
+  sanitizeOutput,
+} from "@/lib/security/sanitize";
 import { hasUserConsent, requiredConsentVersion } from "@/lib/security/consent";
 import { parseAiTextResponse } from "@/lib/ai/response-schema";
+import { withTelemetry } from "@/lib/telemetry";
 
 const AIRespondSchema = z.object({
   query: z.string().min(1, "Query is required"),
@@ -11,12 +16,31 @@ const AIRespondSchema = z.object({
   sessionId: z.string().uuid().optional(),
   userId: z.string().optional(),
   intent: z.string().optional(),
-  context: z.record(z.any()).optional().default({}),
+  context: z.record(z.string(), z.any()).optional().default({}),
   useIntentResolution: z.boolean().optional().default(true),
 });
 
+type UnknownRecord = Record<string, unknown>;
+type Recommendations = Array<{
+  title: string;
+  description: string;
+  priority: string;
+}>;
+interface ResponsePayload {
+  response: string;
+  metadata: UnknownRecord;
+  context_summary: UnknownRecord;
+  recommendations: Recommendations;
+  [key: string]: unknown;
+}
+
+function isObject(v: unknown): v is UnknownRecord {
+  return v !== null && typeof v === "object";
+}
+
 export async function POST(request: NextRequest) {
-  let parsedData: any = null;
+  let parsedData: z.infer<typeof AIRespondSchema> | null = null;
+  const path = new URL(request.url).pathname;
 
   try {
     // Require consent header
@@ -32,134 +56,150 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const parsed = AIRespondSchema.safeParse(body);
+    return await withTelemetry(
+      { endpoint: path, headers: request.headers, queryType: "ai" },
+      async () => {
+        const body = await request.json();
+        const parsed = AIRespondSchema.safeParse(body);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid request parameters",
-          issues: parsed.error.issues.map((i) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
+        if (!parsed.success) {
+          return NextResponse.json(
+            {
+              error: "Invalid request parameters",
+              issues: parsed.error.issues.map((i) => ({
+                path: i.path.join("."),
+                message: i.message,
+              })),
+            },
+            { status: 400 }
+          );
+        }
 
-    parsedData = parsed.data;
-    const {
-      query,
-      language,
-      sessionId,
-      userId,
-      intent: providedIntent,
-      context,
-      useIntentResolution,
-    } = parsed.data;
-    
-    const sanitizedQuery = sanitizeInput(query);
+        parsedData = parsed.data;
+        const {
+          query,
+          language,
+          sessionId,
+          userId,
+          intent: providedIntent,
+          context,
+          useIntentResolution,
+        } = parsed.data;
 
-    let finalIntent = providedIntent;
-    let finalContext = context;
-    let metadata: any = {
-      agent_version: "Phase 4.0 - Smart Response",
-      timestamp: new Date().toISOString(),
-      language,
-      session_id: sessionId,
-      user_id: userId,
-    };
+        const sanitizedQuery = sanitizeInput(query);
 
-    // Step 1: Intent Resolution (if not provided or if enabled)
-    if (!providedIntent || useIntentResolution) {
-      try {
-        const intentResponse = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-          }/api/ai/intent/resolve`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              query: sanitizedQuery,
-              language,
-              sessionId,
-              userId,
-              context,
-            }),
+        let finalIntent = providedIntent;
+        let finalContext = context;
+        let metadata: UnknownRecord = {
+          agent_version: "Phase 4.0 - Smart Response",
+          timestamp: new Date().toISOString(),
+          language,
+          session_id: sessionId,
+          user_id: userId,
+        };
+
+        // Step 1: Intent Resolution (if not provided or if enabled)
+        if (!providedIntent || useIntentResolution) {
+          try {
+            const intentResponse = await fetch(
+              `${
+                process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+              }/api/ai/intent/resolve`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: sanitizedQuery,
+                  language,
+                  sessionId,
+                  userId,
+                  context,
+                }),
+              }
+            );
+
+            if (intentResponse.ok) {
+              const intentData = await intentResponse.json();
+              finalIntent = intentData.intent;
+              finalContext = { ...finalContext, ...intentData.context };
+              metadata = { ...metadata, ...intentData.metadata };
+            }
+          } catch (error) {
+            console.warn("Intent resolution failed, using fallback:", error);
+            finalIntent = providedIntent || "general_inquiry";
           }
+        }
+
+        // Step 2: Determine AI endpoint based on intent
+        const finalIntentStr = finalIntent || "general_inquiry";
+        const aiEndpointPath = determineAIEndpoint(finalIntentStr);
+
+        // Step 3: Prepare AI request payload with intelligent context selection
+        const aiPayload = {
+          query: redactPII(sanitizedQuery),
+          language,
+          session_id: sessionId,
+          user_id: userId,
+          intent: finalIntentStr,
+          context_data: selectRelevantContext(finalContext, finalIntentStr),
+        };
+
+        // Step 4: Call AI service with enhanced payload
+        const aiResponse = await secureFetch(aiEndpointPath, {
+          method: "POST",
+          body: aiPayload,
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error(
+            `AI response generation failed: ${aiResponse.status}`
+          );
+        }
+
+        const aiData = await aiResponse.json();
+        const parsedText = parseAiTextResponse(aiData);
+
+        // Step 5: Enhanced response with business intelligence
+        const metaTimestamp =
+          typeof (metadata as UnknownRecord)["timestamp"] === "string"
+            ? ((metadata as UnknownRecord)["timestamp"] as string)
+            : new Date().toISOString();
+
+        const response = {
+          response: sanitizeOutput(String(parsedText || "")),
+          metadata: {
+            ...metadata,
+            ai_endpoint: aiEndpointPath,
+            intent: finalIntentStr,
+            confidence: aiData.metadata?.confidence || metadata.confidence,
+            data_sources_used: Object.keys(finalContext),
+            processing_time: Date.now() - new Date(metaTimestamp).getTime(),
+            agent_architecture:
+              "Phase 4.0 - Data-Driven Agent with Intent Resolution",
+          },
+          context_summary: createContextSummary(finalContext),
+          recommendations: generateBusinessRecommendations(
+            finalIntentStr,
+            finalContext
+          ),
+        };
+
+        // Step 6: Response optimization based on intent
+        const optimizedResponse = optimizeResponseForIntent(
+          response,
+          finalIntentStr
         );
 
-        if (intentResponse.ok) {
-          const intentData = await intentResponse.json();
-          finalIntent = intentData.intent;
-          finalContext = { ...finalContext, ...intentData.context };
-          metadata = { ...metadata, ...intentData.metadata };
-        }
-      } catch (error) {
-        console.warn("Intent resolution failed, using fallback:", error);
-        finalIntent = providedIntent || "general_inquiry";
-      }
-    }
-
-    // Step 2: Determine AI endpoint based on intent
-    const aiBase = (process.env.AI_SERVICE_URL || process.env.AI_API_URL || "http://localhost:8001").replace(/\/$/, "");
-    const aiEndpoint = aiBase + determineAIEndpoint(finalIntent);
-
-    // Step 3: Prepare AI request payload with intelligent context selection
-    const aiPayload = {
-      query: redactPII(sanitizedQuery),
-      language,
-      session_id: sessionId,
-      user_id: userId,
-      intent: finalIntent,
-      context_data: selectRelevantContext(finalContext, finalIntent),
-    };
-
-    // Step 4: Call AI service with enhanced payload
-    const aiResponse = await secureFetch(aiEndpoint, {
-      method: "POST",
-      body: JSON.stringify(aiPayload),
-    });
-
-    if (!aiResponse.ok) {
-      throw new Error(`AI response generation failed: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const parsedText = parseAiTextResponse(aiData);
-
-    // Step 5: Enhanced response with business intelligence
-    const response = {
-      response: sanitizeOutput(String(parsedText || "")),
-      metadata: {
-        ...metadata,
-        ai_endpoint: aiEndpoint,
-        intent: finalIntent,
-        confidence: aiData.metadata?.confidence || metadata.confidence,
-        data_sources_used: Object.keys(finalContext),
-        processing_time: Date.now() - new Date(metadata.timestamp).getTime(),
-        agent_architecture:
-          "Phase 4.0 - Data-Driven Agent with Intent Resolution",
+        return NextResponse.json(optimizedResponse, {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "X-AI-Intent": finalIntentStr,
+            "X-AI-Version": "Phase-4.0",
+          },
+        });
       },
-      context_summary: createContextSummary(finalContext),
-      recommendations: generateBusinessRecommendations(
-        finalIntent,
-        finalContext
-      ),
-    };
-
-    // Step 6: Response optimization based on intent
-    const optimizedResponse = optimizeResponseForIntent(response, finalIntent);
-
-    return NextResponse.json(optimizedResponse, {
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "X-AI-Intent": finalIntent,
-        "X-AI-Version": "Phase-4.0",
-      },
-    });
+      { onSuccessStatus: "success", onErrorStatus: "failure" }
+    );
   } catch (error) {
     console.error("Error in AI response generation:", error);
 
@@ -211,103 +251,169 @@ function determineAIEndpoint(intent: string): string {
 }
 
 function selectRelevantContext(
-  context: Record<string, any>,
+  context: UnknownRecord,
   intent: string
-): Record<string, any> {
-  const relevantContext: Record<string, any> = {};
+): UnknownRecord {
+  const relevantContext: UnknownRecord = {};
 
   // Intelligent context filtering based on intent
   switch (intent) {
-    case "prospect_analysis":
-      if (context["chat-context"]) {
-        relevantContext.chat_logs = context["chat-context"].logs || [];
-        relevantContext.prospect = context["chat-context"].prospect || null;
-        relevantContext.sentiment =
-          context["chat-context"].sentiment || "neutral";
+    case "prospect_analysis": {
+      const chat = isObject(context["chat-context"])
+        ? (context["chat-context"] as UnknownRecord)
+        : undefined;
+      if (chat) {
+        relevantContext["chat_logs"] = Array.isArray(chat["logs"])
+          ? (chat["logs"] as unknown[])
+          : [];
+        relevantContext["prospect"] = chat["prospect"] ?? null;
+        relevantContext["sentiment"] =
+          typeof chat["sentiment"] === "string"
+            ? (chat["sentiment"] as string)
+            : "neutral";
       }
-      if (context["analytics-context"]) {
-        relevantContext.user_behavior =
-          context["analytics-context"].behavior || {};
+      const analytics = isObject(context["analytics-context"])
+        ? (context["analytics-context"] as UnknownRecord)
+        : undefined;
+      if (analytics) {
+        relevantContext["user_behavior"] = isObject(analytics["behavior"])
+          ? (analytics["behavior"] as UnknownRecord)
+          : {};
       }
       break;
+    }
 
     case "event_details":
     case "event_timing":
     case "event_location":
-    case "event_artists":
-      if (context["event-context"]) {
-        relevantContext.artists = context["event-context"].artists || [];
-        relevantContext.speakers = context["event-context"].speakers || [];
+    case "event_artists": {
+      const ev = isObject(context["event-context"])
+        ? (context["event-context"] as UnknownRecord)
+        : undefined;
+      if (ev) {
+        relevantContext["artists"] = Array.isArray(ev["artists"])
+          ? (ev["artists"] as unknown[])
+          : [];
+        relevantContext["speakers"] = Array.isArray(ev["speakers"])
+          ? (ev["speakers"] as unknown[])
+          : [];
       }
       break;
+    }
 
     case "event_pricing":
-    case "business_partnership":
-      if (context["event-context"]) {
-        relevantContext.sponsors = context["event-context"].sponsors || [];
-        relevantContext.tiers = context["event-context"].tiers || [];
-        relevantContext.availability =
-          context["event-context"].availability || {};
-        relevantContext.pricing_context =
-          context["event-context"].pricing_context || {};
+    case "business_partnership": {
+      const ev = isObject(context["event-context"])
+        ? (context["event-context"] as UnknownRecord)
+        : undefined;
+      if (ev) {
+        relevantContext["sponsors"] = Array.isArray(ev["sponsors"])
+          ? (ev["sponsors"] as unknown[])
+          : [];
+        relevantContext["tiers"] = Array.isArray(ev["tiers"])
+          ? (ev["tiers"] as unknown[])
+          : [];
+        relevantContext["availability"] = isObject(ev["availability"])
+          ? (ev["availability"] as UnknownRecord)
+          : {};
+        relevantContext["pricing_context"] = isObject(ev["pricing_context"])
+          ? (ev["pricing_context"] as UnknownRecord)
+          : {};
       }
       break;
+    }
 
     case "business_analysis":
-    case "personalized_response":
-      if (context["analytics-context"]) {
-        relevantContext.behavior = context["analytics-context"].behavior || {};
-        relevantContext.personalization =
-          context["analytics-context"].personalization || {};
+    case "personalized_response": {
+      const analytics = isObject(context["analytics-context"])
+        ? (context["analytics-context"] as UnknownRecord)
+        : undefined;
+      if (analytics) {
+        (relevantContext as UnknownRecord)["behavior"] = isObject(
+          analytics["behavior"]
+        )
+          ? (analytics["behavior"] as UnknownRecord)
+          : {};
+        (relevantContext as UnknownRecord)["personalization"] = isObject(
+          analytics["personalization"]
+        )
+          ? (analytics["personalization"] as UnknownRecord)
+          : {};
       }
       break;
+    }
 
-    default:
+    default: {
       // Include basic event info for general queries
-      if (context["event-context"]) {
-        relevantContext.basic_info = {
-          sponsors: context["event-context"].sponsors?.slice(0, 3) || [],
-          tiers: context["event-context"].tiers?.slice(0, 3) || [],
-        };
+      const ev = isObject(context["event-context"])
+        ? (context["event-context"] as UnknownRecord)
+        : undefined;
+      if (ev) {
+        const sponsors = Array.isArray(ev["sponsors"])
+          ? (ev["sponsors"] as unknown[])
+          : [];
+        const tiers = Array.isArray(ev["tiers"])
+          ? (ev["tiers"] as unknown[])
+          : [];
+        relevantContext["basic_info"] = {
+          sponsors: sponsors.slice(0, 3),
+          tiers: tiers.slice(0, 3),
+        } as UnknownRecord;
       }
       break;
+    }
   }
 
   return relevantContext;
 }
 
-function createContextSummary(
-  context: Record<string, any>
-): Record<string, any> {
-  const summary: Record<string, any> = {};
+function createContextSummary(context: UnknownRecord): UnknownRecord {
+  const summary: UnknownRecord = {};
 
   Object.keys(context).forEach((key) => {
-    const data = context[key];
+    const data = (context as UnknownRecord)[key];
 
     switch (key) {
-      case "chat-context":
-        summary.chat_summary = {
-          total_messages: data.logs?.length || 0,
-          sentiment: data.sentiment || "neutral",
-          has_prospect: !!data.prospect,
-        };
+      case "chat-context": {
+        const d = isObject(data) ? (data as UnknownRecord) : {};
+        (summary as UnknownRecord)["chat_summary"] = {
+          total_messages: Array.isArray(d["logs"])
+            ? (d["logs"] as unknown[]).length
+            : 0,
+          sentiment:
+            typeof d["sentiment"] === "string"
+              ? (d["sentiment"] as string)
+              : "neutral",
+          has_prospect: !!d["prospect"],
+        } as UnknownRecord;
         break;
+      }
 
-      case "event-context":
-        summary.event_summary = {
-          sponsors_count: data.sponsors?.length || 0,
-          tiers_available: data.tiers?.length || 0,
-          has_pricing_context: !!data.pricing_context,
-        };
+      case "event-context": {
+        const d = isObject(data) ? (data as UnknownRecord) : {};
+        (summary as UnknownRecord)["event_summary"] = {
+          sponsors_count: Array.isArray(d["sponsors"])
+            ? (d["sponsors"] as unknown[]).length
+            : 0,
+          tiers_available: Array.isArray(d["tiers"])
+            ? (d["tiers"] as unknown[]).length
+            : 0,
+          has_pricing_context: isObject(d["pricing_context"]),
+        } as UnknownRecord;
         break;
+      }
 
-      case "analytics-context":
-        summary.analytics_summary = {
-          has_behavior_data: !!data.behavior,
-          has_personalization: !!data.personalization,
-          events_count: data.events?.length || 0,
-        };
+      case "analytics-context": {
+        const d = isObject(data) ? (data as UnknownRecord) : {};
+        (summary as UnknownRecord)["analytics_summary"] = {
+          has_behavior_data: isObject(d["behavior"]),
+          has_personalization: isObject(d["personalization"]),
+          events_count: Array.isArray(d["events"])
+            ? (d["events"] as unknown[]).length
+            : 0,
+        } as UnknownRecord;
         break;
+      }
     }
   });
 
@@ -316,15 +422,17 @@ function createContextSummary(
 
 function generateBusinessRecommendations(
   intent: string,
-  context: Record<string, any>
-): Array<{ title: string; description: string; priority: string }> {
-  const recommendations = [];
+  context: UnknownRecord
+): Recommendations {
+  const recommendations: Recommendations = [];
 
   // Intent-based business intelligence
   switch (intent) {
-    case "prospect_analysis":
-      const chatContext = context["chat-context"];
-      if (chatContext?.sentiment === "positive") {
+    case "prospect_analysis": {
+      const chat = isObject(context["chat-context"])
+        ? (context["chat-context"] as UnknownRecord)
+        : undefined;
+      if (chat && chat["sentiment"] === "positive") {
         recommendations.push({
           title: "High Conversion Potential",
           description:
@@ -332,7 +440,11 @@ function generateBusinessRecommendations(
           priority: "high",
         });
       }
-      if (chatContext?.logs?.length > 5) {
+      const logsLen =
+        isObject(chat) && Array.isArray((chat as UnknownRecord)["logs"])
+          ? ((chat as UnknownRecord)["logs"] as unknown[]).length
+          : 0;
+      if (logsLen > 5) {
         recommendations.push({
           title: "Engaged Prospect",
           description:
@@ -341,13 +453,16 @@ function generateBusinessRecommendations(
         });
       }
       break;
+    }
 
-    case "business_partnership":
-      const eventContext = context["event-context"];
-      if (eventContext?.availability) {
-        const availableTiers = Object.entries(eventContext.availability).filter(
-          ([_, count]) => count && count > 0
-        );
+    case "business_partnership": {
+      const ev = isObject(context["event-context"])
+        ? (context["event-context"] as UnknownRecord)
+        : undefined;
+      if (ev && isObject(ev["availability"])) {
+        const availableTiers = Object.entries(
+          ev["availability"] as Record<string, unknown>
+        ).filter(([, count]) => count != null && Number(count) > 0);
 
         if (availableTiers.length > 0) {
           recommendations.push({
@@ -358,10 +473,17 @@ function generateBusinessRecommendations(
         }
       }
       break;
+    }
 
-    case "personalized_response":
-      const analyticsContext = context["analytics-context"];
-      if (analyticsContext?.personalization?.engagement_pattern === "high") {
+    case "personalized_response": {
+      const analytics = isObject(context["analytics-context"])
+        ? (context["analytics-context"] as UnknownRecord)
+        : undefined;
+      const personalization =
+        analytics && isObject(analytics["personalization"])
+          ? (analytics["personalization"] as UnknownRecord)
+          : undefined;
+      if (personalization && personalization["engagement_pattern"] === "high") {
         recommendations.push({
           title: "High-Value User",
           description:
@@ -370,17 +492,21 @@ function generateBusinessRecommendations(
         });
       }
       break;
+    }
   }
 
   return recommendations;
 }
 
-function optimizeResponseForIntent(response: any, intent: string): any {
+function optimizeResponseForIntent(
+  response: ResponsePayload,
+  intent: string
+): ResponsePayload {
   // Intent-specific response optimization
   switch (intent) {
     case "prospect_analysis":
       // Add call-to-action for prospects
-      response.cta = {
+      (response as UnknownRecord)["cta"] = {
         primary: "Schedule a partnership call",
         secondary: "Download sponsorship brochure",
       };
@@ -389,7 +515,7 @@ function optimizeResponseForIntent(response: any, intent: string): any {
     case "event_pricing":
     case "business_partnership":
       // Add pricing urgency for business queries
-      response.urgency = {
+      (response as UnknownRecord)["urgency"] = {
         message: "Limited sponsorship slots available for August 2026",
         deadline: "Early bird pricing ends June 1st, 2025",
       };
@@ -397,7 +523,7 @@ function optimizeResponseForIntent(response: any, intent: string): any {
 
     case "event_details":
       // Add event highlights for event queries
-      response.highlights = [
+      (response as UnknownRecord)["highlights"] = [
         "6,500m² Arena Berlin venue",
         "5,800+ expected participants",
         "Premium Indonesian artists lineup",
