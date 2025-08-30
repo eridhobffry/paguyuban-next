@@ -23,6 +23,16 @@ const resultCache = new Map<
   }
 >();
 
+function bodyToKey(body: unknown): string {
+  if (typeof body === "string") return body;
+  if (body == null) return "";
+  // URLSearchParams has a stable toString
+  if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams)
+    return body.toString();
+  // For FormData and other streams/binary, avoid huge keys
+  return "[non-string-body]";
+}
+
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -43,7 +53,8 @@ function withTimeout(
 
 function createServiceJwt() {
   const secret = process.env.AI_SERVICE_JWT_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error("AI_SERVICE_JWT_SECRET or JWT_SECRET is not configured");
+  if (!secret)
+    throw new Error("AI_SERVICE_JWT_SECRET or JWT_SECRET is not configured");
   const nowSec = Math.floor(Date.now() / 1000);
   const jti = Math.random().toString(36).slice(2) + Date.now().toString(36);
   return jwt.sign(
@@ -89,7 +100,8 @@ function failureRate(b: BreakerState) {
 
 export async function secureFetch(
   url: string,
-  options: RequestInit & {
+  options: Omit<RequestInit, "body"> & {
+    body?: unknown;
     timeoutMs?: number;
     totalBudgetMs?: number;
     breakerKey?: string;
@@ -110,6 +122,36 @@ export async function secureFetch(
   if (!h.has("Authorization")) h.set("Authorization", `Bearer ${token}`);
   if (!h.has("Content-Type")) h.set("Content-Type", "application/json");
 
+  // Build full URL if a relative path is provided
+  const aiBase = (
+    process.env.AI_SERVICE_URL ||
+    process.env.AI_API_URL ||
+    "http://localhost:8001"
+  ).replace(/\/$/, "");
+  const fullUrl = url.startsWith("http://") || url.startsWith("https://")
+    ? url
+    : `${aiBase}${url.startsWith("/") ? url : "/" + url}`;
+
+  // Normalize JSON body: allow callers to pass plain objects
+  let processedBody: unknown = rest.body;
+  const contentType = h.get("Content-Type") || "application/json";
+  const isJsonish = /application\/json/i.test(contentType);
+  if (
+    processedBody != null &&
+    typeof processedBody === "object" &&
+    // Avoid touching URLSearchParams and other stream-like bodies
+    !(processedBody instanceof URLSearchParams)
+  ) {
+    if (isJsonish) {
+      try {
+        processedBody = JSON.stringify(processedBody);
+      } catch {
+        // Fallback: leave as-is if stringify fails
+      }
+      if (!h.has("Content-Type")) h.set("Content-Type", "application/json");
+    }
+  }
+
   // Circuit breaker gate
   const b = getBreaker(breakerKey);
   const now = Date.now();
@@ -129,11 +171,8 @@ export async function secureFetch(
   }
 
   // Dedup + short result cache
-  const bodyStr =
-    typeof (rest as any).body === "string"
-      ? (rest as any).body
-      : JSON.stringify((rest as any).body || {});
-  const key = `${rest.method || "GET"}:${url}:${bodyStr}`;
+  const bodyStr = bodyToKey(processedBody);
+  const key = `${rest.method || "GET"}:${fullUrl}:${bodyStr}`;
   const cached = resultCache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
     return new Response(cached.body, {
@@ -155,8 +194,9 @@ export async function secureFetch(
       if (elapsed + waited > totalBudgetMs) break;
       if (waited > 0) await sleep(waited);
       try {
-        const { promise } = withTimeout(url, timeoutMs, {
+        const { promise } = withTimeout(fullUrl, timeoutMs, {
           ...rest,
+          body: processedBody as RequestInit["body"],
           headers: h,
         });
         const res = await promise;
@@ -212,3 +252,29 @@ export async function secureFetch(
 
 // Expose for tests
 export const __private__ = { getBreaker, breakers, inflight, resultCache };
+
+// Read-only snapshot of breaker states for telemetry/debugging
+export function getCircuitBreakerStates() {
+  const out: Record<
+    string,
+    {
+      state: "closed" | "open" | "half-open";
+      lastOpenedAt: number | null;
+      consecutiveFailures: number;
+      windowSize: number;
+      lastProbeAt: number | null;
+      failureRate: number;
+    }
+  > = {};
+  for (const [key, b] of breakers.entries()) {
+    out[key] = {
+      state: b.state,
+      lastOpenedAt: b.lastOpenedAt,
+      consecutiveFailures: b.consecutiveFailures,
+      windowSize: b.window.length,
+      lastProbeAt: b.lastProbeAt,
+      failureRate: failureRate(b),
+    };
+  }
+  return out;
+}
