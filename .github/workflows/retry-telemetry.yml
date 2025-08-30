@@ -1,0 +1,66 @@
+name: Retry Telemetry DLQ
+
+on:
+  schedule:
+    # Every hour at minute 10
+    - cron: "10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  call-retry-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call retry-telemetry endpoint
+        env:
+          # Set this repository variable to your production base URL, e.g. https://your-app.vercel.app
+          RETRY_URL: ${{ vars.APP_BASE_URL }}/api/admin/cron/retry-telemetry?limit=200
+          # Set this repository secret to match the CRON_SECRET defined in your app environment
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${RETRY_URL:-}" ]; then
+            echo "vars.APP_BASE_URL is not set. Define repository variable APP_BASE_URL (e.g. https://your-app.vercel.app)."
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "secrets.CRON_SECRET is not set. Define repository secret CRON_SECRET to authenticate the request."
+            exit 1
+          fi
+
+          echo "::group::Telemetry retry request"
+          echo "Event: ${{ github.event_name }}"
+          echo "Calling: $RETRY_URL"
+          echo "::endgroup::"
+
+          set +e
+          RESP=$(curl -sS -i \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -w "\nHTTP_STATUS=%{http_code}\n" \
+            "${RETRY_URL}" 2>&1)
+          CODE=$?
+          set -e
+
+          echo "$RESP"
+
+          STATUS=$(echo "$RESP" | grep -Eo 'HTTP_STATUS=[0-9]+' | cut -d= -f2 || echo "0")
+          echo "HTTP Status: $STATUS"
+
+          {
+            echo "Telemetry Retry DLQ"
+            echo
+            echo "- Triggered by: ${{ github.event_name }}"
+            echo "- URL: ${RETRY_URL}"
+            echo
+            echo "Response:"
+            echo '```'
+            echo "$RESP"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ $CODE -ne 0 ] || [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Retry call failed with curl code $CODE and HTTP status $STATUS"
+            exit 1
+          fi
+
+          echo "Retry call done."

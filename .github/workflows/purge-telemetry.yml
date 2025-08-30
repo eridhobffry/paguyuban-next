@@ -1,0 +1,66 @@
+name: Purge Telemetry
+
+on:
+  schedule:
+    # Daily at 03:15 UTC
+    - cron: "15 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  call-purge-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call purge-telemetry endpoint
+        env:
+          # Set this repository variable to your production base URL, e.g. https://your-app.vercel.app
+          PURGE_URL: ${{ vars.APP_BASE_URL }}/api/admin/cron/purge-telemetry
+          # Set this repository secret to match the CRON_SECRET defined in your app environment
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PURGE_URL:-}" ]; then
+            echo "vars.APP_BASE_URL is not set. Define repository variable APP_BASE_URL (e.g. https://your-app.vercel.app)."
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "secrets.CRON_SECRET is not set. Define repository secret CRON_SECRET to authenticate the request."
+            exit 1
+          fi
+
+          echo "::group::Telemetry purge request"
+          echo "Event: ${{ github.event_name }}"
+          echo "Calling: $PURGE_URL"
+          echo "::endgroup::"
+
+          set +e
+          RESP=$(curl -sS -i \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -w "\nHTTP_STATUS=%{http_code}\n" \
+            "${PURGE_URL}" 2>&1)
+          CODE=$?
+          set -e
+
+          echo "$RESP"
+
+          STATUS=$(echo "$RESP" | grep -Eo 'HTTP_STATUS=[0-9]+' | cut -d= -f2 || echo "0")
+          echo "HTTP Status: $STATUS"
+
+          {
+            echo "Telemetry Purge"
+            echo
+            echo "- Triggered by: ${{ github.event_name }}"
+            echo "- URL: ${PURGE_URL}"
+            echo
+            echo "Response:"
+            echo '```'
+            echo "$RESP"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ $CODE -ne 0 ] || [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Purge call failed with curl code $CODE and HTTP status $STATUS"
+            exit 1
+          fi
+
+          echo "Purge call done."
