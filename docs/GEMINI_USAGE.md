@@ -47,7 +47,7 @@ This project uses Google Gemini server-side in three places. Keep this doc updat
 
 - `GEMINI_API_KEY` (server-only). Required for live model output.
 - `GEMINI_MODEL=gemini-2.5-flash` (general chat and summaries)
-- `ADMIN_GEMINI_MODEL=gemini-2.5-pro` (admin analytics and recommendations)
+- `ADMIN_GEMINI_MODEL=gemini-1.5-flash` (admin analytics and recommendations)
 - If the key is missing/invalid, the summary route falls back to a heuristic summary; the recommend route will error; assistant replies will fail. No client key is ever exposed.
 
 ### Expected volumes (for billing estimation)
