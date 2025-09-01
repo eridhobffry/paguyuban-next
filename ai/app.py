@@ -14,6 +14,7 @@ import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from contracts import EventPlan, AnalyticsReport, ContractReview
+from common.memory import detect_memory_diff
 
 # Simplified configuration
 class SimpleSettings:
@@ -385,6 +386,7 @@ async def generate_chat_response(
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
         response = data_agent.generate_response(query, intent, context_data, language)
+        mem = detect_memory_diff(query, language)
         # Echo routing/cache headers into metadata
         hdr = http_request.headers if http_request else {}
         meta = {
@@ -399,9 +401,13 @@ async def generate_chat_response(
             "task_complexity": hdr.get("x-task-complexity"),
             "involves": hdr.get("x-involves"),
             "language": language,
+            "correlation_id": hdr.get("x-correlation-id"),
         }
 
-        return {"result": response, "metadata": meta}
+        out = {"result": response, "metadata": meta}
+        if mem:
+            out["memory_diff"] = mem
+        return out
 
     except Exception as e:
         logger.error("Chat generation error", error=str(e))
@@ -427,6 +433,7 @@ async def event_chat_response(
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
         response = data_agent.generate_response(query, intent, {}, language)
+        mem = detect_memory_diff(query, language)
 
         hdr = http_request.headers if http_request else {}
         meta = {
@@ -441,8 +448,12 @@ async def event_chat_response(
             "involves": hdr.get("x-involves"),
             "language": language,
             "timestamp": datetime.now().isoformat(),
+            "correlation_id": hdr.get("x-correlation-id"),
         }
-        return {"result": response, "metadata": meta}
+        out = {"result": response, "metadata": meta}
+        if mem:
+            out["memory_diff"] = mem
+        return out
 
     except Exception as e:
         logger.error("Event chat error", error=str(e))
@@ -480,6 +491,7 @@ async def generate_chat_summary(
             "client_intent": hdr.get("x-intent"),
             "task_complexity": hdr.get("x-task-complexity"),
             "involves": hdr.get("x-involves"),
+            "correlation_id": hdr.get("x-correlation-id"),
         }
         return {"summary": summary, "metadata": meta}
 

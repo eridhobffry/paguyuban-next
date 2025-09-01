@@ -71,6 +71,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Lightweight language detection and model routing
     const language = detectLanguage(String(body.message || ""));
     const routing = selectModel({ query: body.message, language, task: "chat" });
+    const correlationId = getOrCreateCorrelationId(req.headers);
+
+    // Resolve intent to enrich routing trace and AI headers
+    let resolvedIntent = "general_inquiry";
+    try {
+      const intentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/ai/intent/resolve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: body.message, language }),
+          cache: "no-store",
+        }
+      );
+      if (intentRes.ok) {
+        const intentJson = (await intentRes.json()) as any;
+        if (typeof intentJson?.intent === "string") resolvedIntent = intentJson.intent;
+      }
+    } catch {}
+
+    function inferComplexity(intent: string): "low" | "medium" | "high" {
+      const hi = new Set([
+        "prospect_analysis",
+        "business_analysis",
+        "business_budget",
+        "business_partnership",
+      ]);
+      const med = new Set(["event_pricing", "event_artists"]);
+      if (hi.has(intent)) return "high";
+      if (med.has(intent)) return "medium";
+      return "low";
+    }
+
+    function inferInvolves(intent: string): string {
+      if (
+        intent === "prospect_analysis" ||
+        intent === "business_analysis" ||
+        intent === "business_budget"
+      )
+        return "analytics";
+      return "";
+    }
+
+    const taskComplexity = inferComplexity(resolvedIntent);
+    const involves = inferInvolves(resolvedIntent);
 
     // Semantic cache check
     try {
@@ -84,7 +129,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const reply = sanitizeOutput(hit.response);
         // Record telemetry for cache hit
         try {
-          const correlationId = getOrCreateCorrelationId(req.headers);
           void recordTelemetry({
             endpoint: "/api/chat/generate",
             intent: "cache_hit",
@@ -111,6 +155,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         res.headers.set("X-Cache-Score", hit.score.toFixed(3));
         res.headers.set("X-AI-Model", routing.model);
         res.headers.set("X-Route-Reason", routing.reason);
+        res.headers.set("X-Correlation-Id", correlationId);
         return res;
       }
     } catch {}
@@ -121,7 +166,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         `${AI_SERVICE_URL.replace(/\/$/, "")}/api/event/chat`,
         {
           method: "POST",
-          headers: { "X-AI-Model": routing.model },
+          headers: {
+            "X-AI-Model": routing.model,
+            "X-Correlation-Id": correlationId,
+            "X-Intent": resolvedIntent,
+            "X-Task-Complexity": taskComplexity,
+            "X-Involves": involves,
+          },
           body: JSON.stringify({ query: redactPII(body.message) }),
           totalBudgetMs: 1200,
           timeoutMs: 800,
@@ -151,7 +202,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         // Telemetry: event_chat success
         try {
-          const correlationId = getOrCreateCorrelationId(req.headers);
           const model_used = (eventData?.metadata?.model_used as string) || routing.model;
           const route_reason = (eventData?.metadata?.route_reason as string) || routing.reason;
           void recordTelemetry({
@@ -179,6 +229,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         res.headers.set("X-Cache", "MISS");
         res.headers.set("X-AI-Model", routing.model);
         res.headers.set("X-Route-Reason", routing.reason);
+        res.headers.set("X-Correlation-Id", correlationId);
         return res;
       }
     } catch (eventError) {
@@ -198,7 +249,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             mode: body.mode || "auto",
           },
         }),
-        headers: { "X-AI-Model": routing.model },
+        headers: {
+          "X-AI-Model": routing.model,
+          "X-Correlation-Id": correlationId,
+          "X-Intent": resolvedIntent,
+          "X-Task-Complexity": taskComplexity,
+          "X-Involves": involves,
+        },
         totalBudgetMs: 1200,
         timeoutMs: 800,
         breakerKey: "ai",
@@ -230,7 +287,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Telemetry: conversational success
     try {
-      const correlationId = getOrCreateCorrelationId(req.headers);
       const model_used = (data?.metadata?.model_used as string) || routing.model;
       const route_reason = (data?.metadata?.route_reason as string) || routing.reason;
       void recordTelemetry({
@@ -258,6 +314,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     res.headers.set("X-Cache", "MISS");
     res.headers.set("X-AI-Model", routing.model);
     res.headers.set("X-Route-Reason", routing.reason);
+    res.headers.set("X-Correlation-Id", correlationId);
     return res;
   } catch (error) {
     console.error("/api/chat/generate error", error);
