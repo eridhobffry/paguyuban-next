@@ -9,6 +9,10 @@ import {
   sanitizeOutput,
 } from "@/lib/security/sanitize";
 import { hasUserConsent, requiredConsentVersion } from "@/lib/security/consent";
+import { detectLanguage } from "@/lib/ai/lang";
+import { selectModel } from "@/lib/ai/model-router";
+import { getCachedResponse, setCachedResponse } from "@/lib/ai/semantic-cache";
+import { SITE } from "@/config/site";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -20,6 +24,7 @@ const BodySchema = z.object({
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: any;
+  const startedAt = Date.now();
 
   try {
     // Require consent header
@@ -62,12 +67,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    // Lightweight language detection and model routing
+    const language = detectLanguage(String(body.message || ""));
+    const routing = selectModel({ query: body.message, language, task: "chat" });
+
+    // Semantic cache check
+    try {
+      const hit = getCachedResponse(body.message, {
+        locale: language,
+        city: SITE.event?.location,
+        eventStart: SITE.event?.startDate,
+        eventEnd: SITE.event?.endDate,
+      });
+      if (hit) {
+        const reply = sanitizeOutput(hit.response);
+        const res = NextResponse.json(
+          { reply, agent: "cache", fallback: false },
+          { status: 200 }
+        );
+        res.headers.set("X-Cache", "HIT");
+        res.headers.set("X-Cache-Score", hit.score.toFixed(3));
+        res.headers.set("X-AI-Model", routing.model);
+        res.headers.set("X-Route-Reason", routing.reason);
+        return res;
+      }
+    } catch {}
+
     // First, try the EventChatAgent for event-specific questions
     try {
       const eventResponse = await secureFetch(
         `${AI_SERVICE_URL.replace(/\/$/, "")}/api/event/chat`,
         {
           method: "POST",
+          headers: { "X-AI-Model": routing.model },
           body: JSON.stringify({ query: redactPII(body.message) }),
           totalBudgetMs: 1200,
           timeoutMs: 800,
@@ -78,11 +110,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
       if (eventResponse.ok) {
         const eventData = await eventResponse.json();
-        return NextResponse.json({
-          reply: eventData.result,
-          agent: "event_chat",
-          fallback: false,
-        });
+        const reply = sanitizeOutput(String(eventData.result ?? ""));
+        // Cache success
+        try {
+          setCachedResponse(
+            body.message,
+            {
+              locale: language,
+              city: SITE.event?.location,
+              eventStart: SITE.event?.startDate,
+              eventEnd: SITE.event?.endDate,
+            },
+            reply,
+            routing.model,
+            { costMs: Date.now() - startedAt }
+          );
+        } catch {}
+
+        const res = NextResponse.json(
+          { reply, agent: "event_chat", fallback: false },
+          { status: 200 }
+        );
+        res.headers.set("X-Cache", "MISS");
+        res.headers.set("X-AI-Model", routing.model);
+        res.headers.set("X-Route-Reason", routing.reason);
+        return res;
       }
     } catch (eventError) {
       // EventChatAgent failed, continue to general chat
@@ -101,6 +153,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             mode: body.mode || "auto",
           },
         }),
+        headers: { "X-AI-Model": routing.model },
         totalBudgetMs: 1200,
         timeoutMs: 800,
         breakerKey: "ai",
@@ -113,11 +166,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const data = await response.json();
-    return NextResponse.json({
-      reply: sanitizeOutput(String(data.result ?? "")),
-      agent: "conversational",
-      fallback: false,
-    });
+    const reply = sanitizeOutput(String(data.result ?? ""));
+    // Cache success
+    try {
+      setCachedResponse(
+        body.message,
+        {
+          locale: language,
+          city: SITE.event?.location,
+          eventStart: SITE.event?.startDate,
+          eventEnd: SITE.event?.endDate,
+        },
+        reply,
+        routing.model,
+        { costMs: Date.now() - startedAt }
+      );
+    } catch {}
+
+    const res = NextResponse.json(
+      { reply, agent: "conversational", fallback: false },
+      { status: 200 }
+    );
+    res.headers.set("X-Cache", "MISS");
+    res.headers.set("X-AI-Model", routing.model);
+    res.headers.set("X-Route-Reason", routing.reason);
+    return res;
   } catch (error) {
     console.error("/api/chat/generate error", error);
     // DLQ logging best-effort

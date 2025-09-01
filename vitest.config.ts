@@ -15,7 +15,10 @@ export default defineConfig({
     ],
     env: {
       NODE_ENV: "test",
-      DATABASE_URL: "postgresql://test:test@localhost:5432/test",
+      // Use actual DATABASE_URL from environment if available
+      DATABASE_URL:
+        process.env.DATABASE_URL ||
+        "postgresql://test:test@localhost:5432/test",
       JWT_SECRET: "test-jwt-secret-for-testing",
       GEMINI_API_KEY: "test-gemini-api-key",
       CI: "true",

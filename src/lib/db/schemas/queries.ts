@@ -7,6 +7,7 @@ import {
   timestamp,
   boolean,
   integer,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 // Knowledge query history and saved queries
@@ -218,6 +219,106 @@ export const queryCache = pgTable("query_cache", {
   result: jsonb("result").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   hitCount: integer("hit_count").default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+// Enhanced semantic cache entries for AI responses
+export const semanticCacheEntries = pgTable("semantic_cache_entries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  cacheKey: varchar("cache_key", { length: 64 }).notNull().unique(),
+  queryText: text("query_text").notNull(),
+  normalizedQuery: text("normalized_query").notNull(),
+  locale: varchar("locale", { length: 10 }).notNull().default("en"),
+  embeddingVector: jsonb("embedding_vector").$type<Record<string, number>>(),
+  responseText: text("response_text").notNull(),
+  modelUsed: varchar("model_used", { length: 100 }),
+  contextMetadata: jsonb("context_metadata").$type<{
+    locale: string;
+    city?: string;
+    eventStart?: string;
+    eventEnd?: string;
+  }>(),
+  md5OfTools: varchar("md5_of_tools", { length: 64 }),
+  costMs: integer("cost_ms"),
+  evalScore: numeric("eval_score", { precision: 3, scale: 2 }),
+  hitCount: integer("hit_count").default(0),
+  lastHitAt: timestamp("last_hit_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// User stable preferences for memory policy
+export const userStablePreferences = pgTable(
+  "user_stable_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    preferenceType: varchar("preference_type", { length: 100 }).notNull(),
+    preferenceValue: jsonb("preference_value").notNull(),
+    confidenceScore: numeric("confidence_score", {
+      precision: 3,
+      scale: 2,
+    }).default("1.0"),
+    lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+    evidenceCount: integer("evidence_count").default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    unique("user_stable_preferences_user_type_key").on(
+      table.userId,
+      table.preferenceType
+    ),
+  ]
+);
+
+// Sponsor interaction history for personalized recommendations
+export const sponsorInteractionHistory = pgTable(
+  "sponsor_interaction_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: varchar("user_id", { length: 255 }),
+    sessionId: uuid("session_id"),
+    sponsorId: uuid("sponsor_id").notNull(),
+    interactionType: varchar("interaction_type", { length: 50 }).notNull(),
+    interactionData: jsonb("interaction_data"),
+    userFeedback: text("user_feedback"),
+    sentimentScore: numeric("sentiment_score", { precision: 3, scale: 2 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  }
+);
+
+// Memory policy rules
+export const memoryPolicyRules = pgTable("memory_policy_rules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ruleName: varchar("rule_name", { length: 255 }).notNull().unique(),
+  ruleType: varchar("rule_type", { length: 50 }).notNull(),
+  conditions: jsonb("conditions").notNull(),
+  actions: jsonb("actions").notNull(),
+  priority: integer("priority").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Memory consolidation log
+export const memoryConsolidationLog = pgTable("memory_consolidation_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  consolidationType: varchar("consolidation_type", { length: 50 }).notNull(),
+  affectedRecords: integer("affected_records").default(0),
+  consolidationDetails: jsonb("consolidation_details"),
+  performanceMetrics: jsonb("performance_metrics"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
