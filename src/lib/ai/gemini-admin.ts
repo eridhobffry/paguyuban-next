@@ -3,8 +3,8 @@
 
 import { generateContent } from "./gemini-client";
 
-// Use the more powerful Pro model for admin analytics and recommendations
-const ADMIN_GEMINI_MODEL = process.env.ADMIN_GEMINI_MODEL || "gemini-2.5-pro";
+// Use the fast and efficient Flash model for admin analytics and recommendations
+const ADMIN_GEMINI_MODEL = process.env.ADMIN_GEMINI_MODEL || "gemini-1.5-flash";
 
 export async function generateAdminContent<T = string>(
   prompt: string,

@@ -2,7 +2,7 @@
 // Usage: import { generateText, extractJsonObject, GEMINI_MODEL } from "@/lib/ai/gemini-client";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 export const GEMINI_API_BASE =
   process.env.GEMINI_API_BASE ||
   "https://generativelanguage.googleapis.com/v1beta/models";
@@ -29,7 +29,11 @@ type Part = { text: string };
 type Content = { parts: Part[] };
 type GeminiCandidatePart = { text?: string };
 type GeminiCandidateContent = { parts?: GeminiCandidatePart[] };
-type GeminiCandidate = { content?: GeminiCandidateContent; finishReason?: string; index?: number };
+type GeminiCandidate = {
+  content?: GeminiCandidateContent;
+  finishReason?: string;
+  index?: number;
+};
 type GeminiResponse = { candidates?: GeminiCandidate[] };
 type GenerationConfig = {
   temperature?: number;
@@ -142,7 +146,8 @@ export async function generateContent<T = string>(
   console.log("Full Gemini API Response:", JSON.stringify(data, null, 2));
 
   // Join all text parts to avoid truncation (JSON may be split across parts)
-  const parts = (data?.candidates?.[0]?.content?.parts || []) as GeminiCandidatePart[];
+  const parts = (data?.candidates?.[0]?.content?.parts ||
+    []) as GeminiCandidatePart[];
   const joinedText: string = parts
     .map((p) => (typeof p?.text === "string" ? p.text : ""))
     .join("");

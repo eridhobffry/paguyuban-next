@@ -22,11 +22,47 @@ vi.mock("../../src/lib/db/drizzle", () => ({
   pool: {},
 }));
 
+// Mock the schema tables that are used in memory policy
+vi.mock("../../src/lib/db/schema", () => ({
+  memoryPolicyRules: {
+    ruleName: "rule_name",
+    ruleType: "rule_type",
+    conditions: "conditions",
+    actions: "actions",
+    priority: "priority",
+    isActive: "is_active",
+  },
+  userStablePreferences: {
+    userId: "user_id",
+    preferenceType: "preference_type",
+    preferenceValue: "preference_value",
+    confidenceScore: "confidence_score",
+    evidenceCount: "evidence_count",
+    lastUpdated: "last_updated",
+  },
+  sponsorInteractionHistory: {
+    userId: "user_id",
+    sessionId: "session_id",
+    sponsorId: "sponsor_id",
+    interactionType: "interaction_type",
+    interactionData: "interaction_data",
+    userFeedback: "user_feedback",
+    sentimentScore: "sentiment_score",
+  },
+  memoryConsolidationLog: {
+    consolidationType: "consolidation_type",
+    affectedRecords: "affected_records",
+    consolidationDetails: "consolidation_details",
+    performanceMetrics: "performance_metrics",
+  },
+}));
+
 // Mock database operations for testing when database is not available
 const mockDatabaseOperations = () => {
   let mockCacheStore: Map<string, any> = new Map();
   let mockPreferences: any[] = [];
   let mockInteractions: any[] = [];
+  let mockMemoryRules: any[] = [];
 
   // Mock the cache persistence methods
   vi.spyOn(cachePersistence, "store").mockImplementation(
@@ -142,6 +178,35 @@ const mockDatabaseOperations = () => {
     totalSponsorInteractions: mockInteractions.length,
     activeMemoryRules: 5, // Mock 5 active rules
     recentConsolidations: 1,
+  });
+
+  // Mock memory policy rule operations
+  vi.spyOn(memoryPolicyManager, "setMemoryPolicyRule").mockImplementation(
+    async (rule) => {
+      const existingIndex = mockMemoryRules.findIndex(
+        (r) => r.ruleName === rule.ruleName
+      );
+      if (existingIndex >= 0) {
+        mockMemoryRules[existingIndex] = {
+          ...mockMemoryRules[existingIndex],
+          ...rule,
+        };
+      } else {
+        mockMemoryRules.push({
+          ...rule,
+          id: `mock-${Date.now()}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    }
+  );
+
+  vi.spyOn(
+    memoryPolicyManager,
+    "getActiveMemoryPolicyRules"
+  ).mockImplementation(async () => {
+    return mockMemoryRules.filter((rule) => rule.isActive !== false);
   });
 };
 
