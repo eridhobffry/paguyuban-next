@@ -15,6 +15,8 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from contracts import EventPlan, AnalyticsReport, ContractReview
 from common.memory import detect_memory_diff
+from common.lang import get_language_prompt
+from ollama_client import OllamaClient, map_model, OllamaError
 
 # Simplified configuration
 class SimpleSettings:
@@ -24,6 +26,16 @@ class SimpleSettings:
 
 settings = SimpleSettings()
 _startup_time = datetime.now()
+_ollama_client = None  # lazy
+
+def _is_ollama_enabled() -> bool:
+    return os.getenv("AI_ENABLE_OLLAMA", "0") == "1"
+
+def _get_ollama() -> Optional[OllamaClient]:
+    global _ollama_client
+    if _ollama_client is None:
+        _ollama_client = OllamaClient(timeout_ms=int(os.getenv("OLLAMA_TIMEOUT_MS", "800")))
+    return _ollama_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -385,7 +397,26 @@ async def generate_chat_response(
         # Phase 2.25 Data-Driven Agent Architecture
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
-        response = data_agent.generate_response(query, intent, context_data, language)
+        # Optionally run Ollama for generation when enabled
+        response = None
+        if _is_ollama_enabled():
+            try:
+                model = map_model((http_request.headers.get("x-ai-model") if http_request else None))
+                # Use chat format with system message to steer language and role
+                system = (
+                    f"You are an assistant for Paguyuban Messe 2026. Respond in the user's language.\n"
+                    f"{get_language_prompt(language)}\n"
+                    f"Keep answers concise and factual."
+                )
+                messages = [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": query},
+                ]
+                response = _get_ollama().chat(model, messages, options={"temperature": 0.5, "num_predict": 256})
+            except (TimeoutError, OllamaError):
+                response = None
+        if not response:
+            response = data_agent.generate_response(query, intent, context_data, language)
         mem = detect_memory_diff(query, language)
         # Echo routing/cache headers into metadata
         hdr = http_request.headers if http_request else {}
@@ -410,7 +441,7 @@ async def generate_chat_response(
         return out
 
     except Exception as e:
-        logger.error("Chat generation error", error=str(e))
+        logger.error("Chat generation error: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Chat generation failed: {str(e)}")
 
 @app.post("/api/event/chat")
@@ -432,7 +463,25 @@ async def event_chat_response(
         # Analyze intent and generate response
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
-        response = data_agent.generate_response(query, intent, {}, language)
+        # Optionally run Ollama when enabled
+        response = None
+        if _is_ollama_enabled():
+            try:
+                model = map_model((http_request.headers.get("x-ai-model") if http_request else None))
+                system = (
+                    f"You are an assistant for Paguyuban Messe 2026. Respond in the user's language.\n"
+                    f"{get_language_prompt(language)}\n"
+                    f"Keep answers concise and factual."
+                )
+                messages = [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": query},
+                ]
+                response = _get_ollama().chat(model, messages, options={"temperature": 0.5, "num_predict": 256})
+            except (TimeoutError, OllamaError):
+                response = None
+        if not response:
+            response = data_agent.generate_response(query, intent, {}, language)
         mem = detect_memory_diff(query, language)
 
         hdr = http_request.headers if http_request else {}
@@ -456,7 +505,7 @@ async def event_chat_response(
         return out
 
     except Exception as e:
-        logger.error("Event chat error", error=str(e))
+        logger.error("Event chat error: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Event chat failed: {str(e)}")
 
 @app.post("/api/analytics/chat/summary")
@@ -496,7 +545,7 @@ async def generate_chat_summary(
         return {"summary": summary, "metadata": meta}
 
     except Exception as e:
-        logger.error("Summary generation error", error=str(e))
+        logger.error("Summary generation error: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Summary generation failed: {str(e)}")
 
 # End of Phase 2.25 Data-Driven Agent Architecture
