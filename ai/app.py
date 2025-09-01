@@ -16,7 +16,9 @@ from datetime import datetime
 from contracts import EventPlan, AnalyticsReport, ContractReview
 from common.memory import detect_memory_diff
 from common.lang import get_language_prompt
+from common.intent import IntentAnalyzer
 from ollama_client import OllamaClient, map_model, OllamaError
+import time
 
 # Simplified configuration
 class SimpleSettings:
@@ -36,6 +38,9 @@ def _get_ollama() -> Optional[OllamaClient]:
     if _ollama_client is None:
         _ollama_client = OllamaClient(timeout_ms=int(os.getenv("OLLAMA_TIMEOUT_MS", "800")))
     return _ollama_client
+
+def _is_memory_diff_enabled() -> bool:
+    return os.getenv("AI_MEMORY_DIFF", "1") == "1"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -101,6 +106,7 @@ class DataDrivenAgent:
     """Simplified data-driven agent for Phase 2.25"""
 
     def __init__(self):
+        self._intent = IntentAnalyzer()
         # Include multilingual keywords (EN/ID/MS/DE)
         self.intent_patterns = {
             # Timing / general event info
@@ -122,14 +128,8 @@ class DataDrivenAgent:
         }
 
     def analyze_intent(self, query: str, language: str = "en") -> str:
-        """Simple NLP intent analysis"""
-        query_lower = query.lower()
-
-        for intent, keywords in self.intent_patterns.items():
-            if any(keyword in query_lower for keyword in keywords):
-                return intent
-
-        return "general_inquiry"
+        # Delegate to shared analyzer for consistency
+        return self._intent.analyze_intent(query, language)
 
     def decide_data_needs(self, intent: str, query: str, session_id: str = None) -> Dict[str, Any]:
         """Agentic decision-making for data requirements"""
@@ -162,7 +162,7 @@ class DataDrivenAgent:
         """Generate response based on intent, data, and language"""
         if intent == "prospect_analysis":
             return self._generate_prospect_analysis(query, context_data)
-        elif intent == "event_details":
+        elif intent in ("event_details", "event_timing"):
             return self._generate_event_details(query, context_data, language)
         elif intent == "pricing_info":
             return self._generate_pricing_info(query, context_data, language)
@@ -192,10 +192,8 @@ class DataDrivenAgent:
     def _generate_event_details(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
         if language == "id":
             return (
-                "Berikut informasi tentang Paguyuban Messe yang akan datang:\n\n"
-                "• Tanggal: 7-8 Agustus 2026\n"
-                "• Lokasi: Arena Berlin, Jerman\n"
-                "• Tema: Digital Innovation & Cultural Heritage\n\n"
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Agustus 2026 di Arena Berlin, Jerman.\n\n"
+                "Tema: Digital Innovation & Cultural Heritage\n\n"
                 "Sorotan Jadwal:\n"
                 "• Hari 1: Pembukaan, B2B matchmaking, lokakarya budaya\n"
                 "• Hari 2: Showcase inovasi, leadership talks, konser grand finale\n\n"
@@ -203,13 +201,12 @@ class DataDrivenAgent:
             )
         if language == "ms":
             return (
-                "Paguyuban Messe 2025 akan diadakan pada 24-26 Oktober 2025 di Jakarta Convention Center, Indonesia.\n\n"
-                "Berikut maklumat lanjut:\n"
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Ogos 2026 di Arena Berlin, Jerman.\n\n"
+                "Maklumat lanjut:\n"
                 "• Tema: Inovasi Digital & Warisan Budaya\n\n"
                 "Sorotan Jadual:\n"
                 "• Hari 1: Perasmian dan persembahan budaya\n"
-                "• Hari 2: Rangkaian perniagaan dan bengkel\n"
-                "• Hari 3: Gala penutup dan pengumuman kerjasama\n\n"
+                "• Hari 2: Rangkaian perniagaan dan bengkel\n\n"
                 "Ada perkara khusus yang anda ingin tahu?"
             )
         return """Here’s the information about our upcoming Paguyuban Messe event:
@@ -266,6 +263,7 @@ All packages include comprehensive marketing benefits and networking opportuniti
     def _generate_general_response(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
         if language == "id":
             return (
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Agustus 2026 di Arena Berlin.\n\n"
                 "Terima kasih atas ketertarikan Anda pada Paguyuban Messe! Saya siap membantu informasi acara, peluang kemitraan, dan perayaan budaya.\n\n"
                 "Bagaimana saya bisa membantu hari ini? Saya dapat menyampaikan:\n"
                 "• Jadwal acara dan penampil\n"
@@ -275,6 +273,7 @@ All packages include comprehensive marketing benefits and networking opportuniti
             )
         if language == "ms":
             return (
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Ogos 2026 di Arena Berlin.\n\n"
                 "Terima kasih atas minat anda terhadap Paguyuban Messe! Saya sedia membantu dengan maklumat acara, peluang penajaan, dan sambutan budaya.\n\n"
                 "Bagaimana saya boleh bantu hari ini? Saya boleh kongsi:\n"
                 "• Jadual acara dan persembahan\n"
@@ -384,6 +383,7 @@ async def generate_chat_response(
 ):
     """Generate data-driven chat response"""
     try:
+        _t_start = time.perf_counter()
         query = request.get("query", "")
         # Language: priority from body, else detect
         from common.lang import detect_language
@@ -435,8 +435,27 @@ async def generate_chat_response(
             "correlation_id": hdr.get("x-correlation-id"),
         }
 
+        # latency
+        meta["latency_ms"] = int((time.perf_counter() - _t_start) * 1000)
+
+        # Structured info log for SLOs
+        try:
+            logger.info(
+                "ai_chat_generate model=%s route=%s lang=%s intent=%s complexity=%s cache=%s latency_ms=%s corr=%s",
+                meta.get("model_used"),
+                meta.get("route_reason"),
+                meta.get("language"),
+                meta.get("intent"),
+                meta.get("task_complexity"),
+                meta.get("cache_status"),
+                meta.get("latency_ms"),
+                meta.get("correlation_id"),
+            )
+        except Exception:
+            pass
+
         out = {"result": response, "metadata": meta}
-        if mem:
+        if _is_memory_diff_enabled() and mem:
             out["memory_diff"] = mem
         return out
 
@@ -452,6 +471,7 @@ async def event_chat_response(
 ):
     """Generate event-specific response using data-driven agent"""
     try:
+        _t_start = time.perf_counter()
         query = request.get("query", "")
         from common.lang import detect_language
         language = request.get("language") or detect_language(query)
@@ -499,8 +519,27 @@ async def event_chat_response(
             "timestamp": datetime.now().isoformat(),
             "correlation_id": hdr.get("x-correlation-id"),
         }
+        # latency
+        meta["latency_ms"] = int((time.perf_counter() - _t_start) * 1000)
+
+        # Structured info log for SLOs
+        try:
+            logger.info(
+                "ai_event_chat model=%s route=%s lang=%s intent=%s complexity=%s cache=%s latency_ms=%s corr=%s",
+                meta.get("model_used"),
+                meta.get("route_reason"),
+                meta.get("language"),
+                meta.get("intent"),
+                meta.get("task_complexity"),
+                meta.get("cache_status"),
+                meta.get("latency_ms"),
+                meta.get("correlation_id"),
+            )
+        except Exception:
+            pass
+
         out = {"result": response, "metadata": meta}
-        if mem:
+        if _is_memory_diff_enabled() and mem:
             out["memory_diff"] = mem
         return out
 
@@ -516,6 +555,7 @@ async def generate_chat_summary(
 ):
     """Generate simplified chat summary"""
     try:
+        _t_start = time.perf_counter()
         transcript = request.get("transcript", "")
         language = request.get("language", "en")
 
@@ -542,6 +582,8 @@ async def generate_chat_summary(
             "involves": hdr.get("x-involves"),
             "correlation_id": hdr.get("x-correlation-id"),
         }
+        # latency
+        meta["latency_ms"] = int((time.perf_counter() - _t_start) * 1000)
         return {"summary": summary, "metadata": meta}
 
     except Exception as e:
