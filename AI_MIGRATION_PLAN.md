@@ -1606,6 +1606,31 @@ GET /api/health/ai
 
 ---
 
+## Recommendations (Execution Priorities)
+
+- Configure environment for production:
+  - AI_SERVICE_URL, AI_PROVIDER, FALLBACK_GEMINI=1, FALLBACK_LOCAL=1
+  - FEATURE_AI_CHAT=1, FEATURE_AI_RECOMMEND=1, FEATURE_AI_SUMMARIES=1
+  - AI_TELEMETRY_ENABLED=true, AI_TELEMETRY_SUCCESS_RATE=0.1, AI_TELEMETRY_INTENT_LIMIT=100
+  - AI_TELEMETRY_REQUIRE_CONSENT=true, AI_CONSENT_VERSION=v1
+- Consent & privacy:
+  - Gate AI usage via consent modal; set x-ai-consent header (see `hasUserConsent()` in `src/app/api/ai/respond/route.ts`)
+  - Ensure PII redaction via `sanitizeInput`/`redactPII`
+- Health & reliability:
+  - Verify `/api/health` probes AI at `${AI_SERVICE_URL}/health` and the database
+  - Keep secure fallbacks via `secureFetch` and intent-based endpoint routing
+- Observability & ops:
+  - Set CRON_SECRET for `/api/admin/cron/retry-telemetry` and enable GH workflows
+  - Use `/api/admin/metrics/*` for SLOs; alert thresholds aligned to P95 < 2s and availability > 99.9%
+- Data-driven agents:
+  - Ensure `/api/ai/intent/resolve` and context endpoints are live and instrumented (see PHASE6 docs)
+  - Use intent-specific context selection and business recommendations in responses
+- Rollout plan:
+  - Canary 10% traffic; monitor error rate < 1% and P95 latency < 2s before 100%
+  - Roll back via feature flags if SLOs are breached
+
+---
+
 **Ready to proceed with Phase 2.25: Data-Driven Agent Architecture**
 
 ---
