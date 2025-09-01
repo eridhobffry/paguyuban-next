@@ -13,6 +13,7 @@ import { detectLanguage } from "@/lib/ai/lang";
 import { selectModel } from "@/lib/ai/model-router";
 import { getCachedResponse, setCachedResponse } from "@/lib/ai/semantic-cache";
 import { SITE } from "@/config/site";
+import { recordTelemetry, getOrCreateCorrelationId } from "@/lib/telemetry";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8001";
 
@@ -81,6 +82,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
       if (hit) {
         const reply = sanitizeOutput(hit.response);
+        // Record telemetry for cache hit
+        try {
+          const correlationId = getOrCreateCorrelationId(req.headers);
+          void recordTelemetry({
+            endpoint: "/api/chat/generate",
+            intent: "cache_hit",
+            queryType: "ai",
+            aiEndpoint: "/api/cache",
+            model: routing.model,
+            metadata: {
+              route_reason: routing.reason,
+              cache_status: "HIT",
+              cache_score: hit.score,
+              language,
+            },
+            correlationId,
+            status: "success",
+            success: true,
+            responseTime: Date.now() - startedAt,
+          });
+        } catch {}
         const res = NextResponse.json(
           { reply, agent: "cache", fallback: false },
           { status: 200 }
@@ -125,6 +147,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             routing.model,
             { costMs: Date.now() - startedAt }
           );
+        } catch {}
+
+        // Telemetry: event_chat success
+        try {
+          const correlationId = getOrCreateCorrelationId(req.headers);
+          const model_used = (eventData?.metadata?.model_used as string) || routing.model;
+          const route_reason = (eventData?.metadata?.route_reason as string) || routing.reason;
+          void recordTelemetry({
+            endpoint: "/api/chat/generate",
+            intent: "event_chat",
+            queryType: "ai",
+            aiEndpoint: "/api/event/chat",
+            model: model_used,
+            metadata: {
+              route_reason,
+              cache_status: "MISS",
+              language,
+            },
+            correlationId,
+            status: "success",
+            success: true,
+            responseTime: Date.now() - startedAt,
+          });
         } catch {}
 
         const res = NextResponse.json(
@@ -181,6 +226,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         routing.model,
         { costMs: Date.now() - startedAt }
       );
+    } catch {}
+
+    // Telemetry: conversational success
+    try {
+      const correlationId = getOrCreateCorrelationId(req.headers);
+      const model_used = (data?.metadata?.model_used as string) || routing.model;
+      const route_reason = (data?.metadata?.route_reason as string) || routing.reason;
+      void recordTelemetry({
+        endpoint: "/api/chat/generate",
+        intent: "conversational",
+        queryType: "ai",
+        aiEndpoint: "/api/chat/generate",
+        model: model_used,
+        metadata: {
+          route_reason,
+          cache_status: "MISS",
+          language,
+        },
+        correlationId,
+        status: "success",
+        success: true,
+        responseTime: Date.now() - startedAt,
+      });
     } catch {}
 
     const res = NextResponse.json(

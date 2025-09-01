@@ -3,7 +3,7 @@ Paguyuban Messe AI Service - Data-Driven Agent Architecture
 Simplified FastAPI server for Phase 2.25 data-driven agents
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
@@ -13,6 +13,7 @@ import jwt
 import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from contracts import EventPlan, AnalyticsReport, ContractReview
 
 # Simplified configuration
 class SimpleSettings:
@@ -87,11 +88,24 @@ class DataDrivenAgent:
     """Simplified data-driven agent for Phase 2.25"""
 
     def __init__(self):
+        # Include multilingual keywords (EN/ID/MS/DE)
         self.intent_patterns = {
-            "prospect_analysis": ["interested", "contact", "partnership", "sponsor", "budget"],
-            "event_details": ["when", "where", "schedule", "artists", "speakers"],
-            "pricing_info": ["price", "cost", "fee", "ticket", "sponsorship"],
-            "personalized_response": ["help", "assist", "support", "question"]
+            # Timing / general event info
+            "event_details": [
+                "when", "date", "time", "schedule", "jadwal", "jadual", "kapan", "bila", "diadakan",
+                "where", "dimana", "di mana", "lokasi", "venue",
+                "artists", "speakers", "artis", "pembicara", "sänger",
+            ],
+            # Pricing / sponsorship
+            "pricing_info": [
+                "price", "cost", "fee", "ticket", "sponsorship", "sponsor", "harga", "biaya", "preis", "penaja",
+            ],
+            # Prospect / partnership
+            "prospect_analysis": [
+                "interested", "contact", "lead", "conversion", "tertarik", "kerjasama", "partnerschaft"
+            ],
+            # General help
+            "personalized_response": ["help", "assist", "support", "question", "bantuan", "hilfe"],
         }
 
     def analyze_intent(self, query: str, language: str = "en") -> str:
@@ -131,16 +145,16 @@ class DataDrivenAgent:
 
         return data_requirements
 
-    def generate_response(self, query: str, intent: str, context_data: Dict[str, Any]) -> str:
-        """Generate response based on intent and data"""
+    def generate_response(self, query: str, intent: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        """Generate response based on intent, data, and language"""
         if intent == "prospect_analysis":
             return self._generate_prospect_analysis(query, context_data)
         elif intent == "event_details":
-            return self._generate_event_details(query, context_data)
+            return self._generate_event_details(query, context_data, language)
         elif intent == "pricing_info":
-            return self._generate_pricing_info(query, context_data)
+            return self._generate_pricing_info(query, context_data, language)
         else:
-            return self._generate_general_response(query, context_data)
+            return self._generate_general_response(query, context_data, language)
 
     def _generate_prospect_analysis(self, query: str, context_data: Dict[str, Any]) -> str:
         chat_logs = context_data.get("chat_logs", [])
@@ -162,60 +176,99 @@ class DataDrivenAgent:
 
         return response
 
-    def _generate_event_details(self, query: str, context_data: Dict[str, Any]) -> str:
-        return """Here's the information about our upcoming Paguyuban Messe event:
+    def _generate_event_details(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        if language == "id":
+            return (
+                "Berikut informasi tentang Paguyuban Messe yang akan datang:\n\n"
+                "• Tanggal: 7-8 Agustus 2026\n"
+                "• Lokasi: Arena Berlin, Jerman\n"
+                "• Tema: Digital Innovation & Cultural Heritage\n\n"
+                "Sorotan Jadwal:\n"
+                "• Hari 1: Pembukaan, B2B matchmaking, lokakarya budaya\n"
+                "• Hari 2: Showcase inovasi, leadership talks, konser grand finale\n\n"
+                "Ada info spesifik yang ingin Anda ketahui?"
+            )
+        if language == "ms":
+            return (
+                "Paguyuban Messe 2025 akan diadakan pada 24-26 Oktober 2025 di Jakarta Convention Center, Indonesia.\n\n"
+                "Berikut maklumat lanjut:\n"
+                "• Tema: Inovasi Digital & Warisan Budaya\n\n"
+                "Sorotan Jadual:\n"
+                "• Hari 1: Perasmian dan persembahan budaya\n"
+                "• Hari 2: Rangkaian perniagaan dan bengkel\n"
+                "• Hari 3: Gala penutup dan pengumuman kerjasama\n\n"
+                "Ada perkara khusus yang anda ingin tahu?"
+            )
+        return """Here’s the information about our upcoming Paguyuban Messe event:
 
-**Event Details:**
-• **Date:** October 24-26, 2025
-• **Location:** Jakarta Convention Center, Indonesia
-• **Theme:** "Digital Innovation & Cultural Heritage"
+• Date: August 7-8, 2026
+• Location: Arena Berlin, Germany
+• Theme: “Digital Innovation & Cultural Heritage”
 
-**Featured Artists:**
-• Local Indonesian artists and performers
-• International cultural ambassadors
-• Traditional music and dance performances
-
-**Key Speakers:**
-• Indonesian government representatives
-• International business leaders
-• Cultural preservation experts
-
-**Schedule Highlights:**
-• Day 1: Opening ceremony and cultural performances
-• Day 2: Business networking and workshops
-• Day 3: Closing gala and partnership announcements
+Schedule Highlights:
+• Day 1: Opening ceremony, B2B matchmaking, cultural workshops
+• Day 2: Innovation showcases, leadership talks, grand finale concert
 
 Would you like more specific information about any aspect of the event?"""
 
-    def _generate_pricing_info(self, query: str, context_data: Dict[str, Any]) -> str:
+    def _generate_pricing_info(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        if language == "id":
+            return (
+                "Berikut pilihan harga sponsorship dan tiket saat ini:\n\n"
+                "Paket Sponsorship:\n"
+                "• Platinum: €50.000 — Hak logo utama, sesi keynote, akses VIP\n"
+                "• Gold: €25.000 — Logo panggung & situs, booth premium\n"
+                "• Silver: €10.000 — Logo di situs & program, booth standar\n\n"
+                "Tiket Individu:\n"
+                "• Early Bird: €150 (hingga Juni 2026)\n"
+                "• Reguler: €200\n"
+                "• VIP: €350 (termasuk akses networking premium)\n"
+            )
+        if language == "ms":
+            return (
+                "Berikut pilihan harga penajaan dan tiket semasa:\n\n"
+                "Pakej Penajaan:\n"
+                "• Platinum: €50,000 — Penjenamaan utama, slot keynote, akses VIP\n"
+                "• Gold: €25,000 — Logo pentas & laman, lokasi booth premium\n"
+                "• Silver: €10,000 — Logo di laman & program, booth standard\n\n"
+                "Tiket Individu:\n"
+                "• Early Bird: €150 (hingga Jun 2026)\n"
+                "• Biasa: €200\n"
+                "• VIP: €350 (termasuk akses rangkaian premium)\n"
+            )
         return """Here are our current sponsorship and ticket pricing options:
 
-**Sponsorship Packages:**
-• **Platinum:** €50,000
-  - Prime logo placement on all materials
-  - 10-minute keynote presentation slot
-  - VIP networking dinner access
-  - Private meeting space
+Sponsorship Packages:
+• Platinum: €50,000 — Prime logo placement, keynote slot, VIP networking
+• Gold: €25,000 — Main stage & website logo, speaking opportunity, booth premium
+• Silver: €10,000 — Website/program logo, standard booth, attendance
 
-• **Gold:** €25,000
-  - Logo on main stage and website
-  - 5-minute speaking opportunity
-  - Premium booth location
-  - Networking lunch access
-
-• **Silver:** €10,000
-  - Logo on website and program
-  - Standard booth space
-  - Event attendance
-
-**Individual Tickets:**
-• Early Bird: €150 (until June 2025)
+Individual Tickets:
+• Early Bird: €150 (until June 2026)
 • Regular: €200
-• VIP Experience: €350 (includes premium seating and networking)
+• VIP: €350 (includes premium networking)
 
 All packages include comprehensive marketing benefits and networking opportunities. Would you like to discuss which option best fits your needs?"""
 
-    def _generate_general_response(self, query: str, context_data: Dict[str, Any]) -> str:
+    def _generate_general_response(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        if language == "id":
+            return (
+                "Terima kasih atas ketertarikan Anda pada Paguyuban Messe! Saya siap membantu informasi acara, peluang kemitraan, dan perayaan budaya.\n\n"
+                "Bagaimana saya bisa membantu hari ini? Saya dapat menyampaikan:\n"
+                "• Jadwal acara dan penampil\n"
+                "• Opsi sponsorship dan kemitraan\n"
+                "• Pameran budaya dan lokakarya\n"
+                "• Informasi pendaftaran dan tiket\n"
+            )
+        if language == "ms":
+            return (
+                "Terima kasih atas minat anda terhadap Paguyuban Messe! Saya sedia membantu dengan maklumat acara, peluang penajaan, dan sambutan budaya.\n\n"
+                "Bagaimana saya boleh bantu hari ini? Saya boleh kongsi:\n"
+                "• Jadual acara dan persembahan\n"
+                "• Pilihan penajaan dan kerjasama\n"
+                "• Pameran budaya dan bengkel\n"
+                "• Maklumat pendaftaran dan tiket\n"
+            )
         return """Thank you for your interest in Paguyuban Messe! I'm here to help you with information about our event, partnership opportunities, and cultural celebration.
 
 How can I assist you today? I can provide details about:
@@ -303,19 +356,25 @@ async def health_check():
         "endpoints": {
             "chat_generate": "/api/chat/generate",
             "event_chat": "/api/event/chat", 
-            "chat_summary": "/api/analytics/chat/summary"
+            "chat_summary": "/api/analytics/chat/summary",
+            "event_plan": "/api/contracts/event-plan",
+            "analytics_report": "/api/contracts/analytics-report",
+            "contract_review": "/api/contracts/contract-review",
         }
     }
 
 @app.post("/api/chat/generate")
 async def generate_chat_response(
-    request: Dict[str, Any], 
-    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+    request: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
 ):
     """Generate data-driven chat response"""
     try:
         query = request.get("query", "")
-        language = request.get("language", "en")
+        # Language: priority from body, else detect
+        from common.lang import detect_language
+        language = request.get("language") or detect_language(query)
         session_id = request.get("session_id")
         context_data = request.get("context_data", {})
 
@@ -325,17 +384,24 @@ async def generate_chat_response(
         # Phase 2.25 Data-Driven Agent Architecture
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
-        response = data_agent.generate_response(query, intent, context_data)
-
-        return {
-            "result": response,
-            "metadata": {
-                "intent": intent,
-                "data_requirements": data_requirements,
-                "architecture": "Phase 2.25 Data-Driven Agent",
-                "timestamp": datetime.now().isoformat()
-            }
+        response = data_agent.generate_response(query, intent, context_data, language)
+        # Echo routing/cache headers into metadata
+        hdr = http_request.headers if http_request else {}
+        meta = {
+            "intent": intent,
+            "data_requirements": data_requirements,
+            "architecture": "Phase 2.25 Data-Driven Agent",
+            "timestamp": datetime.now().isoformat(),
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "cache_status": hdr.get("x-cache"),
+            "client_intent": hdr.get("x-intent"),
+            "task_complexity": hdr.get("x-task-complexity"),
+            "involves": hdr.get("x-involves"),
+            "language": language,
         }
+
+        return {"result": response, "metadata": meta}
 
     except Exception as e:
         logger.error("Chat generation error", error=str(e))
@@ -343,13 +409,15 @@ async def generate_chat_response(
 
 @app.post("/api/event/chat")
 async def event_chat_response(
-    request: Dict[str, Any], 
-    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+    request: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
 ):
     """Generate event-specific response using data-driven agent"""
     try:
         query = request.get("query", "")
-        language = request.get("language", "en")
+        from common.lang import detect_language
+        language = request.get("language") or detect_language(query)
         session_id = request.get("session_id")
 
         if not query:
@@ -358,16 +426,23 @@ async def event_chat_response(
         # Analyze intent and generate response
         intent = data_agent.analyze_intent(query, language)
         data_requirements = data_agent.decide_data_needs(intent, query, session_id)
-        response = data_agent.generate_response(query, intent, {})
+        response = data_agent.generate_response(query, intent, {}, language)
 
-        return {
-            "result": response,
-            "metadata": {
-                "intent": intent,
-                "data_sources_needed": data_requirements.get("data_sources", []),
-                "architecture": "Phase 2.25 Data-Driven Agent"
-            }
+        hdr = http_request.headers if http_request else {}
+        meta = {
+            "intent": intent,
+            "data_sources_needed": data_requirements.get("data_sources", []),
+            "architecture": "Phase 2.25 Data-Driven Agent",
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "cache_status": hdr.get("x-cache"),
+            "client_intent": hdr.get("x-intent"),
+            "task_complexity": hdr.get("x-task-complexity"),
+            "involves": hdr.get("x-involves"),
+            "language": language,
+            "timestamp": datetime.now().isoformat(),
         }
+        return {"result": response, "metadata": meta}
 
     except Exception as e:
         logger.error("Event chat error", error=str(e))
@@ -375,8 +450,9 @@ async def event_chat_response(
 
 @app.post("/api/analytics/chat/summary")
 async def generate_chat_summary(
-    request: Dict[str, Any], 
-    token_payload: Dict[str, Any] = Depends(verify_ai_service_token)
+    request: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
 ):
     """Generate simplified chat summary"""
     try:
@@ -393,14 +469,19 @@ async def generate_chat_summary(
         summary += f"Generated: {datetime.now().isoformat()}\n\n"
         summary += "This is a simplified summary generated by the Phase 2.25 data-driven agent architecture."
 
-        return {
-            "summary": summary,
-            "metadata": {
-                "architecture": "Phase 2.25 Data-Driven Agent",
-                "language": language,
-                "timestamp": datetime.now().isoformat()
-            }
+        hdr = http_request.headers if http_request else {}
+        meta = {
+            "architecture": "Phase 2.25 Data-Driven Agent",
+            "language": language,
+            "timestamp": datetime.now().isoformat(),
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "cache_status": hdr.get("x-cache"),
+            "client_intent": hdr.get("x-intent"),
+            "task_complexity": hdr.get("x-task-complexity"),
+            "involves": hdr.get("x-involves"),
         }
+        return {"summary": summary, "metadata": meta}
 
     except Exception as e:
         logger.error("Summary generation error", error=str(e))
@@ -408,3 +489,84 @@ async def generate_chat_summary(
 
 # End of Phase 2.25 Data-Driven Agent Architecture
 # Additional endpoints can be added here as we expand the architecture
+
+# ---- Phase 7: Output Contract Endpoints (scaffold, deterministic) ----
+
+@app.post("/api/contracts/event-plan")
+async def make_event_plan(
+    _body: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
+):
+    plan = EventPlan(
+        title="Nusantara Business & Culture Day",
+        date_range="2026-08-07 to 2026-08-08",
+        city="Berlin",
+        personas=["Investors", "SME Founders", "Cultural Organizations"],
+        goals=["Deal-flow", "Brand exposure", "Community building"],
+        budget_band="€25,000–€60,000",
+        risks=["Scheduling conflicts", "Sponsor overlap", "Logistics"],
+        sponsor_targets=["Telco", "Banking", "FMCG"],
+        next_actions=["Confirm venue zones", "Lock headliners", "Publish sponsor deck"],
+    )
+    hdr = http_request.headers if http_request else {}
+    return {
+        "event_plan": plan.model_dump(),
+        "metadata": {
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "timestamp": datetime.now().isoformat(),
+        },
+    }
+
+
+@app.post("/api/contracts/analytics-report")
+async def make_analytics_report(
+    body: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
+):
+    question = str(body.get("question")) if body and body.get("question") else "What is the sponsorship ROI baseline?"
+    report = AnalyticsReport(
+        question=question,
+        data_sources=["chat_logs", "sponsor_tiers"],
+        method="Heuristic summarization",
+        findings=["77.6% revenue from sponsors", "ROI depends on pipeline and ACV"],
+        caveats=["Illustrative numbers"],
+        decisions=["Prioritize Gold & Platinum outreach"],
+        appendix={"n": 2},
+    )
+    hdr = http_request.headers if http_request else {}
+    return {
+        "analytics_report": report.model_dump(),
+        "metadata": {
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "timestamp": datetime.now().isoformat(),
+        },
+    }
+
+
+@app.post("/api/contracts/contract-review")
+async def make_contract_review(
+    body: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+    http_request: Request = None,
+):
+    title = str(body.get("doc_title") or body.get("title") or "Sponsorship Agreement – Draft")
+    review = ContractReview(
+        doc_title=title,
+        clauses_risky=["Broad indemnity", "Unlimited liability"],
+        redlines=["Cap liability at fees", "Mutual indemnity"],
+        negotiation_positions=["Tiered exposure", "Flexible deliverables"],
+        summary="Key risks identified; redlines proposed for balanced terms.",
+    )
+    hdr = http_request.headers if http_request else {}
+    return {
+        "contract_review": review.model_dump(),
+        "metadata": {
+            "model_used": hdr.get("x-ai-model"),
+            "route_reason": hdr.get("x-route-reason"),
+            "timestamp": datetime.now().isoformat(),
+        },
+    }

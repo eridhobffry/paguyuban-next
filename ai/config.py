@@ -119,4 +119,10 @@ SEARCH_SIMILARITY_THRESHOLD = 0.7
 # Event Creation Configuration
 MAX_EVENT_TITLE_LENGTH = 200
 MAX_EVENT_DESCRIPTION_LENGTH = 2000
-SUPPORTED_LANGUAGES = ["en", "id", "de"]
+SUPPORTED_LANGUAGES = ["en", "id", "ms", "de"]
+
+# Malay (Bahasa Melayu) keywords for detection
+MALAY_KEYWORDS = [
+    "bila", "di mana", "dimana", "berapa", "harga", "acara", "perniagaan",
+    "syarikat", "nak", "penaja", "manfaat", "jadual", "hubungi"
+]
