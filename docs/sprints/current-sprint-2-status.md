@@ -97,6 +97,7 @@ The final task for Sprint 2 is to execute the manual testing outlined in `MANUAL
 
 1. **Sprint 3 Preparation** - Plan next sprint focusing on:
 
+   - AI Platform Migration: replace Gemini with a local runtime under `ai/` and remove external dependencies
    - Knowledge Overlay CMS implementation
    - Component refactoring (admin analytics page, document upload)
    - Agenda CMS MVP development
@@ -104,7 +105,7 @@ The final task for Sprint 2 is to execute the manual testing outlined in `MANUAL
 
 2. **Technical Debt Reduction** - Begin addressing the component refactoring backlog documented in `NEXT_SPRINT_COMPONENT_REFACTOR_PLAN.md`
 
-## 📈 Sprint 2 Impact
+## Sprint 2 Impact
 
 This sprint has significantly improved the project's quality foundation:
 

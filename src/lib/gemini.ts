@@ -1,6 +1,13 @@
 // Enhanced Gemini API Integration for Paguyuban Messe 2026 Chat Assistant
 import { generateText, GEMINI_API_KEY } from "@/lib/ai/gemini-client";
 import { deepMerge } from "@/lib/knowledge/loader";
+import {
+  assembleContext,
+  estimateTokens,
+  type ContextChunk,
+} from "@/lib/ai/context/window";
+import { summarizeTurns } from "@/lib/ai/context/summarize";
+import { redact } from "@/lib/ai/context/redact";
 import { dynamicKnowledgeBuilder } from "@/lib/knowledge/builder";
 
 interface ChatMessage {
@@ -964,32 +971,77 @@ Key Metrics:
       const selectedPersonality =
         personality || ASSISTANT_PERSONALITIES["ucup"];
       const topicContext = this.buildTopicContext(topic);
-      const conversationContext = this.conversationHistory
-        .slice(-4)
-        .map((msg) => `${msg.role}: ${msg.content}`)
+
+      // Build context chunks for assembly within token budget
+      const sysChunk: ContextChunk = {
+        role: "system",
+        content: selectedPersonality.systemPrompt,
+        essential: true,
+      };
+      const overlayChunk: ContextChunk = {
+        role: "overlay",
+        content: topicContext,
+        essential: true,
+      };
+      const now = Date.now();
+      const historyChunks: ContextChunk[] = this.conversationHistory
+        .slice(-8)
+        .map((m, idx) => ({
+          role: m.role as ContextChunk["role"],
+          content: m.content,
+          timestamp: (m.timestamp?.getTime?.() as number) || now - (idx + 1) * 1000,
+        }));
+      const currentUser: ContextChunk = {
+        role: "user",
+        content: message,
+        timestamp: now,
+        essential: true,
+      };
+
+      const included = assembleContext(
+        {
+          system: [sysChunk],
+          overlays: [overlayChunk],
+          current: [currentUser],
+          history: historyChunks,
+        },
+        {
+          maxTokens: 3200,
+          headroomRatio: 0.1,
+          tokenEstimator: estimateTokens,
+        }
+      );
+
+      // Summarize prior turns to provide compact continuity if needed
+      const { text: historySummary } = summarizeTurns(historyChunks, 400, {
+        tokenEstimator: estimateTokens,
+      });
+
+      // Compose assembled context lines (excluding system to avoid duplication)
+      const assembledLines = included
+        .filter((c) => c.role !== "system")
+        .map((c) => `[${c.role}] ${c.content}`)
         .join("\n");
 
-      const prompt = `${selectedPersonality.systemPrompt}
+      let prompt = `${selectedPersonality.systemPrompt}
 
 SPECIFIC CONTEXT FOR THIS QUERY:
 ${topicContext}
 
-KEY FACTS TO REMEMBER:
-- Event: August 7-8, 2026 at Arena Berlin
-- Attendance: 1,800 offline + 4,000 online
-- Revenue: €1,018,660 target
-- Sponsorship: €15,000-€120,000 tiers
-- Business Pipeline: €200,000-€650,000
-- Contact: nusantaraexpoofficial@gmail.com
+ASSEMBLED CONTEXT:
+${assembledLines}
 
-CONVERSATION HISTORY:
-${conversationContext}
+SUMMARIZED HISTORY:
+${historySummary}
 
 USER MESSAGE: ${message}
 USER LANGUAGE PREFERENCE: ${language}
 DETECTED TOPIC: ${topic}
 
 Respond as ${selectedPersonality.name} with accurate, specific information. Include relevant numbers, dates, and concrete benefits. Keep response focused and actionable.`;
+
+      // Redact sensitive info before sending to the model
+      prompt = redact(prompt).text;
 
       const shouldUseLocal = options?.mode === "local" || !GEMINI_API_KEY;
 

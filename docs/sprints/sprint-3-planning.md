@@ -4,24 +4,46 @@
 
 **Sprint Goal:** Extend CMS capabilities and begin component refactoring to improve maintainability.
 
-**Scope:** Implement Knowledge Overlay CMS, Agenda CMS MVP, Sponsors CMS, and begin component refactoring work. Keep changes incremental and reversible.
+**Scope:** Migrate AI from Gemini to a local runtime, implement Knowledge Overlay CMS, Agenda CMS MVP, Sponsors CMS, and begin component refactoring work. Keep changes incremental and reversible.
 
 **Timeline:** 2-3 weeks
 **Priority:** High - These features will significantly enhance admin capabilities and code maintainability.
 
 ## Sprint Objectives
 
-### 1) Knowledge Overlay CMS (Highest Priority)
+### 1) AI Platform Migration (Replace Gemini with Local) — Highest Priority
+
+**Goal:** Eliminate external AI costs by removing Gemini usage and switching to a local AI runtime under the `ai/` directory.
+
+**Implementation:**
+
+- **Client Replacement:** Replace `src/lib/ai/gemini-client.ts` with a local AI client that preserves the existing interface (`generateText`, `extractJsonObject`).
+- **Routes & Services:** Update all imports to use the local client (`admin/analytics/chat/recommend`, `admin/partnership/recommend`, `analytics/chat/summary`, `src/lib/document-analyzer.ts`, `src/lib/gemini.ts`).
+- **Models/Runtime:** Configure a lightweight local model and ensure deterministic JSON output for Zod validation. Use the `ai/` directory for the runner.
+- **Validation:** Keep JSON-mode + Zod validation via `src/lib/ai/schemas.ts`.
+- **Config/CI:** Remove Gemini secrets from `.env*` and CI. Provide a provider-toggle if needed.
+- **Testing:** Update unit/integration tests to use/mocks of the local client.
+- **Docs:** Update `docs/GEMINI_USAGE.md` to note deprecation and local flow.
+
+**Acceptance Criteria:**
+
+- No external Gemini calls remain
+- All tests pass with the local AI client
+- Feature parity maintained (intent detection, summaries, recommendations)
+- Zero AI cost in dev/CI
+
+### 2) Knowledge Overlay CMS (High Priority)
 
 **Goal:** Allow admins to dynamically update chatbot knowledge without redeployment.
 
 **Implementation:**
 
-- **Database:** `knowledge` table with `overlay` JSONB, `updated_at`, optional `is_active`
-- **API:** `GET /api/admin/knowledge`, `PUT /api/admin/knowledge` (admin-protected, Zod-validated)
-- **Loader:** Add `loadDbKnowledgeOverlay()` with short TTL cache; merge static + file + DB via `deepMerge`
-- **Admin UI:** Minimal JSON editor with validation; preview key paths (e.g., `event.dates`, `financials.revenue.total`)
-- **Tests:** Unit tests, API route tests, chat integration tests
+- **Database & Migration:** Define schema and create Drizzle migration (`drizzle/`, Neon) for `knowledge` table storing overlay JSON and metadata.
+- **CRUD API Routes:** Admin-protected, Zod-validated `GET /api/admin/knowledge`, `PUT /api/admin/knowledge`, plus upload if needed.
+- **Admin UI:** Forms built with `react-hook-form` + Zod; JSON editor with validation and previews for key paths (e.g., `event.dates`, `financials.revenue.total`).
+- **Loader Integration:** Implement precedence and deep-merge logic in `src/lib/knowledge/loader.ts` with short TTL cache across static/file/DB overlays.
+- **Tests:** Unit + E2E tests for CRUD flows, loader behavior, and chat overlay consumption.
+- **Docs & Plans:** Update `CURRENT_SPRINT_PLAN.md`, `NEXT_SPRINT_PLAN.md`, and this plan upon completion.
 
 **Acceptance Criteria:**
 
@@ -29,7 +51,7 @@
 - Chat uses updated knowledge within TTL without redeployment
 - All tests pass including chat integration
 
-### 2) Agenda CMS MVP
+### 3) Agenda CMS MVP
 
 **Goal:** Enable admin management of event agenda with speaker assignments.
 
@@ -47,7 +69,7 @@
 - Public API returns properly formatted agenda data
 - Feature flag controls visibility
 
-### 3) Sponsors CMS
+### 4) Sponsors CMS
 
 **Goal:** Complete dynamic sponsor logo management system.
 
@@ -66,7 +88,7 @@
 - No broken image requests
 - Proper fallback handling
 
-### 4) Component Refactoring (Start)
+### 5) Component Refactoring (Start)
 
 **Goal:** Break down oversized components to improve maintainability.
 

@@ -6,7 +6,7 @@
 
 - **Status**: Ready for final QA → Production deployment
 - **Next**: Execute manual tests → Start Sprint 3
-- **Priority**: Knowledge Overlay CMS implementation
+- **Priority**: AI migration to local (replace Gemini) and Knowledge Overlay CMS
 
 ### 📋 Documentation Index
 
@@ -105,17 +105,39 @@ This unified documentation provides a complete overview of the Paguyuban Messe 2
 
 ### Sprint Objectives
 
-#### 1) Knowledge Overlay CMS (Highest Priority)
+#### 1) AI Platform Migration (Replace Gemini with Local) — Highest Priority
+
+**Goal:** Eliminate external AI costs by removing Gemini usage and switching to a local AI runtime.
+
+**Implementation:**
+
+- **Client Replacement:** Replace `src/lib/ai/gemini-client.ts` with a local AI client. Keep the same interface (`generateText`, `extractJsonObject`) for a drop-in swap.
+- **Routing & Services:** Update all routes/services that currently import Gemini client (e.g., `admin/analytics/chat/recommend`, `admin/partnership/recommend`, `analytics/chat/summary`, `src/lib/document-analyzer.ts`, `src/lib/gemini.ts`) to use the local client.
+- **Models & Runtime:** Use the local AI runner under `ai/` directory (`@/ai`). Configure a lightweight local model and ensure deterministic JSON output for schema validation.
+- **Validation:** Keep Zod-based validation pipelines intact. Ensure JSON-mode outputs integrate with existing schemas in `src/lib/ai/schemas.ts`.
+- **Config & Secrets:** Remove Gemini API key dependencies from `.env*` and CI. Add toggles to switch providers if needed.
+- **Testing:** Update unit/integration tests to run against local AI. Mock interfaces where appropriate to keep tests fast and deterministic.
+- **Docs:** Document migration in `docs/GEMINI_USAGE.md` (deprecation notes), and update CI notes to reflect local inference usage.
+
+**Acceptance Criteria:**
+
+- No external Gemini calls are made in any environment
+- All existing tests pass against the local AI client
+- Cost for AI usage reduced to zero in development and CI
+- Feature parity for existing AI features (intent detection, summaries, recommendations)
+
+#### 2) Knowledge Overlay CMS (High Priority)
 
 **Goal:** Allow admins to dynamically update chatbot knowledge without redeployment.
 
 **Implementation:**
 
-- **Database:** `knowledge` table with `overlay` JSONB, `updated_at`, optional `is_active`
-- **API:** `GET /api/admin/knowledge`, `PUT /api/admin/knowledge` (admin-protected, Zod-validated)
-- **Loader:** Add `loadDbKnowledgeOverlay()` with short TTL cache; merge static + file + DB via `deepMerge`
-- **Admin UI:** Minimal JSON editor with validation; preview key paths (e.g., `event.dates`, `financials.revenue.total`)
-- **Tests:** Unit tests, API route tests, chat integration tests
+- **Database & Migration:** Define DB schema and create migration (`drizzle/`, Neon) for a `knowledge` table storing overlay JSON and metadata.
+- **CRUD API Routes:** Implement admin-protected, Zod-validated routes: `GET /api/admin/knowledge`, `PUT /api/admin/knowledge`, and upload support if needed.
+- **Admin UI:** Build forms with `react-hook-form` + Zod, including a JSON editor, validation, and previews for key paths (e.g., `event.dates`, `financials.revenue.total`).
+- **Loader Integration:** Implement precedence and merge logic in `src/lib/knowledge/loader.ts` to combine static, file, and DB overlays via deep merge and short TTL cache.
+- **Testing:** Add unit tests and E2E tests covering CRUD flows, loader behavior, and chat consumption of overlays.
+- **Docs & Plans:** Update `CURRENT_SPRINT_PLAN.md`, `NEXT_SPRINT_PLAN.md`, and `IMPLEMENTATION_PLAN.md` to reflect the Knowledge Overlay CMS.
 
 **Acceptance Criteria:**
 
@@ -123,7 +145,7 @@ This unified documentation provides a complete overview of the Paguyuban Messe 2
 - Chat uses updated knowledge within TTL without redeployment
 - All tests pass including chat integration
 
-#### 2) Agenda CMS MVP
+#### 3) Agenda CMS MVP
 
 **Goal:** Enable admin management of event agenda with speaker assignments.
 
@@ -141,7 +163,7 @@ This unified documentation provides a complete overview of the Paguyuban Messe 2
 - Public API returns properly formatted agenda data
 - Feature flag controls visibility
 
-#### 3) Sponsors CMS
+#### 4) Sponsors CMS
 
 **Goal:** Complete dynamic sponsor logo management system.
 
@@ -160,7 +182,7 @@ This unified documentation provides a complete overview of the Paguyuban Messe 2
 - No broken image requests
 - Proper fallback handling
 
-#### 4) Component Refactoring (Start)
+#### 5) Component Refactoring (Start)
 
 **Goal:** Break down oversized components to improve maintainability.
 
