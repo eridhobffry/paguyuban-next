@@ -66,20 +66,16 @@ export async function initializeAdmin(): Promise<void> {
   const adminEmail = ADMIN_EMAIL;
   const adminPassword = "Aabbcc1!";
 
-  try {
-    // Ensure database is properly set up before creating admin
-    await ensureUsersSingleTableModel();
+  // Ensure database is properly set up before creating admin
+  await ensureUsersSingleTableModel();
 
-    const existingAdmin = await getUserByEmail(adminEmail);
-    if (!existingAdmin) {
-      const hashedPassword = await hashPassword(adminPassword);
-      await createUser(adminEmail, hashedPassword, "admin");
-      console.log("Admin user created successfully");
-    } else {
-      console.log("Admin user already exists");
-    }
-  } catch (error) {
-    console.error("Error initializing admin:", error);
+  const existingAdmin = await getUserByEmail(adminEmail);
+  if (!existingAdmin) {
+    const hashedPassword = await hashPassword(adminPassword);
+    await createUser(adminEmail, hashedPassword, "admin");
+    console.log("Admin user created successfully");
+  } else {
+    console.log("Admin user already exists");
   }
 }
 

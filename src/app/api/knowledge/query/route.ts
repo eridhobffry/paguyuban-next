@@ -305,8 +305,10 @@ export async function POST(request: NextRequest) {
     console.error("Knowledge query error:", error);
 
     if (error instanceof z.ZodError) {
+      const firstIssue = error.issues && error.issues[0];
+      const message = firstIssue?.message || "Invalid request data";
       return NextResponse.json(
-        { error: "Invalid request data", details: error.issues },
+        { error: message, details: error.issues },
         { status: 400 }
       );
     }

@@ -124,3 +124,33 @@ AND table_name IN (
 - **Updated**: API documentation in root endpoint to include new endpoint
 - **Updated**: Documentation in `docs/GEMINI_USAGE.md` to reflect model changes
 - **Tested**: Local implementation of new endpoint - ✅ Working correctly
+
+### September 4, 2025 — Test Run Summary (no fixes applied)
+
+### Unit Tests (Vitest)
+
+- Files: 57 total — 39 passed, 18 failed
+- Tests: 450 total — 347 passed, 103 failed
+- Start: 10:25:09
+- Duration: 41.39s (transform 1.87s, setup 5.20s, collect 4.66s, tests 48.65s, environment 24.05s, prepare 4.01s)
+
+Representative failures observed (unchanged, for documentation only):
+
+- `tests/api/knowledge-query.test.ts` — expected 200 but received 500 from `POST /api/knowledge/query`.
+- `tests/api/request_access_route.test.ts` — expected 201 but received 500 from `POST /api/auth/request-access`.
+- `tests/lib/admin_auth.test.ts` — multiple failures; setup error `TypeError: vi.mocked(...).mockReturnValue is not a function` indicates mocked helpers not compatible with current imports in `tests/setupTests.ts` and `@/lib/jwt` usage.
+- `tests/lib/auth_integration.test.ts` — tokens expected to differ were equal, suggesting timestamp/nonce not varying between successive calls.
+- `tests/lib/chat_service_overlay_integration.test.ts` — overlay resolution returned default/base values (`August 7-8, 2026`) instead of overlay-provided values (`December 1-2, 2026`).
+- `tests/lib/knowledge_loader.test.ts` — merge structure differs; received nested `csv: { key: ... }` instead of flattened `"csv.key": "csv_value"`.
+
+Notes: No remediation attempted in this run; results captured for tracking only.
+
+### E2E Smoke (Playwright `@smoke`)
+
+- Command: `npm run e2e -- -g @smoke`
+- Result: Failed to start Next.js web server during build
+- Error: Type error in `src/app/api/admin/alerts/evaluate/route.ts`
+  - Message: `"evaluateRule" is not a valid Route export field.`
+  - Outcome: Next.js build worker exited with code 1; Playwright could not start the server.
+
+Status: No fixes applied per feature-first focus. This entry records the current baseline to revisit after feature work.
