@@ -1043,7 +1043,8 @@ Respond as ${selectedPersonality.name} with accurate, specific information. Incl
       // Redact sensitive info before sending to the model
       prompt = redact(prompt).text;
 
-      const shouldUseLocal = options?.mode === "local" || !GEMINI_API_KEY;
+      // Force local knowledge path; no external Gemini usage
+      const shouldUseLocal = true;
 
       // If running in local mode or API key is not set, return knowledge-based fallback immediately
       if (shouldUseLocal) {

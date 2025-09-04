@@ -74,10 +74,9 @@ export async function getCachedResponse(
         5
       );
       for (const dbEntry of similarEntries) {
-        const score = cosine(
-          new Map(Object.entries(dbEntry.embeddingVector)),
-          emb
-        );
+        const vec = (dbEntry as any)?.embeddingVector;
+        if (!vec || typeof vec !== "object") continue;
+        const score = cosine(new Map(Object.entries(vec)), emb);
         if (
           score >= threshold &&
           validateContextMatch(dbEntry.normalizedQuery, normalized, ctx)

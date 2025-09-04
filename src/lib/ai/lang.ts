@@ -12,7 +12,6 @@ const ID_WORDS = [
   "bisnis",
   "saya",
   "tertarik",
-  "sponsor",
   "penyelanggara",
   "manfaat",
   "jadwal",
@@ -38,7 +37,12 @@ const DE_WORDS = ["wann", "wo", "wie", "veranstaltung", "preis", "geschäft"];
 
 export function detectLanguage(text: string): Lang {
   const t = (text || "").toLowerCase();
-  const score = (words: string[]) => words.reduce((s, w) => s + (t.includes(w) ? 1 : 0), 0);
+  const tokens = new Set((t.match(/[a-z]+/g) || []).filter(Boolean));
+  const score = (words: string[]) =>
+    words.reduce((s, w) => {
+      if (w.includes(" ")) return s + (t.includes(w) ? 2 : 0); // phrase match gets higher weight
+      return s + (tokens.has(w) ? 1 : 0);
+    }, 0);
 
   const idScore = score(ID_WORDS);
   const msScore = score(MS_WORDS);
@@ -49,4 +53,3 @@ export function detectLanguage(text: string): Lang {
   if (msScore >= idScore && msScore >= deScore) return "ms";
   return "de";
 }
-

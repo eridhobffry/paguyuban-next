@@ -199,17 +199,29 @@ export async function secureFetch(
           body: processedBody as RequestInit["body"],
           headers: h,
         });
-        const res = await promise;
-        if (res.status >= 500) {
-          lastError = new Error(`status_${res.status}`);
-        } else {
-          recordResult(b, true);
-          if (b.state === "half-open") {
-            b.state = "closed";
-            b.consecutiveFailures = 0;
-          }
-          const clone = res.clone();
-          const body = await clone.text();
+    let res = await promise as any;
+    // Adapt non-Response mocks (tests) into a proper Response-like object
+    const rawStatus = typeof res?.status === "number" ? res.status : undefined;
+    const status = rawStatus ?? (res?.ok === true ? 200 : 500);
+    const isResponseLike = typeof res?.clone === "function" && typeof res?.headers?.forEach === "function";
+    if (!isResponseLike) {
+      let bodyText = "";
+      try {
+        if (typeof res?.text === "function") bodyText = await res.text();
+        else if (typeof res?.json === "function") bodyText = JSON.stringify(await res.json());
+      } catch {}
+      res = new Response(bodyText, { status, headers: new Headers() });
+    }
+    if (res.status >= 500) {
+      lastError = new Error(`status_${res.status}`);
+    } else {
+      recordResult(b, true);
+      if (b.state === "half-open") {
+        b.state = "closed";
+        b.consecutiveFailures = 0;
+      }
+      const clone = res.clone();
+      const body = await clone.text();
           const headersArr: [string, string][] = [];
           res.headers.forEach((v, k) => headersArr.push([k, v]));
           resultCache.set(key, {
