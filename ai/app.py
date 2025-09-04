@@ -13,11 +13,11 @@ import jwt
 import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from contracts import EventPlan, AnalyticsReport, ContractReview
-from common.memory import detect_memory_diff
-from common.lang import get_language_prompt
-from common.intent import IntentAnalyzer
-from ollama_client import OllamaClient, map_model, OllamaError
+from ai.contracts import EventPlan, AnalyticsReport, ContractReview
+from ai.common.memory import detect_memory_diff
+from ai.common.lang import get_language_prompt
+from ai.common.intent import IntentAnalyzer
+from ai.ollama_client import OllamaClient, map_model, OllamaError
 import time
 
 # Simplified configuration
@@ -150,7 +150,7 @@ class DataDrivenAgent:
                 {"type": "artists", "upcoming_only": True},
                 {"type": "speakers", "confirmed_only": True}
             ]
-        elif intent == "pricing_info":
+        elif intent in ("pricing_info", "event_pricing"):
             data_requirements["data_sources"] = [
                 {"type": "sponsors", "include_tiers": True},
                 {"type": "event_pricing", "current": True}
@@ -164,7 +164,7 @@ class DataDrivenAgent:
             return self._generate_prospect_analysis(query, context_data)
         elif intent in ("event_details", "event_timing"):
             return self._generate_event_details(query, context_data, language)
-        elif intent == "pricing_info":
+        elif intent in ("pricing_info", "event_pricing"):
             return self._generate_pricing_info(query, context_data, language)
         else:
             return self._generate_general_response(query, context_data, language)
@@ -190,75 +190,196 @@ class DataDrivenAgent:
         return response
 
     def _generate_event_details(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        # Try to use any provided event context to enrich details
+        ev = context_data.get("event_context") or {}
+        availability = ev.get("availability") or {}
+        sponsors = ev.get("sponsors") or []
+        tiers = ev.get("tiers") or []
+        sponsor_line_en = (
+            f"Current sponsors: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
+        )
+        sponsor_line_id = (
+            f"Sponsor saat ini: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
+        )
+        sponsor_line_ms = (
+            f"Penaja semasa: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
+        )
+        # Show quick availability if present
+        def fmt_avail(av: Dict[str, Any], names: List[str]) -> Optional[str]:
+            parts = []
+            for n in names:
+                v = av.get(n)
+                if v is not None:
+                    parts.append(f"{n}: {v}")
+            return ", ".join(parts) if parts else None
+
         if language == "id":
-            return (
-                "Paguyuban Messe 2026 akan diadakan pada 7-8 Agustus 2026 di Arena Berlin, Jerman.\n\n"
-                "Tema: Digital Innovation & Cultural Heritage\n\n"
-                "Sorotan Jadwal:\n"
-                "• Hari 1: Pembukaan, B2B matchmaking, lokakarya budaya\n"
-                "• Hari 2: Showcase inovasi, leadership talks, konser grand finale\n\n"
-                "Ada info spesifik yang ingin Anda ketahui?"
-            )
+            base = [
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Agustus 2026 di Arena Berlin, Jerman.",
+                "",
+                "Tema: Digital Innovation & Cultural Heritage",
+                "",
+                "Sorotan Jadwal:",
+                "• Hari 1: Pembukaan, B2B matchmaking, lokakarya budaya",
+                "• Hari 2: Showcase inovasi, leadership talks, konser grand finale",
+            ]
+            if sponsor_line_id:
+                base.append("")
+                base.append(sponsor_line_id)
+            avail = fmt_avail(availability, ["title", "platinum", "gold", "silver", "bronze"])
+            if avail:
+                base.append(f"Ketersediaan paket: {avail}")
+            base.append("")
+            base.append("Ada info spesifik yang ingin Anda ketahui?")
+            return "\n".join(base)
         if language == "ms":
-            return (
-                "Paguyuban Messe 2026 akan diadakan pada 7-8 Ogos 2026 di Arena Berlin, Jerman.\n\n"
-                "Maklumat lanjut:\n"
-                "• Tema: Inovasi Digital & Warisan Budaya\n\n"
-                "Sorotan Jadual:\n"
-                "• Hari 1: Perasmian dan persembahan budaya\n"
-                "• Hari 2: Rangkaian perniagaan dan bengkel\n\n"
-                "Ada perkara khusus yang anda ingin tahu?"
-            )
-        return """Here’s the information about our upcoming Paguyuban Messe event:
-
-• Date: August 7-8, 2026
-• Location: Arena Berlin, Germany
-• Theme: “Digital Innovation & Cultural Heritage”
-
-Schedule Highlights:
-• Day 1: Opening ceremony, B2B matchmaking, cultural workshops
-• Day 2: Innovation showcases, leadership talks, grand finale concert
-
-Would you like more specific information about any aspect of the event?"""
+            base = [
+                "Paguyuban Messe 2026 akan diadakan pada 7-8 Ogos 2026 di Arena Berlin, Jerman.",
+                "",
+                "Maklumat lanjut:",
+                "• Tema: Inovasi Digital & Warisan Budaya",
+                "",
+                "Sorotan Jadual:",
+                "• Hari 1: Perasmian dan persembahan budaya",
+                "• Hari 2: Rangkaian perniagaan dan bengkel",
+            ]
+            if sponsor_line_ms:
+                base.append("")
+                base.append(sponsor_line_ms)
+            avail = fmt_avail(availability, ["title", "platinum", "gold", "silver", "bronze"])
+            if avail:
+                base.append(f"Ketersediaan pakej: {avail}")
+            base.append("")
+            base.append("Ada perkara khusus yang anda ingin tahu?")
+            return "\n".join(base)
+        base = [
+            "Here’s the information about our upcoming Paguyuban Messe event:",
+            "",
+            "• Date: August 7-8, 2026",
+            "• Location: Arena Berlin, Germany",
+            "• Theme: “Digital Innovation & Cultural Heritage”",
+            "",
+            "Schedule Highlights:",
+            "• Day 1: Opening ceremony, B2B matchmaking, cultural workshops",
+            "• Day 2: Innovation showcases, leadership talks, grand finale concert",
+        ]
+        if sponsor_line_en:
+            base.append("")
+            base.append(sponsor_line_en)
+        avail = fmt_avail(availability, ["title", "platinum", "gold", "silver", "bronze"])
+        if avail:
+            base.append(f"Tier availability: {avail}")
+        base.append("")
+        base.append("Would you like more specific information about any aspect of the event?")
+        return "\n".join(base)
 
     def _generate_pricing_info(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
+        # Prefer dynamic pricing info from event_context.sponsors/tiers when provided
+        ev = context_data.get("event_context") or {}
+        tiers = ev.get("tiers") or []
+        sponsors = ev.get("sponsors") or []
+        availability = ev.get("availability") or {}
+
+        def fmt_price(p: Any) -> Optional[str]:
+            try:
+                if p is None:
+                    return None
+                # Already a number? format as €xx,xxx
+                if isinstance(p, (int, float)):
+                    return f"€{int(p):,}".replace(",", ".")
+                # String? return as-is
+                return str(p)
+            except Exception:
+                return None
+
+        def tier_lines() -> List[str]:
+            lines: List[str] = []
+            if isinstance(tiers, list) and tiers:
+                for t in tiers:
+                    name = t.get("name") if isinstance(t, dict) else None
+                    price = fmt_price((t.get("price") if isinstance(t, dict) else None))
+                    rem = t.get("remaining") if isinstance(t, dict) else None
+                    bits = []
+                    if name:
+                        bits.append(str(name))
+                    if price:
+                        bits.append(str(price))
+                    if rem is not None:
+                        bits.append(f"remaining {rem}")
+                    if bits:
+                        lines.append("• " + " — ".join(bits))
+            return lines
+
         if language == "id":
-            return (
-                "Berikut pilihan harga sponsorship dan tiket saat ini:\n\n"
-                "Paket Sponsorship:\n"
-                "• Platinum: €50.000 — Hak logo utama, sesi keynote, akses VIP\n"
-                "• Gold: €25.000 — Logo panggung & situs, booth premium\n"
-                "• Silver: €10.000 — Logo di situs & program, booth standar\n\n"
-                "Tiket Individu:\n"
-                "• Early Bird: €150 (hingga Juni 2026)\n"
-                "• Reguler: €200\n"
-                "• VIP: €350 (termasuk akses networking premium)\n"
+            header = ["Berikut pilihan harga sponsorship saat ini:"]
+            lines = tier_lines()
+            if not lines:
+                # Fallback static tiers
+                lines = [
+                    "• Platinum: €50.000 — Hak logo utama, sesi keynote, akses VIP",
+                    "• Gold: €25.000 — Logo panggung & situs, booth premium",
+                    "• Silver: €10.000 — Logo di situs & program, booth standar",
+                ]
+            sponsor_info = (
+                f"Jumlah sponsor aktif: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
             )
+            avail_parts = []
+            for k in ["title", "platinum", "gold", "silver", "bronze"]:
+                v = availability.get(k)
+                if v is not None:
+                    avail_parts.append(f"{k}: {v}")
+            out = header + [""] + ["Paket Sponsorship:"] + lines
+            if sponsor_info:
+                out += ["", sponsor_info]
+            if avail_parts:
+                out += [f"Ketersediaan paket: {', '.join(avail_parts)}"]
+            return "\n".join(out)
         if language == "ms":
-            return (
-                "Berikut pilihan harga penajaan dan tiket semasa:\n\n"
-                "Pakej Penajaan:\n"
-                "• Platinum: €50,000 — Penjenamaan utama, slot keynote, akses VIP\n"
-                "• Gold: €25,000 — Logo pentas & laman, lokasi booth premium\n"
-                "• Silver: €10,000 — Logo di laman & program, booth standard\n\n"
-                "Tiket Individu:\n"
-                "• Early Bird: €150 (hingga Jun 2026)\n"
-                "• Biasa: €200\n"
-                "• VIP: €350 (termasuk akses rangkaian premium)\n"
+            header = ["Berikut pilihan harga penajaan semasa:"]
+            lines = tier_lines()
+            if not lines:
+                lines = [
+                    "• Platinum: €50,000 — Penjenamaan utama, slot keynote, akses VIP",
+                    "• Gold: €25,000 — Logo pentas & laman, lokasi booth premium",
+                    "• Silver: €10,000 — Logo di laman & program, booth standard",
+                ]
+            sponsor_info = (
+                f"Penaja aktif: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
             )
-        return """Here are our current sponsorship and ticket pricing options:
-
-Sponsorship Packages:
-• Platinum: €50,000 — Prime logo placement, keynote slot, VIP networking
-• Gold: €25,000 — Main stage & website logo, speaking opportunity, booth premium
-• Silver: €10,000 — Website/program logo, standard booth, attendance
-
-Individual Tickets:
-• Early Bird: €150 (until June 2026)
-• Regular: €200
-• VIP: €350 (includes premium networking)
-
-All packages include comprehensive marketing benefits and networking opportunities. Would you like to discuss which option best fits your needs?"""
+            avail_parts = []
+            for k in ["title", "platinum", "gold", "silver", "bronze"]:
+                v = availability.get(k)
+                if v is not None:
+                    avail_parts.append(f"{k}: {v}")
+            out = header + [""] + ["Pakej Penajaan:"] + lines
+            if sponsor_info:
+                out += ["", sponsor_info]
+            if avail_parts:
+                out += [f"Ketersediaan pakej: {', '.join(avail_parts)}"]
+            return "\n".join(out)
+        header = ["Here are our current sponsorship pricing options:"]
+        lines = tier_lines()
+        if not lines:
+            lines = [
+                "• Platinum: €50,000 — Prime logo placement, keynote slot, VIP networking",
+                "• Gold: €25,000 — Main stage & website logo, speaking opportunity, booth premium",
+                "• Silver: €10,000 — Website/program logo, standard booth, attendance",
+            ]
+        sponsor_info = (
+            f"Current sponsors: {len(sponsors)}" if isinstance(sponsors, list) and len(sponsors) else None
+        )
+        avail_parts = []
+        for k in ["title", "platinum", "gold", "silver", "bronze"]:
+            v = availability.get(k)
+            if v is not None:
+                avail_parts.append(f"{k}: {v}")
+        out = header + [""] + ["Sponsorship Packages:"] + lines
+        if sponsor_info:
+            out += ["", sponsor_info]
+        if avail_parts:
+            out += [f"Tier availability: {', '.join(avail_parts)}"]
+        out += ["", "Would you like to discuss which option best fits your needs?"]
+        return "\n".join(out)
 
     def _generate_general_response(self, query: str, context_data: Dict[str, Any], language: str = "en") -> str:
         if language == "id":
@@ -293,6 +414,7 @@ Please let me know what specific information you're looking for!"""
 
 # Global agent instance
 data_agent = DataDrivenAgent()
+_intent_analyzer = IntentAnalyzer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -386,7 +508,7 @@ async def generate_chat_response(
         _t_start = time.perf_counter()
         query = request.get("query", "")
         # Language: priority from body, else detect
-        from common.lang import detect_language
+        from ai.common.lang import detect_language
         language = request.get("language") or detect_language(query)
         session_id = request.get("session_id")
         context_data = request.get("context_data", {})
@@ -473,9 +595,10 @@ async def event_chat_response(
     try:
         _t_start = time.perf_counter()
         query = request.get("query", "")
-        from common.lang import detect_language
+        from ai.common.lang import detect_language
         language = request.get("language") or detect_language(query)
         session_id = request.get("session_id")
+        context_data = request.get("context_data", {})
 
         if not query:
             raise HTTPException(status_code=400, detail="Query is required")
@@ -501,7 +624,7 @@ async def event_chat_response(
             except (TimeoutError, OllamaError):
                 response = None
         if not response:
-            response = data_agent.generate_response(query, intent, {}, language)
+            response = data_agent.generate_response(query, intent, context_data, language)
         mem = detect_memory_diff(query, language)
 
         hdr = http_request.headers if http_request else {}
@@ -673,3 +796,36 @@ async def make_contract_review(
             "timestamp": datetime.now().isoformat(),
         },
     }
+
+# ---- Intent Analyze Endpoint ----
+
+@app.post("/api/ai/intent/analyze")
+async def analyze_intent(
+    body: Dict[str, Any],
+    token_payload: Dict[str, Any] = Depends(verify_ai_service_token),
+):
+    """Lightweight intent analysis for Next intent resolver.
+
+    Request body:
+      { query: string, language?: string, session_id?: string, user_id?: string, context?: object }
+    Response:
+      { intent: string, confidence: float }
+    """
+    try:
+        query = str(body.get("query") or "").strip()
+        if not query:
+            return {"intent": "general_inquiry", "confidence": 0.0}
+        lang = str(body.get("language") or "en").strip().lower()
+        # Use shared analyzer
+        intent = _intent_analyzer.analyze_intent(query, lang)
+        # Simple confidence heuristic
+        base_conf = 0.7
+        if intent in {"event_details", "event_timing", "event_location", "pricing_info", "prospect_analysis"}:
+            conf = 0.85
+        else:
+            conf = base_conf
+        return {"intent": intent, "confidence": conf}
+    except Exception as e:
+        logger.error("Intent analyze error: %s", str(e))
+        # Degrade gracefully
+        return {"intent": "general_inquiry", "confidence": 0.0}

@@ -17,7 +17,6 @@ ID_WORDS = [
     "bisnis",
     "saya",
     "tertarik",
-    "sponsor",
     "manfaat",
     "jadwal",
 ]
@@ -43,9 +42,20 @@ DE_WORDS = ["wann", "wo", "wie", "veranstaltung", "preis", "geschäft", "hilfe"]
 
 def detect_language(text: str) -> Lang:
     t = (text or "").lower()
+    # token-based scoring to avoid false positives (e.g., English "sponsorship")
+    import re
+    tokens = set(re.findall(r"[a-z]+", t))
 
     def score(words):
-        return sum(1 for w in words if w in t)
+        s = 0
+        for w in words:
+            if " " in w:
+                if w in t:
+                    s += 2  # phrase match gets higher weight
+            else:
+                if w in tokens:
+                    s += 1
+        return s
 
     id_s = score(ID_WORDS)
     ms_s = score(MS_WORDS)
@@ -68,4 +78,3 @@ def get_language_prompt(language: Lang) -> str:
     if language == "de":
         return "Bitte auf Deutsch antworten."
     return "Please respond in English."
-
