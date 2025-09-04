@@ -24,35 +24,58 @@ export async function GET(request: NextRequest) {
       console.log("AI service health check failed:", error.message);
     }
 
-    // Test AI data routes
-    const dataRoutes = [
-      { name: "chat-context", endpoint: "/api/ai/data/chat-context" },
-      { name: "event-context", endpoint: "/api/ai/data/event-context" },
-      { name: "analytics-context", endpoint: "/api/ai/data/analytics-context" },
-      { name: "financial-context", endpoint: "/api/ai/data/financial-context" },
-      { name: "knowledge-context", endpoint: "/api/ai/data/knowledge-context" },
-      { name: "learning", endpoint: "/api/ai/data/learning" },
-    ];
-
-    const routeHealth: Record<string, boolean> = {};
-
-    // Phase 2.25: Manually track working routes that we've tested
-    const knownWorkingRoutes = ["chat-context", "event-context"];
-
-    for (const route of dataRoutes) {
-      if (knownWorkingRoutes.includes(route.name)) {
-        // We know these routes are working from our manual testing
-        routeHealth[route.name] = true;
-      } else {
-        // For routes we haven't fully implemented yet, mark as false
-        routeHealth[route.name] = false;
+    // Test AI data routes (ping with minimal valid params)
+    const origin = new URL(request.url).origin;
+    async function ping(path: string, init?: RequestInit): Promise<boolean> {
+      try {
+        const res = await fetch(`${origin}${path}`, {
+          method: "GET",
+          headers: { "Cache-Control": "no-store" },
+          ...init,
+        } as RequestInit);
+        return res.ok;
+      } catch {
+        return false;
       }
     }
 
-    const overallHealthy =
-      dbHealthy &&
-      aiServiceHealthy &&
-      Object.values(routeHealth).every((healthy) => healthy);
+    const routeHealth: Record<string, boolean> = {
+      // Provide a dummy UUID for validation; route should return 200 with empty arrays
+      "chat-context": await ping(
+        `/api/ai/data/chat-context?sessionId=00000000-0000-4000-8000-000000000000&limit=1`
+      ),
+      "event-context": await ping(
+        `/api/ai/data/event-context?intent=general&include=sponsors,tiers`
+      ),
+      "analytics-context": await ping(
+        `/api/ai/data/analytics-context?timeRange=1`
+      ),
+      "financial-context": await ping(
+        `/api/ai/data/financial-context?include=revenue&intent=general`
+      ),
+      "knowledge-context": await ping(`/api/ai/data/knowledge-context`),
+      // learning GET requires params; instead issue a POST best-effort
+      // and treat 200 as healthy
+      "learning": await (async () => {
+        try {
+          const res = await fetch(`${origin}/api/ai/data/learning`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: "00000000-0000-4000-8000-000000000000",
+              query: "health",
+              intent: "health_check",
+              response_quality: 5,
+            }),
+          });
+          return res.ok;
+        } catch {
+          return false;
+        }
+      })(),
+    };
+
+    const overallHealthy = dbHealthy && aiServiceHealthy && Object.values(routeHealth).every(Boolean);
 
     return NextResponse.json(
       {

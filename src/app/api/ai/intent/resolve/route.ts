@@ -43,27 +43,33 @@ export async function POST(request: NextRequest) {
         const querySan = sanitizeInput(parsed.data.query);
         const { language, sessionId, userId, context } = parsed.data;
 
-        // Advanced intent resolution using AI service
-        const intentResponse = await secureFetch("/api/ai/intent/analyze", {
-          method: "POST",
-          body: {
-            query: redactPII(querySan),
-            language,
-            session_id: sessionId,
-            user_id: userId,
-            context,
-          },
-        });
-
-        if (!intentResponse.ok) {
-          throw new Error(
-            `AI intent analysis failed: ${intentResponse.status}`
-          );
+        // Advanced intent resolution using AI service (graceful fallbacks)
+        let intent = "general_inquiry";
+        let confidence = 0.0;
+        try {
+          const intentResponse = await secureFetch("/api/ai/intent/analyze", {
+            method: "POST",
+            body: {
+              query: redactPII(querySan),
+              language,
+              session_id: sessionId,
+              user_id: userId,
+              context,
+            },
+            // keep short time budget; if it fails, we degrade without erroring
+            timeoutMs: 600,
+            totalBudgetMs: 1000,
+            breakerKey: "ai-intent",
+            dedupWindowMs: 5000,
+          });
+          if (intentResponse.ok) {
+            const intentData = await intentResponse.json();
+            intent = intentData.intent || intent;
+            confidence = intentData.confidence ?? 0.5;
+          }
+        } catch (e) {
+          // Degrade silently: keep default intent
         }
-
-        const intentData = await intentResponse.json();
-        const intent = intentData.intent || "general_inquiry";
-        const confidence = intentData.confidence || 0.5;
 
         // Intelligent data source selection based on intent
         const dataRequirements = determineDataRequirements(

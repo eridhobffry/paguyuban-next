@@ -9,6 +9,7 @@ const QuerySchema = z.object({
   topic: z.string().optional(),
   language: z.string().default("en"),
   limit: z.number().min(1).max(20).default(10),
+  debug: z.string().optional(), // e.g. "shape" to emit overlay shape for tests/debug
 });
 
 export async function GET(request: NextRequest) {
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
           topic: searchParams.get("topic") || undefined,
           language: searchParams.get("language") || "en",
           limit: parseInt(searchParams.get("limit") || "10"),
+          debug: searchParams.get("debug") || undefined,
         });
 
         const response: Record<string, unknown> = {
@@ -47,10 +49,31 @@ export async function GET(request: NextRequest) {
               sql`(${knowledge.overlay})::text ILIKE ${`%${query.topic}%`}`
             )
           : baseQuery;
-        const knowledgeData = await filtered
+        const knowledgeRows = await filtered
           .orderBy(desc(knowledge.createdAt))
           .limit(query.limit);
-        response.knowledge = knowledgeData;
+        response.knowledge = knowledgeRows;
+
+        // Build merged overlay with consistent top-level keys for loaders
+        const mergedOverlay: Record<string, unknown> = {};
+        for (const row of knowledgeRows as Array<{ overlay?: Record<string, unknown> }>) {
+          const ov = (row?.overlay as Record<string, unknown>) || {};
+          deepMergeInto(mergedOverlay, ov);
+        }
+        ensureKeys(mergedOverlay, [
+          "event",
+          "financials",
+          "sponsorship",
+          "speakers",
+          "artists",
+          "documents",
+        ]);
+        response.overlay = mergedOverlay;
+
+        // Optional: emit overlay shape for tests/debugging
+        if (query.debug === "shape" || (process.env.NODE_ENV === "test" && query.debug !== "off")) {
+          response.debug_shape = summarizeShape(mergedOverlay);
+        }
 
         // Fetch relevant documents if topic specified
         if (query.topic) {
@@ -84,13 +107,13 @@ export async function GET(request: NextRequest) {
           response.topic_context = {
             primary_topic: query.topic,
             related_topics: getRelatedTopics(query.topic),
-            confidence_score: calculateConfidence(knowledgeData, query.topic),
-            last_updated: knowledgeData[0]?.createdAt || null,
+            confidence_score: calculateConfidence(knowledgeRows as any, query.topic),
+            last_updated: (knowledgeRows as any)[0]?.createdAt || null,
           };
         }
 
-        // Add static knowledge as fallback (from current system)
-        if (knowledgeData.length === 0) {
+        // Add static knowledge as fallback when DB returns no rows
+        if ((knowledgeRows as any[]).length === 0) {
           response.static_knowledge = {
             event_overview: {
               name: "Paguyuban Messe 2026 - Level-Up Indonesia",
@@ -194,4 +217,48 @@ function calculateConfidence(
   });
 
   return Math.min(1, hits / knowledgeData.length);
+}
+
+function deepMergeInto(target: Record<string, unknown>, source: Record<string, unknown>) {
+  for (const [k, v] of Object.entries(source)) {
+    if (
+      v && typeof v === "object" && !Array.isArray(v) && typeof target[k] === "object" && target[k] !== null
+    ) {
+      deepMergeInto(target[k] as Record<string, unknown>, v as Record<string, unknown>);
+    } else if (v && typeof v === "object" && !Array.isArray(v)) {
+      target[k] = { ...(v as Record<string, unknown>) };
+    } else {
+      target[k] = v as unknown;
+    }
+  }
+}
+
+function ensureKeys(obj: Record<string, unknown>, keys: string[]) {
+  for (const k of keys) {
+    if (!(k in obj)) obj[k] = {};
+  }
+}
+
+function summarizeShape(obj: any) {
+  try {
+    const out: Record<string, any> = { keys: Object.keys(obj || {}) };
+    const details: Record<string, any> = {};
+    for (const k of Object.keys(obj || {})) {
+      const v = (obj as any)[k];
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        details[k] = {
+          type: "object",
+          keys: Object.keys(v),
+        };
+      } else if (Array.isArray(v)) {
+        details[k] = { type: "array", length: v.length };
+      } else {
+        details[k] = { type: typeof v };
+      }
+    }
+    out.details = details;
+    return out;
+  } catch {
+    return { keys: [], details: {} };
+  }
 }
